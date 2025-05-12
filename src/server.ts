@@ -18,6 +18,7 @@ const app: Application = express();
 // Middleware
 app.use(cors()); // Enable CORS
 app.use(morgan('dev')); // Logging middleware
+app.use(express.urlencoded({extended: true}));
 app.use(express.json()); // Parse JSON request bodies
 
 // Session middleware
