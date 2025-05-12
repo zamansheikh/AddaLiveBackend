@@ -1,17 +1,20 @@
 import mongoose, { Document, Model } from 'mongoose';
 
+export interface IAuthData{
+    authData: {
+        google: {
+            access_token?: string,
+            id?: string,
+            id_token?: string,
+        }
+    }
+}
 
 export interface UserData {
     username: string;
     email: string;
     password: string,
-    authData: {
-        google: {
-            access_token?: string;
-            id?: string;
-            id_token?: string;
-        };
-    };
+    authData: IAuthData,
     lastOnline?: Date;
     user_state_in_app?: 'Online' | 'Offline';
     isreseller?: boolean;
@@ -31,7 +34,7 @@ export interface UserData {
     bio?: string;
     country_code?: string;
     country_dial_code?: string;
-    uid?: number;
+    uid: number;
     country_languages?: string[];
     credit?: number;
     userPoints?: number;

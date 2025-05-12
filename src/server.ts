@@ -6,11 +6,8 @@ import dotenv from 'dotenv';
 import session from 'express-session';
 // import mongoClient from "mongodb";
 import mongoose from 'mongoose';
-
 import router from "./router/auth_routes";
 
-// import bcrypt from 'bcrypt';
-// import jwt from 'jsonwebtoken';
 
 // Initialize dotenv for environment variables
 dotenv.config();

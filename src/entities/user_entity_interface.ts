@@ -1,10 +1,5 @@
-export interface AuthData {
-    google: {
-        access_token?: string;
-        id?: string;
-        id_token?: string;
-    };
-}
+import { IAuthData } from "../models/user_model_interface";
+
 
 export interface Avatar {
     name?: string;
@@ -21,7 +16,7 @@ export interface IUserEntity {
     username: string;
     email: string;
     password: string;
-    authData: AuthData;
+    authData: IAuthData,
     lastOnline?: Date;
     userStateInApp?: "Online" | "Offline";
     isReseller?: boolean;
@@ -38,7 +33,7 @@ export interface IUserEntity {
     bio?: string;
     countryCode?: string;
     countryDialCode?: string;
-    uid?: number;
+    uid: number;
     countryLanguages?: string[];
     credit?: number;
     userPoints?: number;
