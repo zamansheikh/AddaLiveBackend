@@ -7,6 +7,13 @@ const userSchema = new mongoose.Schema<IUserDocument>(
         email: { type: String, required: true },
         password: { type: String, required: true },
         lastOnline: { type: Date },
+        authData: {
+            gooogle: {
+                access_token: String,
+                id: String,
+                id_token: String,
+            },
+        },
         user_state_in_app: {
             type: String,
             enum: ["Online", "Offline"],

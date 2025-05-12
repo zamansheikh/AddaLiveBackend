@@ -10,12 +10,6 @@ export const validateRequest = (DTOClass: any) => {
 
     if (errors.length > 0) {
         next(errors)
-    //   return res.status(400).json({
-    //     errors: errors.map(err => ({
-    //       property: err.property,
-    //       constraints: err.constraints
-    //     }))
-    //   });
     }
 
     req.body = dtoInstance;

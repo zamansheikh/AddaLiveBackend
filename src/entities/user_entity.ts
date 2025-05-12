@@ -1,9 +1,11 @@
+import { IAuthData } from "../models/user_model_interface";
 import { ActivityZone,  Avatar, IUserEntity } from "./user_entity_interface";
 
 class UserEntity {
     username: string;
     email: string;
     password: string;
+    authData: IAuthData;
     lastOnline?: Date;
     userStateInApp: "Online" | "Offline";
     isReseller: boolean;
@@ -32,6 +34,7 @@ class UserEntity {
         this.username = data.username;
         this.email = data.email;
         this.password = data.password;
+        this.authData = data.authData;
         this.lastOnline = data.lastOnline;
         this.userStateInApp = data.userStateInApp || "Offline";
         this.isReseller = data.isReseller || false;

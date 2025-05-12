@@ -1,3 +1,4 @@
+import { IAuthData } from "../models/user_model_interface";
 
 
 export interface Avatar {
@@ -15,6 +16,7 @@ export interface IUserEntity {
     username: string;
     email: string;
     password: string;
+    authData: IAuthData,
     lastOnline?: Date;
     userStateInApp?: "Online" | "Offline";
     isReseller?: boolean;

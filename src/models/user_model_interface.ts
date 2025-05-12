@@ -1,10 +1,20 @@
 import mongoose, { Document, Model } from 'mongoose';
 
+export interface IAuthData{
+    authData: {
+        google: {
+            access_token?: string,
+            id?: string,
+            id_token?: string,
+        }
+    }
+}
 
 export interface UserData {
     username: string;
     email: string;
     password: string,
+    authData: IAuthData,
     lastOnline?: Date;
     user_state_in_app?: 'Online' | 'Offline';
     isreseller?: boolean;
