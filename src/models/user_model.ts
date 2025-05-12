@@ -6,14 +6,6 @@ const userSchema = new mongoose.Schema<IUserDocument>(
         username: { type: String, required: true },
         email: { type: String, required: true },
         password: { type: String, required: true },
-        authData: {
-            google: {
-                access_token: String,
-                id: String,
-                id_token: String,
-            },
-            required: true
-        },
         lastOnline: { type: Date },
         user_state_in_app: {
             type: String,
@@ -38,7 +30,7 @@ const userSchema = new mongoose.Schema<IUserDocument>(
         bio: String,
         country_code: String,
         country_dial_code: String,
-        uid: Number,
+        uid: {type: Number, required: true, unique: true},
         country_languages: [String],
         credit: { type: Number, default: 0 },
         userPoints: { type: Number, default: 0 },

@@ -1,10 +1,4 @@
-export interface AuthData {
-    google: {
-        access_token?: string;
-        id?: string;
-        id_token?: string;
-    };
-}
+
 
 export interface Avatar {
     name?: string;
@@ -21,7 +15,6 @@ export interface IUserEntity {
     username: string;
     email: string;
     password: string;
-    authData: AuthData;
     lastOnline?: Date;
     userStateInApp?: "Online" | "Offline";
     isReseller?: boolean;
@@ -38,7 +31,7 @@ export interface IUserEntity {
     bio?: string;
     countryCode?: string;
     countryDialCode?: string;
-    uid?: number;
+    uid: number;
     countryLanguages?: string[];
     credit?: number;
     userPoints?: number;

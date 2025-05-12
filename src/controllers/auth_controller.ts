@@ -1,10 +1,15 @@
+import { Request, Response } from "express";
 import { IAuthService } from "../services/auth_service_interface";
 
- class AuthController {
-    AuthService: IAuthService;
-    constructor(AuthService: IAuthService) {
-        this.AuthService = AuthService;
+ export default class AuthController {
+    authService: IAuthService;
+    constructor(authService: IAuthService) {
+        this.authService = authService;
     }
-}
 
-export default AuthController
+     registerWithGoogle = async (req: Request, res: Response) => {
+        const {user, token} = await this.authService.registerWithGoogle(req.body);
+        res.status(200).json({user, token})
+    }
+
+}
