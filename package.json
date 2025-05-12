@@ -33,6 +33,7 @@
     "@types/morgan": "^1.9.9",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.15.17",
+    "http-status-codes": "^2.3.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"
   }

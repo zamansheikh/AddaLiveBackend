@@ -3,7 +3,7 @@ import { IUserDocument } from "./user_model_interface";
 
 const userSchema = new mongoose.Schema<IUserDocument>(
     {
-        username: { type: String, required: true },
+        username: { type: String, required: false },
         email: { type: String, required: true },
         password: { type: String, required: true },
         lastOnline: { type: Date },
