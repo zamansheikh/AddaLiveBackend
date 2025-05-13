@@ -13,7 +13,7 @@ import jwt from 'jsonwebtoken';
 import AppError from '../Utils/app_errors';
 
 interface JwtPayload {
-uid: string;
+  id: string;
   // add more fields as needed
 }
 
@@ -28,9 +28,13 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
 
   const token = authHeader.split(' ')[1];
 
+
+  
+
   try {
     const decoded = jwt.verify(token, secret) as JwtPayload;
     req.user = decoded; // Extend Request type to fix TS error
+    // console.log(req.user);
     next();
   } catch (err) {
     next(err);

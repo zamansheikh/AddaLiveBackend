@@ -20,7 +20,13 @@ export default class AuthController {
             result: [user],
         });
     });
+
+
     updateProfile = catchAsync(async (req: Request, res: Response) => {
+        const userId = req.user!.id;
+        
+        const updatedUser = await this.authService.updateProfile({ id: userId, profileData: req.body, file: req.file });
+        res.status(200).json(updatedUser);
     });
 
 }

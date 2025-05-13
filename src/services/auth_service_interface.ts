@@ -3,5 +3,5 @@ import { IUserDocument } from "../models/user_model_interface";
 
 export interface IAuthService {
     registerWithGoogle(UserData: IUserEntity):Promise<{user: IUserDocument, token: string}>;
-    updateProfile({ id, profileData, file }: { id: string, profileData: Partial<Record<string, any>>, file?: Express.Multer.File }):Promise<IUserDocument | null|undefined>;
+    updateProfile({ id, profileData, file }: { id: string, profileData: Partial<Record<string, any>>, file?: Express.Multer.File }):Promise<IUserDocument | null>;
 }
