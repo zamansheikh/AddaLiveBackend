@@ -1,10 +1,10 @@
 
 import { log } from "console";
-import cloudinary from "../config/cloudaniay_config";
-import { IUserEntity } from "../entities/user_entity_interface";
-import { IUserRepository } from "../repository/user_repository_interface";
+import cloudinary from "../../config/cloudaniay_config";
+import { IUserEntity } from "../../entities/user_entity_interface";
+import { IUserRepository } from "../../repository/user_repository_interface";
 import jwt from 'jsonwebtoken';
-import { generateFileHash } from "../Utils/helper_functions";
+import { generateFileHash } from "../../Utils/helper_functions";
 
 export default class AuthService {
     UserRepository: IUserRepository;
@@ -26,12 +26,6 @@ export default class AuthService {
 
     async updateProfile({ id, profileData, file }: { id: string, profileData: Partial<Record<string, any>>, file?: Express.Multer.File }) {
         const updatePayload: Record<string, any> = {};
-
-
-        console.log("from service ", id);
-        console.log("from service ", profileData);
-        console.log("from service ", file);
-
 
         let profilePicUrl;
         if (file) {

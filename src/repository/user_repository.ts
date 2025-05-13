@@ -19,6 +19,14 @@ export default class UserRepository {
     async findByUID(uid: number) {
         return await this.UserModel.findOne({ uid });
     }
+    
+    async findAllUser(){
+        return await this.UserModel.find();
+    }
+
+    async findUsersConitionally(field: string, value: string | number) {
+        return await this.UserModel.find({ [field]: value });
+    }
 
     async findUserByIdAndUpdate(id:string, payload:Record<string, any>) {
         return await this.UserModel.findByIdAndUpdate(id, payload, {new:true});
