@@ -4,6 +4,7 @@ import cloudinary from "../config/cloudaniay_config";
 import { IUserEntity } from "../entities/user_entity_interface";
 import { IUserRepository } from "../repository/user_repository_interface";
 import jwt from 'jsonwebtoken';
+import { generateFileHash } from "../Utils/helper_functions";
 
 export default class AuthService {
     UserRepository: IUserRepository;
@@ -16,10 +17,10 @@ export default class AuthService {
         const SECRET = process.env.JWT_SECRET || "jwt_secret";
         if (!existingUser) {
             const newUser = await this.UserRepository.create(UserData);
-            const token = jwt.sign({id: newUser._id}, SECRET);
+            const token = jwt.sign({ id: newUser._id }, SECRET);
             return { user: newUser, token };
         }
-        const token = jwt.sign({id: existingUser._id}, SECRET);
+        const token = jwt.sign({ id: existingUser._id }, SECRET);
         return { user: existingUser, token };
     }
 
@@ -27,47 +28,58 @@ export default class AuthService {
         const updatePayload: Record<string, any> = {};
 
 
-             console.log("from service ", id);
-             console.log("from service ", profileData);
-             console.log("from service ", file);
-            
+        console.log("from service ", id);
+        console.log("from service ", profileData);
+        console.log("from service ", file);
+
+
+        let profilePicUrl;
+        if (file) {
+
+            const fileHash = generateFileHash(file.buffer);
+            const publicId = `user_profiles/${fileHash}`;
+
+      
+                    profilePicUrl = await new Promise<string>((resolve, reject) => {
+                        const stream = cloudinary.uploader.upload_stream(
+                            {
+                                public_id: publicId, // Ensures hash is used
+                                folder: 'user_profiles',
+                                resource_type: 'image',
+                                overwrite: false, // Don't overwrite if already exists
+                            },
+                            (error, result) => {
+                                if (error || !result) return reject(error);
+                                resolve(result.secure_url);
+                            }
+                        );
+                        stream.end(file.buffer);
+                    });
+                
           
-            let profilePicUrl;
-            if (file) {
+            // adds the image to the payload
+            updatePayload['avatar'] = {
+                name: file.originalname,
+                url: profilePicUrl,
+            };
+        }
 
-                profilePicUrl = await new Promise<string>((resolve, reject) => {
-                    const stream = cloudinary.uploader.upload_stream(
-                        { folder: 'user_profiles' },
-                        (error, result) => {
-                            if (error || !result) return reject(error);
-                            resolve(result.secure_url);
-                        }
-                    );
-                    stream.end(file.buffer);
-                });
-                // adds the image to the payload
-                updatePayload['avatar'] = {
-                    name: file.originalname,
-                    url: profilePicUrl,
-                };
+        // Filter and add only valid keys from profileData
+        for (const [key, value] of Object.entries(profileData)) {
+            if (value !== undefined) {
+                updatePayload[key] = value;
             }
+        }
 
-            // Filter and add only valid keys from profileData
-            for (const [key, value] of Object.entries(profileData)) {
-                if (value !== undefined) {
-                    updatePayload[key] = value;
-                }
-            }
+        if (Object.keys(updatePayload).length === 0) {
+            throw new Error('No valid data provided for update.');
+        }
 
-            if (Object.keys(updatePayload).length === 0) {
-                throw new Error('No valid data provided for update.');
-            }
 
-         
-            
-           
-           return this.UserRepository.findUserByIdAndUpdate(id, updatePayload);
-       
+
+
+        return this.UserRepository.findUserByIdAndUpdate(id, updatePayload);
+
     }
 
 
