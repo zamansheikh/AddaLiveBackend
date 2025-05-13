@@ -21,4 +21,19 @@ export default class AdminUserController {
             });
         }
     )
+
+    updateActivityZone = catchAsync(async (req: Request, res: Response) => {
+        const { id, zone, date_till } = req.body;
+
+        const result = await this.AdminUserService.updateActivityZone({ id: id, zone: zone, dateTill: date_till });
+
+        sendResponse(res, {
+            statusCode: StatusCodes.ACCEPTED,
+            success: true,
+            message: `The user has been successfully assigned to the ${zone} zone.`,
+            result: [
+                result
+            ]
+        });
+    });
 }

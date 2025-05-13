@@ -11,7 +11,7 @@ const adminUserService = new AdminUserService(userRepository);
 const adminUserController = new AdminUserController(adminUserService);
 
 router.get("/users", adminUserController.retrieveAllUsers);
-// router.put("/users/activity_zone",);
+router.put("/users/activity-zone", adminUserController.updateActivityZone);
 
 export default router;
 
