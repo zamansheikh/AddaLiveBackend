@@ -12,13 +12,16 @@ export default class AdminUserController {
 
     retrieveAllUsers = catchAsync(
         async (req: Request, res: Response) => {
-            const users = await this.AdminUserService.retrieveAllUsers();
+            const users = await this.AdminUserService.retrieveAllUsers() ;
+            
             sendResponse(res, {
                 statusCode: StatusCodes.ACCEPTED,
                 success: true,
                 result: users,
-                message: "Users have been successfully retrieved."
+                message:  "Users have been successfully retrieved." 
             });
+            
+            
         }
     )
 
@@ -30,7 +33,7 @@ export default class AdminUserController {
         sendResponse(res, {
             statusCode: StatusCodes.ACCEPTED,
             success: true,
-            message: `The user has been successfully assigned to the ${zone} zone.`,
+            message: result == null? req.body.id == null? "User Id is required": "Something unexpected occured" :`The user has been successfully assigned to the ${zone} zone.`,
             result: [
                 result
             ]
