@@ -22,7 +22,8 @@ const authController = new AuthController(authService);
 
 
 router.post("/register-google", validateRequest(RegisterUserDto), authController.registerWithGoogle)
-router.put("/update-profile",  authenticate,  upload.single('avatar'), validateRequest(ProfileUpdateDto),authController.updateProfile)
+router.put("/update-profile", authenticate, upload.single('avatar'), validateRequest(ProfileUpdateDto), authController.updateProfile)
+router.get("/user/:id", authenticate, authController.getUserDetails);
 
 export default router;
 

@@ -24,6 +24,10 @@ export default class AuthService {
         return { user: existingUser, token };
     }
 
+    async retrieveUserDetails(id: string) {
+        return await this.UserRepository.findUserById(id);
+    }
+
     async updateProfile({ id, profileData, file }: { id: string, profileData: Partial<Record<string, any>>, file?: Express.Multer.File }) {
         const updatePayload: Record<string, any> = {};
 
