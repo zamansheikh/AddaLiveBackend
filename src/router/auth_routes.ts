@@ -1,5 +1,5 @@
 import express from "express";
-import User from '../models/user_model';
+import User from '../models/user/user_model';
 import UserRepository from "../repository/user_repository";
 import AuthService from "../services/auth/auth_services";
 import AuthController from "../controllers/auth_controller";

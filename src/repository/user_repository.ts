@@ -1,5 +1,5 @@
 import { IUserEntity } from "../entities/user_entity_interface";
-import { IUserModel } from "../models/user_model_interface";
+import { IUserModel } from "../models/user/user_model_interface";
 
 export default class UserRepository {
     UserModel: IUserModel;

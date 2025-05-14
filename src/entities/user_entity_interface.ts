@@ -1,4 +1,4 @@
-import { IAuthData } from "../models/user_model_interface";
+import { IAuthData } from "../models/user/user_model_interface";
 
 
 export interface Avatar {

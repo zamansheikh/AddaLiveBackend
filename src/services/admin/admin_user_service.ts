@@ -1,4 +1,4 @@
-import { IUserDocument } from "../../models/user_model_interface";
+import { IUserDocument } from "../../models/user/user_model_interface";
 import { IUserRepository } from "../../repository/user_repository_interface";
 
 export default class AdminUserService {

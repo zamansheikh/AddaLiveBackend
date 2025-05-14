@@ -1,4 +1,4 @@
-import { IAuthData } from "../models/user_model_interface";
+import { IAuthData } from "../models/user/user_model_interface";
 import { ActivityZone,  Avatar, IUserEntity } from "./user_entity_interface";
 
 class UserEntity {
