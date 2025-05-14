@@ -1,6 +1,6 @@
 import express from 'express';
 import UserRepository from '../repository/user_repository';
-import User from '../models/user_model';
+import User from '../models/user/user_model';
 import AdminUserService from '../services/admin/admin_user_service';
 import AdminUserController from '../controllers/admin/admin_user_controller';
 import { validateRequest } from '../middlewares/validate_request';
