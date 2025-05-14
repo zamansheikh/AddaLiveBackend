@@ -1,9 +1,10 @@
 import mongoose from "mongoose";
 import { DatabaseNames, ReelStatus } from "../../Utils/enums";
+import { IReelDocument } from "./reel_interface";
 
-const reelSchema = new mongoose.Schema(
+const reelSchema = new mongoose.Schema<IReelDocument>(
     {
-        owenerId: { // represents the creators id
+        ownerId: { // represents the creators id
             type: mongoose.Schema.Types.ObjectId,
             required: true,
             ref: DatabaseNames.User,

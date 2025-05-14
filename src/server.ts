@@ -8,6 +8,7 @@ import session from 'express-session';
 import mongoose from 'mongoose';
 import AuthRouter from "./router/auth_routes";
 import AdminRouter from "./router/admin_routes";
+import ReelsRouter from "./router/reels_routes";
 
 
 // Initialize dotenv for environment variables
@@ -34,6 +35,7 @@ app.use(
 // Routes
 app.use("/api/auth", AuthRouter);
 app.use("/api/admin", AdminRouter);
+app.use("/api/reels", ReelsRouter);
 
 const PORT = process.env.PORT || 8000;
 const MONGOURL = process.env.MONGO_URL || 'mongodb://localhost:27017/livestreaming';
