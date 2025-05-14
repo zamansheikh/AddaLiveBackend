@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { IUserDocument } from "../user/user_model_interface";
+import { DatabaseNames } from "../../Utils/enums";
 
 const userSchema = new mongoose.Schema<IUserDocument>(
     {
@@ -59,6 +60,6 @@ const userSchema = new mongoose.Schema<IUserDocument>(
     }
 );
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model(DatabaseNames.User, userSchema);
 
 export default User;
