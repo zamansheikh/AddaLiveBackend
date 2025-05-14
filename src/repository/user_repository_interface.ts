@@ -3,5 +3,9 @@ import { IUserDocument } from "../models/user_model_interface";
 
 export interface IUserRepository {
     create(userEntity: IUserEntity): Promise<IUserDocument>;
-    findByUID(uid:number): Promise<IUserDocument | null>;
+    findUserById(id: string): Promise<IUserDocument | null>;
+    findByUID(uid: number): Promise<IUserDocument | null>;
+    findAllUser(): Promise<IUserDocument[] | null>;
+    findUsersConitionally(field: string, value: string | number): Promise<IUserDocument[] | null>
+    findUserByIdAndUpdate(id: string, payload: Record<string, any>): Promise<IUserDocument | null>;
 }

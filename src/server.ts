@@ -6,7 +6,8 @@ import dotenv from 'dotenv';
 import session from 'express-session';
 // import mongoClient from "mongodb";
 import mongoose from 'mongoose';
-import router from "./router/auth_routes";
+import AuthRouter from "./router/auth_routes";
+import AdminRouter from "./router/admin_routes";
 
 
 // Initialize dotenv for environment variables
@@ -18,6 +19,7 @@ const app: Application = express();
 // Middleware
 app.use(cors()); // Enable CORS
 app.use(morgan('dev')); // Logging middleware
+app.use(express.urlencoded({extended: true}));
 app.use(express.json()); // Parse JSON request bodies
 
 // Session middleware
@@ -30,7 +32,8 @@ app.use(
 );
 
 // Routes
-app.use("/api/auth", router);
+app.use("/api/auth", AuthRouter);
+app.use("/api/admin", AdminRouter);
 
 const PORT = process.env.PORT || 8000;
 const MONGOURL = process.env.MONGO_URL || 'mongodb://localhost:27017/livestreaming';

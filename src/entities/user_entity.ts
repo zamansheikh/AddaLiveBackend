@@ -2,6 +2,7 @@ import { IAuthData } from "../models/user_model_interface";
 import { ActivityZone,  Avatar, IUserEntity } from "./user_entity_interface";
 
 class UserEntity {
+    id: string;
     username: string;
     email: string;
     password: string;
@@ -31,6 +32,7 @@ class UserEntity {
     activityZone: ActivityZone;
 
     constructor(data: IUserEntity) {
+        this.id = data.id;
         this.username = data.username;
         this.email = data.email;
         this.password = data.password;
@@ -62,6 +64,49 @@ class UserEntity {
             createdAt: data.activityZone?.createdAt,
             expire: data.activityZone?.expire,
         };
+    }
+
+    static fromJson(json: any): UserEntity {
+        return new UserEntity({
+            id: json._id,
+            username: json.username,
+            email: json.email,
+            password: json.password,
+            authData: json.authData,
+            lastOnline: json.lastOnline ? new Date(json.lastOnline) : undefined,
+            userStateInApp: json.userStateInApp,
+            isReseller: json.isReseller,
+            resellerCoins: json.resellerCoins,
+            resellerWhatsAppNumber: json.resellerWhatsAppNumber,
+            resellerHistory: json.resellerHistory,
+            avatar: json.avatar,
+            name: json.name,
+            firstName: json.firstName,
+            lastName: json.lastName,
+            gender: json.gender,
+            birthday: json.birthday ? new Date(json.birthday) : undefined,
+            country: json.country,
+            bio: json.bio,
+            countryCode: json.countryCode,
+            countryDialCode: json.countryDialCode,
+            uid: json.uid,
+            countryLanguages: json.countryLanguages,
+            credit: json.credit,
+            userPoints: json.userPoints,
+            isViewer: json.isViewer,
+            objectId: json.objectId,
+            activityZone: json.activityZone
+                ? {
+                      zone: json.activityZone.zone,
+                      createdAt: json.activityZone.createdAt
+                          ? new Date(json.activityZone.createdAt)
+                          : undefined,
+                      expire: json.activityZone.expire
+                          ? new Date(json.activityZone.expire)
+                          : undefined,
+                  }
+                : undefined,
+        });
     }
 }
 
