@@ -1,0 +1,32 @@
+import { IReelReactionEntity } from "../../../entities/reel_reaction_entitiy_interface";
+import { IReelReactionModel, IReelsReaction } from "../../../models/reels/likes/reels_reaction_interface";
+
+
+export default class ReelsReactionRepostitory {
+    ReelReactionModel: IReelReactionModel;
+    constructor(ReelReactionModel: IReelReactionModel) {
+        this.ReelReactionModel = ReelReactionModel;
+    }
+
+    async create(ReelEntity: IReelReactionEntity) { 
+        const reel =  new this.ReelReactionModel(ReelEntity);
+        return await reel.save();
+    }
+
+    async findReelReactionById(id: string) { 
+        return await this.ReelReactionModel.findById(id);
+    }
+
+    async findAllReelReactions() {
+        return await this.ReelReactionModel.find();
+     }
+
+    async findReelReactionsConditionally(field: string, value: string | number) { 
+        return await this.ReelReactionModel.find({[field]: value});
+    }
+
+    async findReelReactopnByIdAndUpdate(id: string, payload: Record<string, any>) { 
+        return await this.ReelReactionModel.findByIdAndUpdate(id, payload, {new:true});
+    }
+
+} 

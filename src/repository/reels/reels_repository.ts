@@ -7,14 +7,25 @@ export default class ReelsRepository {
         this.ReelModel = ReelModel;
     }
 
-    async create(ReelEntity: IReelEntity) { }
+    async create(ReelEntity: IReelEntity) { 
+        const reel =  new this.ReelModel(ReelEntity);
+        return await reel.save();
+    }
 
-    async findReelById(id: string) { }
+    async findReelById(id: string) { 
+        return await this.ReelModel.findById(id);
+    }
 
-    async findAllReels() { }
+    async findAllReels() {
+        return await this.ReelModel.find();
+     }
 
-    async findReelsConditionally(field: string, value: string | number) { }
+    async findReelsConditionally(field: string, value: string | number) { 
+        return await this.ReelModel.find({[field]: value});
+    }
 
-    async findReelByIdAndUpdate() { }
+    async findReelByIdAndUpdate(id: string, payload: Record<string, any>) { 
+        return await this.ReelModel.findByIdAndUpdate(id, payload, {new:true});
+    }
 
 } 

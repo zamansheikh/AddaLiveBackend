@@ -12,5 +12,5 @@ export interface IReelsReactionDocument extends IReelsReaction, Document {
     updatedAt: Date;
 }
 
-export interface ReelReactionModel extends Model<IReelsReactionDocument> {}
+export interface IReelReactionModel extends Model<IReelsReactionDocument> {}
 
