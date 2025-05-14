@@ -35,14 +35,14 @@ const reelSchema = new mongoose.Schema(
         reactions: [
             {
                 type: mongoose.Schema.Types.ObjectId,
-                ref: DatabaseNames.Reactions
+                ref: DatabaseNames.ReelsReactions
             }
         ],
 
         comments: [
             {
                 type: mongoose.Schema.Types.ObjectId,
-                ref: DatabaseNames.Comments,
+                ref: DatabaseNames.ReelsComments,
             },
         ],
 

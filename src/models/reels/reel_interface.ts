@@ -1,6 +1,6 @@
 import { Document, Model } from "mongoose";
-import { IReaction } from "../likes/like_interface";
-import { IComment } from "../comments/comment_interface";
+import { IReelsReaction } from "./likes/reels_reaction_interface";
+import { IReelsComment } from "./comments/reels_comment_interface";
 
 export interface IReel {
     owenerId: string,
@@ -9,8 +9,8 @@ export interface IReel {
     video_length: number,
     video_maximum_length: number,
     reelUrl: string,
-    reactions: IReaction[],
-    comments: IComment[],
+    reactions: IReelsReaction[],
+    comments: IReelsComment[],
     topRank: number,
 }
 
@@ -19,5 +19,5 @@ export interface IReelDocument extends IReel, Document {
     updatedAt: Date;
 }
 
-export interface ReelModel extends Model<IReelDocument> {}
+export interface IReelModel extends Model<IReelDocument> {}
 

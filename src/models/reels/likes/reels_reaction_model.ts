@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import { DatabaseNames, ReactionType } from "../../Utils/enums";
+import { DatabaseNames, ReactionType } from "../../../Utils/enums";
 
-const reactionSchema = new mongoose.Schema({
+const reelsReactionSchema = new mongoose.Schema({
     reactedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: DatabaseNames.User,
@@ -25,6 +25,6 @@ const reactionSchema = new mongoose.Schema({
     }
 );
 
-const Reactions = mongoose.model(DatabaseNames.Reactions, reactionSchema);
+const ReelsReactions = mongoose.model(DatabaseNames.ReelsReactions, reelsReactionSchema);
 
-export default Reactions;
+export default ReelsReactions;

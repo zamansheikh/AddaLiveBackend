@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import { DatabaseNames } from "../../Utils/enums";
+import { DatabaseNames } from "../../../Utils/enums";
 
-const commentSchema = new mongoose.Schema({
+const reelsCommentSchema = new mongoose.Schema({
     commentedBy: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
@@ -19,13 +19,13 @@ const commentSchema = new mongoose.Schema({
     reactions: [
         {
             type: mongoose.Schema.Types.ObjectId,
-            ref: DatabaseNames.Reactions,
+            ref: DatabaseNames.ReelsReactions,
         }
     ],
     comments: [
         {
             type: mongoose.Schema.Types.ObjectId,
-            ref: DatabaseNames.Comments,
+            ref: DatabaseNames.ReelsComments,
         }
     ]
 },
@@ -35,4 +35,4 @@ const commentSchema = new mongoose.Schema({
 
 );
 
-const Comment = mongoose.model(DatabaseNames.Comments, commentSchema);
+const Comment = mongoose.model(DatabaseNames.ReelsComments, reelsCommentSchema);
