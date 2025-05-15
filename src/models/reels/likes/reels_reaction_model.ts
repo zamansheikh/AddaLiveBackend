@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 import { DatabaseNames, ReactionType } from "../../../Utils/enums";
+import { IReelsReactionDocument } from "./reels_reaction_interface";
 
-const reelsReactionSchema = new mongoose.Schema({
+const reelsReactionSchema = new mongoose.Schema<IReelsReactionDocument>({
     reactedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: DatabaseNames.User,

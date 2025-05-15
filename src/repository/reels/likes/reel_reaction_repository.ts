@@ -1,8 +1,9 @@
 import { IReelReactionEntity } from "../../../entities/reel_reaction_entitiy_interface";
 import { IReelReactionModel, IReelsReaction } from "../../../models/reels/likes/reels_reaction_interface";
+import { IReelReactionRepository } from "./reel_reaction_interface";
 
 
-export default class ReelsReactionRepostitory {
+export default class ReelsReactionRepostitory implements IReelReactionRepository{
     ReelReactionModel: IReelReactionModel;
     constructor(ReelReactionModel: IReelReactionModel) {
         this.ReelReactionModel = ReelReactionModel;
@@ -21,8 +22,8 @@ export default class ReelsReactionRepostitory {
         return await this.ReelReactionModel.find();
      }
 
-    async findReelReactionsConditionally(field: string, value: string | number) { 
-        return await this.ReelReactionModel.find({[field]: value});
+    async findReelReactionsConditionally(condition: Record<string, string|number> ) { 
+        return await this.ReelReactionModel.find(condition);
     }
 
     async findReelReactopnByIdAndUpdate(id: string, payload: Record<string, any>) { 

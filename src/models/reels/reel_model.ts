@@ -36,19 +36,15 @@ const reelSchema = new mongoose.Schema<IReelDocument>(
             required: true,
         },
 
-        reactions: [
-            {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: DatabaseNames.ReelsReactions
-            }
-        ],
+        reactions: {
+            type: Number,
+            default: 0,
+        },
 
-        comments: [
-            {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: DatabaseNames.ReelsComments,
-            },
-        ],
+        comments: {
+            type: Number,
+            default: 0,
+        }
 
         topRank:Number
     },

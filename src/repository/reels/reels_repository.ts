@@ -1,7 +1,8 @@
 import { IReelEntity } from "../../entities/reel_entity_interface";
 import { IReelModel } from "../../models/reels/reel_interface";
+import { IReelRepository } from "./reels_interface";
 
-export default class ReelsRepository {
+export default class ReelsRepository implements IReelRepository {
     ReelModel: IReelModel;
     constructor(ReelModel: IReelModel) {
         this.ReelModel = ReelModel;
@@ -20,8 +21,12 @@ export default class ReelsRepository {
         return await this.ReelModel.find();
      }
 
-    async findReelsConditionally(field: string, value: string | number) { 
-        return await this.ReelModel.find({[field]: value});
+    async findReelsConditionally(condition: Record<string, string | number>) { 
+        return await this.ReelModel.find(condition);
+    }
+
+    async findByIdAddtoSet({field, value}: {field: string, value: string}){
+        return await this.ReelModel.findByIdAndUpdate();
     }
 
     async findReelByIdAndUpdate(id: string, payload: Record<string, any>) { 

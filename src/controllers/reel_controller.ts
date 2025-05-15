@@ -1,9 +1,7 @@
 import { Request, Response } from "express";
 import sendResponse, { sendResponseEnhanced } from "../Utils/send_response";
-import { StatusCodes } from "http-status-codes";
 import { IReelService } from "../services/reels/reel_service_interface";
 import catchAsync from "../Utils/catch_async";
-import { IReelDocument } from "../models/reels/reel_interface";
 
 
 
@@ -23,6 +21,16 @@ export default class ReelController {
         async (req: Request, res: Response) => {
             const result = await this.ReelService.editReel({ reelID: req.body.reelID, reelCaption: req.body.reelCaption, userId: req.user!.id });
             sendResponseEnhanced(res, result);
+        }
+    );
+
+    reactOnReel = catchAsync(
+        async (req: Request, res: Response) => {
+            const { reaction_type, reelId } = req.body;
+            const { id } = req.user!;
+
+            const reel = await this.ReelService.reactOnReels({ reaction_type, reelId, userID: id });
+            sendResponseEnhanced(res, reel);
         }
     );
 

@@ -3,8 +3,8 @@ import { IReelsReactionDocument } from "../../../models/reels/likes/reels_reacti
 
 export interface IReelReactionRepository {
     create(ReelEntity: IReelReactionEntity): Promise<IReelsReactionDocument | null>;
-    findReelById(id: string): Promise<IReelsReactionDocument | null>;
-    findAllReels(): Promise<IReelsReactionDocument | null>;
-    findReelsConditionally(field: string, value: string | number): Promise<IReelsReactionDocument | null>;
-    findReelByIdAndUpdate(id: string, payload: Record<string, any>) : Promise<IReelsReactionDocument | null>;
+    findReelReactionById(id: string): Promise<IReelsReactionDocument | null>;
+    findAllReelReactions(): Promise<IReelsReactionDocument[] | null>;
+    findReelReactionsConditionally(condition: Record<string, string | number> ): Promise<IReelsReactionDocument[] | null>;
+    findReelReactopnByIdAndUpdate(id: string, payload: Record<string, any>) : Promise<IReelsReactionDocument | null>;
 }
