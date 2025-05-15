@@ -23,3 +23,4 @@ export enum CloudinaryFolder {
   Reels = "reels",
   UserPRofile = "user_profiles"
 }
+

@@ -30,4 +30,8 @@ export default class ReelsReactionRepostitory implements IReelReactionRepository
         return await this.ReelReactionModel.findByIdAndUpdate(id, payload, {new:true});
     }
 
+    async deleteReactionByID(reelId: string) {
+        return this.ReelReactionModel.findByIdAndDelete(reelId);
+    }
+
 } 

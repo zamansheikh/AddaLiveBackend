@@ -21,7 +21,8 @@ const reelService = new ReelsService(reelRepository, reactionRepository);
 const reelsController = new ReelController(reelService);
 
 router.post("/create", authenticate, upload.single('video'), validateRequest(UploadReelDto), customValidateFileResponse({ isvideo: true }), reelsController.createReel);
-router.put("/react/", authenticate,  validateRequest(ReelReactionDto), reelsController.reactOnReel);
+router.post("/edit", authenticate,  validateRequest(EditReelDto), reelsController.editReel);
+router.put("/react", authenticate,  validateRequest(ReelReactionDto), reelsController.reactOnReel);
 
 
 export default router;

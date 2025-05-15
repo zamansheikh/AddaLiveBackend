@@ -6,6 +6,6 @@ export interface IReelRepository {
     findReelById(id: string): Promise<IReelDocument | null>;
     findAllReels(): Promise<IReelDocument[] | null>;
     findReelsConditionally(condition: Record<string, string | number>): Promise<IReelDocument[] | null>;
-    findByIdAddtoSet({field, value}: {field: string, value: string}): Promise<IReelDocument | string | null>;
-    findReelByIdAndUpdate(id: string, payload: Record<string, any>) : Promise<IReelDocument | null>;
+    updateCount({ reelId, count, isReaction }: { reelId: string, count: number, isReaction: boolean }): Promise<IReelDocument | string | null>;
+    findReelByIdAndUpdate(id: string, payload: Record<string, any>): Promise<IReelDocument | null>;
 }

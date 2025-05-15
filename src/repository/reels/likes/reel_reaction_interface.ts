@@ -7,4 +7,5 @@ export interface IReelReactionRepository {
     findAllReelReactions(): Promise<IReelsReactionDocument[] | null>;
     findReelReactionsConditionally(condition: Record<string, string | number> ): Promise<IReelsReactionDocument[] | null>;
     findReelReactopnByIdAndUpdate(id: string, payload: Record<string, any>) : Promise<IReelsReactionDocument | null>;
+    deleteReactionByID(reelId: string): Promise<IReelsReactionDocument | null>;
 }

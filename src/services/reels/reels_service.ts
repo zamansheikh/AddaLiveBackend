@@ -43,17 +43,25 @@ export default class ReelsService implements IReelService {
         }
 
         const reaction = await this.ReactionRepository.findReelReactionsConditionally({ reactedTo: reelId, reactedBy: userID });
-        
-        if (reaction) {
-            // todo: check if it has the same reaction_type as the reaction_type passsed then delete it. 
+
+        if (reaction && reaction.length > 0) {
+            const id = reaction[0]._id;
+            if (reaction[0].reaction_type == reaction_type) {
+
+                return await this.ReactionRepository.deleteReactionByID(id as string);
+            } else {
+                return await this.ReactionRepository.findReelReactopnByIdAndUpdate(id as string, {reaction_type});
+            }
+
         } else {
-
             const reaction = await this.ReactionRepository.create({ reactedBy: userID, reactedTo: reelId, reaction_type: reaction_type as ReactionType });
-
             if (!reaction) return "something went wrong while registering the reaction in the database";
 
+            const reel = await this.ReelRepository.updateCount({ reelId, count: 1, isReaction: true });
+            if (!reel) return "updating the reactions failed";
+
+            return reel;
         }
-        return null;
     }
 
 }
