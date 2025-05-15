@@ -18,3 +18,8 @@ export enum ReelStatus {
   active = "active",
   inactive= "inactive",
 }
+
+export enum CloudinaryFolder {
+  Reels = "reels",
+  UserPRofile = "user_profiles"
+}
