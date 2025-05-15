@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { DatabaseNames, ReelStatus } from "../../Utils/enums";
 import { IReelDocument } from "./reel_interface";
 
+
 const reelSchema = new mongoose.Schema<IReelDocument>(
     {
         ownerId: { // represents the creators id
@@ -11,6 +12,8 @@ const reelSchema = new mongoose.Schema<IReelDocument>(
         },
 
         pageId: Number,
+
+        reelCaption: String,
 
         status: {
             type: String,

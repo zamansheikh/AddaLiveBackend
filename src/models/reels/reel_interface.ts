@@ -5,6 +5,7 @@ import { IReelsComment } from "./comments/reels_comment_interface";
 export interface IReel {
     ownerId: Types.ObjectId | string;
     pageId?: number;
+    reelCaption?: string,
     status?: string;
     video_length: number;
     video_maximum_length?: number;

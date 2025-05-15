@@ -8,6 +8,7 @@ import { authenticate } from "../middlewares/auth_middleware";
 import { validateRequest } from "../middlewares/validate_request";
 import { UploadReelDto } from "../dtos/reels/upload_reel_dto";
 import { customValidateFileResponse } from "../middlewares/custom_validate_file_response";
+import { EditReelDto } from "../dtos/reels/edit_reel_dto";
 
 const router = express.Router();
 
@@ -15,7 +16,8 @@ const reelRepository = new ReelsRepository(Reels);
 const reelService = new ReelsService(reelRepository);
 const reelsController = new ReelController(reelService);
 
-router.post("/create", authenticate, upload.single('video'), validateRequest(UploadReelDto), customValidateFileResponse({isvideo: true}), reelsController.createReel);
+router.post("/create", authenticate, upload.single('video'), validateRequest(UploadReelDto), customValidateFileResponse({ isvideo: true }), reelsController.createReel);
+router.post("/edit", authenticate,  validateRequest(EditReelDto),  reelsController.editReel);
 
 
 export default router;
