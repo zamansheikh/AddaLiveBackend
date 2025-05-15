@@ -12,15 +12,13 @@ export default class ReelController {
 
 
     createReel = async (req: Request, res: Response) => {
-        console.log("body => ", req.body);
-        console.log("file => ", req.file);
-
-        this.ReelService.createReel({ownerID: req.body.ownerId, file: req.file});
-
+        const reel = await this.ReelService.createReel({ body: req.body, file: req.file });
+        const success = reel != null;
         sendResponse(res, {
-            statusCode: StatusCodes.ACCEPTED,
-            success: true,
-        })
+            statusCode: success ? StatusCodes.ACCEPTED : StatusCodes.BAD_REQUEST,
+            success,
+            result: reel ?? null
+        });
     }
 
 }

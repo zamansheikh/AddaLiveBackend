@@ -5,12 +5,12 @@ import { IReelsComment } from "./comments/reels_comment_interface";
 export interface IReel {
     ownerId: Types.ObjectId | string;
     pageId?: number;
-    status: string;
+    status?: string;
     video_length: number;
-    video_maximum_length: number;
+    video_maximum_length?: number;
     reelUrl: string;
-    reactions: (IReelsReaction | Types.ObjectId)[];
-    comments: (IReelsComment | Types.ObjectId)[];
+    reactions?: (IReelsReaction | Types.ObjectId)[];
+    comments?: (IReelsComment | Types.ObjectId)[];
     topRank?: number;
 }
 

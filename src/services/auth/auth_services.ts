@@ -37,24 +37,24 @@ export default class AuthService {
             const fileHash = generateFileHash(file.buffer);
             const publicId = `user_profiles/${fileHash}`;
 
-      
-                    profilePicUrl = await new Promise<string>((resolve, reject) => {
-                        const stream = cloudinary.uploader.upload_stream(
-                            {
-                                public_id: publicId, // Ensures hash is used
-                                folder: 'user_profiles',
-                                resource_type: 'image',
-                                overwrite: false, // Don't overwrite if already exists
-                            },
-                            (error, result) => {
-                                if (error || !result) return reject(error);
-                                resolve(result.secure_url);
-                            }
-                        );
-                        stream.end(file.buffer);
-                    });
-                
-          
+
+            profilePicUrl = await new Promise<string>((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    {
+                        public_id: publicId, // Ensures hash is used
+                        folder: 'user_profiles',
+                        resource_type: 'image',
+                        overwrite: false, // Don't overwrite if already exists
+                    },
+                    (error, result) => {
+                        if (error || !result) return reject(error);
+                        resolve(result.secure_url);
+                    }
+                );
+                stream.end(file.buffer);
+            });
+
+
             // adds the image to the payload
             updatePayload['avatar'] = {
                 name: file.originalname,

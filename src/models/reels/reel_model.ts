@@ -25,7 +25,7 @@ const reelSchema = new mongoose.Schema<IReelDocument>(
 
         video_maximum_length: {
             type: Number,
-            default: 59
+            default: 60
         },
 
         reelUrl: {
