@@ -44,7 +44,7 @@ const reelSchema = new mongoose.Schema<IReelDocument>(
         comments: {
             type: Number,
             default: 0,
-        }
+        },
 
         topRank:Number
     },
