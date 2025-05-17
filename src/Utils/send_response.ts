@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
 import { token } from 'morgan';
 
 type IData<T> = {
@@ -14,6 +15,21 @@ type IData<T> = {
   result?: T;
   access_token?: string;
 };
+
+export const sendResponseEnhanced = (res: Response, result?: any) => {
+  const hasResult = result != null;
+  let isResultTypeString;
+  if (hasResult) {
+    isResultTypeString = typeof result == "string";
+  }
+
+  sendResponse(res, {
+    success: hasResult && !isResultTypeString,
+    statusCode: hasResult && !isResultTypeString ? StatusCodes.ACCEPTED : StatusCodes.BAD_REQUEST,
+    result: isResultTypeString ? null : result,
+    ...(isResultTypeString ? { message: result } : {})
+  });
+}
 
 const sendResponse = <T>(res: Response, data: IData<T>) => {
   const resData = {
