@@ -1,11 +1,12 @@
-import { Document, Model } from "mongoose"
+import { Document, Model, Types } from "mongoose"
 
 
 export interface IReelsComment {
-    commentedBy: string,
-    CommentedTo: string,
+    commentedBy: Types.ObjectId,
+    CommentedTo: Types.ObjectId,
     article: string,
-    comments: IReelsComment[],
+    parentComment?: string,
+   reactionsCount?: number,
 }
 
 export interface IReelsCommentDocument extends IReelsComment, Document {

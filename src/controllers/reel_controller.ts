@@ -24,6 +24,15 @@ export default class ReelController {
         }
     );
 
+    deleteReel = catchAsync(
+        async (req: Request, res: Response) => {
+            const { id } = req.user!;
+            const { reelId } = req.params;
+            const result = await this.ReelService.deleteReel({ reelID: reelId, userId: id });
+            sendResponseEnhanced(res, result);
+        }
+    );
+
     reactOnReel = catchAsync(
         async (req: Request, res: Response) => {
             const { reaction_type, reelId } = req.body;
@@ -31,6 +40,48 @@ export default class ReelController {
 
             const reel = await this.ReelService.reactOnReels({ reaction_type, reelId, userID: id });
             sendResponseEnhanced(res, reel);
+        }
+    );
+
+    commentOnReel = catchAsync(
+        async (req: Request, res: Response) => {
+            const { id } = req.user!;
+            const { reelId, comment } = req.body;
+            const reel = await this.ReelService.commnetOnReels({ commentText: comment, reelId, userID: id });
+            sendResponseEnhanced(res, reel);
+        }
+    );
+
+    deleteComment = catchAsync(
+        async (req: Request, res: Response) => {
+            const { id } = req.user!;
+            const { reelId, commentId } = req.params;
+            console.log(req.params);
+
+            const reel = await this.ReelService.deleteComment({ commentId, reelId, userId: id });
+            sendResponseEnhanced(res, reel);
+        }
+    );
+
+    editComment = catchAsync(
+        async (req: Request, res: Response) => {
+            const { id } = req.user!;
+            const { commentId, newComment } = req.body;
+            console.log(req.params);
+            const reel = await this.ReelService.editComment({ commentId, newComment, userId: id });
+
+            sendResponseEnhanced(res, reel);
+        }
+    );
+
+    reactOnComment = catchAsync(
+        async (req: Request, res: Response) => {
+            const { id } = req.user!;
+            const { commentId, reaction_type } = req.body;
+
+            const comment = await this.ReelService.reactOnComment({ commentId, reaction_type, userId: id });
+
+            sendResponseEnhanced(res, comment);
         }
     );
 

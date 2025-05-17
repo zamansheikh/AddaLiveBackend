@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 import { DatabaseNames } from "../../../Utils/enums";
+import { IReelsCommentDocument } from "./reels_comment_interface";
 
-const reelsCommentSchema = new mongoose.Schema({
+const reelsCommentSchema = new mongoose.Schema<IReelsCommentDocument>({
     commentedBy: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
@@ -12,22 +13,15 @@ const reelsCommentSchema = new mongoose.Schema({
         required: true,
         ref: DatabaseNames.Reels,
     },
+    parentComment: mongoose.Schema.Types.ObjectId,
     article: {
         type: String,
         required: true,
     },
-    reactions: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: DatabaseNames.ReelsReactions,
-        }
-    ],
-    comments: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: DatabaseNames.ReelsComments,
-        }
-    ]
+    reactionsCount: {
+        type: Number,
+        default: 0,
+    },
 },
     {
         timestamps: true,
@@ -35,4 +29,6 @@ const reelsCommentSchema = new mongoose.Schema({
 
 );
 
-const Comment = mongoose.model(DatabaseNames.ReelsComments, reelsCommentSchema);
+const Comments = mongoose.model(DatabaseNames.ReelsComments, reelsCommentSchema);
+
+export default Comments;

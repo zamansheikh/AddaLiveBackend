@@ -1,7 +1,8 @@
 import { IReelCommentEntity } from "../../../entities/reel_comment_entity_interface";
-import { IReelsCommentModel } from "../../../models/reels/comments/reels_comment_interface";
+import { IReelsCommentDocument, IReelsCommentModel } from "../../../models/reels/comments/reels_comment_interface";
+import { IReelCommentRepository } from "./reel_comments_interface";
 
-export default class ReelsCommentRepostitory {
+export default class ReelsCommentRepostitory implements IReelCommentRepository {
     ReelCommentModel: IReelsCommentModel;
     constructor(ReelCommentModel: IReelsCommentModel) {
         this.ReelCommentModel = ReelCommentModel;
@@ -12,20 +13,22 @@ export default class ReelsCommentRepostitory {
         return await reel.save();
     }
 
-    async findReelCommentById(id: string) { 
-        return await this.ReelCommentModel.findById(id);
+    async findCommentById(commentId: string): Promise<IReelsCommentDocument | null> {
+        return await this.ReelCommentModel.findById(commentId);
     }
 
-    async findAllReelComments() {
+    async deleteCommentByID(commentId: string): Promise<IReelsCommentDocument | null> {
+        return await this.ReelCommentModel.findByIdAndDelete(commentId);
+    }
+
+    async findCommentByIdAndUpdate(commentId: string, payload: Record<string, string>): Promise<IReelsCommentDocument | null> {
+        return await this.ReelCommentModel.findByIdAndUpdate(commentId, payload, {new: true});
+    }
+    async getAllComments(): Promise<IReelsCommentDocument[] | null> {
         return await this.ReelCommentModel.find();
-     }
-
-    async findReelCommentsConditionally(field: string, value: string | number) { 
-        return await this.ReelCommentModel.find({[field]: value});
     }
-
-    async findReelReactopnByIdAndUpdate(id: string, payload: Record<string, any>) { 
-        return await this.ReelCommentModel.findByIdAndUpdate(id, payload, {new:true});
+    async updateCount(comentId: string, payload: Record<string, number>): Promise<IReelsCommentDocument | null> {
+        return await this.ReelCommentModel.findByIdAndUpdate(comentId, {$inc: payload}, {new: true});
     }
 
 } 

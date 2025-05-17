@@ -1,5 +1,5 @@
 import { IReelEntity } from "../../entities/reel_entity_interface";
-import { IReelModel } from "../../models/reels/reel_interface";
+import { IReelDocument, IReelModel } from "../../models/reels/reel_interface";
 import { IReelRepository } from "./reels_interface";
 
 export default class ReelsRepository implements IReelRepository {
@@ -29,6 +29,9 @@ export default class ReelsRepository implements IReelRepository {
         return this.ReelModel.findByIdAndUpdate(reelId, { $inc: { [isReaction ? "reactions" : "comments"]: count } }, { new: true });
     }
 
+    async deleteReelById(reelId: string): Promise<IReelDocument | null> {
+        return await this.ReelModel.findByIdAndDelete(reelId);
+    }
 
 
     async findReelByIdAndUpdate(id: string, payload: Record<string, any>) {

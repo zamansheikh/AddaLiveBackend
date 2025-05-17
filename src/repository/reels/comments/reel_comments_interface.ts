@@ -3,9 +3,10 @@ import { IReelsCommentDocument } from "../../../models/reels/comments/reels_comm
 
 
 export interface IReelCommentRepository {
-    create(ReelEntity: IReelCommentEntity): Promise<IReelsCommentDocument | null>;
-    findReelById(id: string): Promise<IReelsCommentDocument | null>;
-    findAllReels(): Promise<IReelsCommentDocument | null>;
-    findReelsConditionally(field: string, value: string | number): Promise<IReelsCommentDocument | null>;
-    findReelByIdAndUpdate(id: string, payload: Record<string, any>) : Promise<IReelsCommentDocument | null>;
+    create(comment: IReelCommentEntity): Promise<IReelsCommentDocument | null>;
+    findCommentById(commentId: string): Promise<IReelsCommentDocument | null>;
+    findCommentByIdAndUpdate(commentId: string, payload:Record<string, string>): Promise<IReelsCommentDocument | null>;
+    deleteCommentByID(commentId: string):Promise<IReelsCommentDocument | null>;
+    getAllComments(): Promise<IReelsCommentDocument[] | null>;
+    updateCount(comentId: string, payload: Record<string, number>): Promise<IReelsCommentDocument | null>;
 }

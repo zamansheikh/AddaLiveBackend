@@ -8,4 +8,5 @@ export interface IReelRepository {
     findReelsConditionally(condition: Record<string, string | number>): Promise<IReelDocument[] | null>;
     updateCount({ reelId, count, isReaction }: { reelId: string, count: number, isReaction: boolean }): Promise<IReelDocument | string | null>;
     findReelByIdAndUpdate(id: string, payload: Record<string, any>): Promise<IReelDocument | null>;
+    deleteReelById(reelId: string): Promise<IReelDocument | null>;
 }
