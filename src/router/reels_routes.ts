@@ -18,6 +18,7 @@ import ReelsCommentsReactions from "../models/reels/comments/likes/reels_comment
 import { ReelCommentDto } from "../dtos/reels/reel_comment_dto";
 import { EditCommentDto } from "../dtos/reels/edit_comment_dto";
 import {  ReactOnCommentDto } from "../dtos/reels/react_on_comment_dto";
+import { ReplyCommentDto } from "../dtos/reels/reply_comment_dto";
 
 const router = express.Router();
 
@@ -35,9 +36,8 @@ router.post("/react", authenticate,  validateRequest(ReelReactionDto), reelsCont
 router.post("/comment", authenticate,  validateRequest(ReelCommentDto), reelsController.commentOnReel);
 router.delete("/:reelId/comment/delete/:commentId", authenticate, reelsController.deleteComment);
 router.put("/comment/edit", authenticate, validateRequest(EditCommentDto), reelsController.editComment);
-
 router.post("/comment/react", authenticate, validateRequest(ReactOnCommentDto), reelsController.reactOnComment);
-
+router.post("/comment/reply", authenticate, validateRequest(ReplyCommentDto),  reelsController.replyToComment);
 
 
 export default router;

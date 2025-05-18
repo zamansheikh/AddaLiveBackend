@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import sendResponse, { sendResponseEnhanced } from "../Utils/send_response";
 import { IReelService } from "../services/reels/reel_service_interface";
 import catchAsync from "../Utils/catch_async";
+import User from "../models/user/user_model";
 
 
 
@@ -81,6 +82,15 @@ export default class ReelController {
 
             const comment = await this.ReelService.reactOnComment({ commentId, reaction_type, userId: id });
 
+            sendResponseEnhanced(res, comment);
+        }
+    );
+
+    replyToComment = catchAsync(
+        async (req: Request, res: Response) => {
+            const { id } = req.user!;
+            const { commentText, commentId, reelId } = req.body;
+            const comment = await this.ReelService.replyToComment({ commentId, commentText, userId: id, reelId });
             sendResponseEnhanced(res, comment);
         }
     );

@@ -7,7 +7,7 @@ import { IReelService } from "./reel_service_interface";
 import { ReactionType } from "../../Utils/enums";
 import { IReelCommentRepository } from "../../repository/reels/comments/reel_comments_interface";
 import { IReelsCommentDocument } from "../../models/reels/comments/reels_comment_interface";
-import { IReelReactionModel, IReelsReactionDocument } from "../../models/reels/likes/reels_reaction_interface";
+import {  IReelsReactionDocument } from "../../models/reels/likes/reels_reaction_interface";
 import { IReelDocument } from "../../models/reels/reel_interface";
 
 
@@ -178,6 +178,23 @@ export default class ReelsService implements IReelService {
         if (!comment) return "Incrementing comment reaction count failed";
         return comment;
 
+    }
+
+    async replyToComment({ userId, commentId, commentText, reelId }: { userId: string; commentId: string; commentText: string; reelId: string }): Promise<IReelsCommentDocument | string | null> {
+        console.log(reelId);
+        
+        const reel = await this.ReelRepository.findReelById(reelId);
+        if(!reel) return "either reelId is not valid or the reel does not exist";
+
+        const comment = await this.CommentRepository.findCommentById(commentId);
+        if(!comment) return "either the commentId is not valid or the comment does not exist";
+
+        if(comment.CommentedTo.toString() != reelId) return "the comment does not belong to this reel";
+        
+        const reply = await this.CommentRepository.create({article: commentText, commentedBy: userId, CommentedTo:reelId, parentComment: commentId });
+        if(!reply) return "failed creation comment reply";
+
+        return reply;
     }
 
 }
