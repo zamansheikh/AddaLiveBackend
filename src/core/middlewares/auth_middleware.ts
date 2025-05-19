@@ -10,7 +10,7 @@ declare global {
   }
 }
 import jwt from 'jsonwebtoken';
-import AppError from '../Utils/app_errors';
+import AppError from '../errors/app_errors';
 
 interface JwtPayload {
   id: string;

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { DatabaseNames, ReelStatus } from "../../Utils/enums";
 import { IReelDocument } from "./reel_interface";
+import { DatabaseNames, ReelStatus } from "../../core/Utils/enums";
 
 
 const reelSchema = new mongoose.Schema<IReelDocument>(

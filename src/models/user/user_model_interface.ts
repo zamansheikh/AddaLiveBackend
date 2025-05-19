@@ -34,7 +34,7 @@ export interface UserData {
     bio?: string;
     country_code?: string;
     country_dial_code?: string;
-    uid: number;
+    uid: string;
     country_languages?: string[];
     credit?: number;
     userPoints?: number;

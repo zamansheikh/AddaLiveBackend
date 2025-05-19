@@ -1,14 +1,15 @@
 import { IReelEntity } from "../../entities/reel_entity_interface";
 import { IReelReactionRepository } from "../../repository/reels/likes/reel_reaction_interface";
 import { IReelRepository } from "../../repository/reels/reels_interface";
-import { CloudinaryFolder } from "../../Utils/enums";
-import { uploadFileToCloudinary } from "../../Utils/upload_file_cloudinary";
 import { IReelService } from "./reel_service_interface";
-import { ReactionType } from "../../Utils/enums";
 import { IReelCommentRepository } from "../../repository/reels/comments/reel_comments_interface";
 import { IReelsCommentDocument } from "../../models/reels/comments/reels_comment_interface";
 import { IReelsReactionDocument } from "../../models/reels/likes/reels_reaction_interface";
 import { IReelDocument } from "../../models/reels/reel_interface";
+import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
+import { CloudinaryFolder, ReactionType } from "../../core/Utils/enums";
+import AppError from "../../core/errors/app_errors";
+import { StatusCodes } from "http-status-codes";
 
 
 
@@ -28,32 +29,31 @@ export default class ReelsService implements IReelService {
     async createReel({ ownerId, body, file }: { ownerId: string, body: Partial<Record<string, any>>, file: Express.Multer.File }) {
         body["ownerId"] = ownerId;
         const length = Number(body.video_length);
-        if (length > 60) return "video length exceeded limit of 60 seconds";
+        if (length > 60) throw new AppError(StatusCodes.BAD_REQUEST, "Video length exceeded the limit");
         try {
             const reelUrl = await uploadFileToCloudinary({ isVideo: true, folder: CloudinaryFolder.Reels, file });
             body["reelUrl"] = reelUrl;
             return await this.ReelRepository.create(body as IReelEntity)
         } catch (error) {
-            console.log("Cloudinary error => ", error);
-            return "Upload failed";
+            throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Upload failed");
         }
     }
 
-    async getAllReel(query: Record<string, any>): Promise<IReelDocument[] | string | null> {
+    async getAllReel(query: Record<string, any>) {
 
         return await this.ReelRepository.getAllReels(query);
     }
 
     async editReel({ reelID, reelCaption, userId }: { reelID: string, reelCaption: string, userId: string }) {
         const reel = await this.ReelRepository.findReelById(reelID);
-        if (!reel) return "Reel Does not exist";
+        if (!reel) throw new AppError(StatusCodes.BAD_REQUEST, "Reel Does not exist");
         if (reel.ownerId != userId) return "User does not have permission to edit the reel";
         return await this.ReelRepository.findReelByIdAndUpdate(reelID, { reelCaption })
     }
 
     async deleteReel({ reelID, userId }: { reelID: string; userId: string; }): Promise<IReelDocument | string | null> {
         const reel = await this.ReelRepository.findReelById(reelID);
-        if (!reel) return "reel not found";
+        if (!reel) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "reel not found");
         if (reel.ownerId.toString() != userId) return "user is not authorized to delete the reel";
 
         const deletedReel = this.ReelRepository.deleteReelById(reelID);
@@ -62,7 +62,8 @@ export default class ReelsService implements IReelService {
 
     async reactOnReels({ reelId, reaction_type, userID }: { reelId: string, reaction_type: string, userID: string }) {
         if (!Object.values(ReactionType).includes(reaction_type as ReactionType)) {
-            return "reaction_type is of wrong type";
+
+            throw new AppError(StatusCodes.BAD_REQUEST, "reaction_type is of wrong type");
         }
 
         const existingReactions = await this.ReactionRepository.findReelReactionsConditionally({
@@ -84,7 +85,7 @@ export default class ReelsService implements IReelService {
                     isReaction: true,
                 });
 
-                return "Something went wrong while unliking the post";
+                throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Something went wrong while unliking the post");
             }
 
             // Update to new reaction type
@@ -99,7 +100,7 @@ export default class ReelsService implements IReelService {
         });
 
         if (!newReaction) {
-            return "something went wrong while registering the reaction in the database";
+            throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "something went wrong while registering the reaction in the database");
         }
 
         const updatedReel = await this.ReelRepository.updateCount({
@@ -109,7 +110,7 @@ export default class ReelsService implements IReelService {
         });
 
         if (!updatedReel) {
-            return "updating the reactions failed";
+            throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "updating the reactions failed");
         }
 
         return updatedReel;
@@ -119,13 +120,13 @@ export default class ReelsService implements IReelService {
         console.log(reelId, commentText, userID);
         // checking if the reel exists
         const reel = await this.ReelRepository.findReelById(reelId);
-        if (!reel) return "either wrong reel Id, or does not exist";
+        if (!reel) throw new AppError(StatusCodes.BAD_REQUEST, "either wrong reel Id, or does not exist");
 
         const comment = await this.CommentRepository.create({ commentedBy: userID, article: commentText, commentedTo: reelId });
-        if (!comment) return "failed creating comment";
+        if (!comment) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "failed creating comment");
 
         const reelComment = await this.ReelRepository.updateCount({ reelId: reelId, count: 1, isReaction: false });
-        if (!reelComment) return "failed incrementing comment count"
+        if (!reelComment) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "failed incrementing comment count");
         return comment;
     }
 
@@ -133,15 +134,15 @@ export default class ReelsService implements IReelService {
         console.log(reelId);
 
         const comment = await this.CommentRepository.findCommentById(commentId);
-        if (!comment) return "Commnet does not exist";
+        if (!comment) throw new AppError(StatusCodes.BAD_REQUEST, "Commnet does not exist");
         if (comment.commentedBy.toString() != userId) return "User is not authorized to delete this comment";
         if (comment.commentedTo.toString() != reelId) return "this reel id does not contain this comment";
 
         const deletedComment = await this.CommentRepository.deleteCommentByID(commentId);
-        if (!deletedComment) return "deleting the comment failed";
+        if (!deletedComment) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "deleting the comment failed");
 
         const reel = this.ReelRepository.updateCount({ reelId, count: -1, isReaction: false });
-        if (!reel) return "decrementing the reel comment count failed";
+        if (!reel) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "decrementing the reel comment count failed");
 
         return deletedComment;
 
@@ -149,8 +150,8 @@ export default class ReelsService implements IReelService {
 
     async editComment({ userId, commentId, newComment }: { userId: string; commentId: string; newComment: string; }): Promise<IReelDocument | IReelsCommentDocument | string | null> {
         const comment = await this.CommentRepository.findCommentById(commentId);
-        if (!comment) return "Comment does not exist";
-        if (comment.commentedBy.toString() != userId) return "User is not authorized to edit this comment";
+        if (!comment) throw new AppError(StatusCodes.BAD_REQUEST, "Comment does not exist");
+        if (comment.commentedBy.toString() != userId) throw new AppError(StatusCodes.BAD_REQUEST, "User is not authorized to edit this comment");
         const updatedComment = await this.CommentRepository.findCommentByIdAndUpdate(commentId, { article: newComment })
         return updatedComment;
 
@@ -158,7 +159,7 @@ export default class ReelsService implements IReelService {
 
     async reactOnComment({ userId, commentId, reaction_type }: { userId: string; commentId: string; reaction_type: string; }): Promise<IReelsCommentDocument | IReelsReactionDocument | string | null> {
         if (!Object.values(ReactionType).includes(reaction_type as ReactionType)) {
-            return "Reaction_type is not of the right type";
+            throw new AppError(StatusCodes.BAD_REQUEST, "Reaction_type is not of the right type");
         }
 
         const reaction = await this.CommentReaction.findReelReactionsConditionally({ reactedTo: commentId, reactedBy: userId });
@@ -167,20 +168,20 @@ export default class ReelsService implements IReelService {
             const reactionID = reaction[0]._id as string;
             if (reaction[0].reaction_type == reaction_type) {
                 const deletedReaction = this.CommentReaction.deleteReactionByID(reactionID);
-                if (!deletedReaction) return "deleting the reaction failed";
+                if (!deletedReaction) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "deleting the reaction failed");
                 const comment = await this.CommentRepository.updateCount(commentId, { reactionsCount: -1 });
                 return comment;
             }
 
             const updatedReaction = await this.CommentReaction.findReelReactopnByIdAndUpdate(reactionID, { reaction_type });
-            if (!updatedReaction) return "updating the reaction failed";
+            if (!updatedReaction) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR,"updating the reaction failed");
             return updatedReaction;
         }
 
         const reactionOnComment = await this.CommentReaction.create({ reactedBy: userId, reactedTo: commentId, reaction_type: reaction_type as ReactionType });
-        if (!reactionOnComment) return "creation of nreaction on comment failed";
+        if (!reactionOnComment) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "creation of nreaction on comment failed");
         const comment = await this.CommentRepository.updateCount(commentId, { reactionsCount: 1 });
-        if (!comment) return "Incrementing comment reaction count failed";
+        if (!comment) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Incrementing comment reaction count failed");
         return comment;
 
     }
@@ -189,24 +190,24 @@ export default class ReelsService implements IReelService {
         console.log(reelId);
 
         const reel = await this.ReelRepository.findReelById(reelId);
-        if (!reel) return "either reelId is not valid or the reel does not exist";
+        if (!reel) throw new AppError(StatusCodes.BAD_REQUEST,"either reelId is not valid or the reel does not exist");
 
         const comment = await this.CommentRepository.findCommentById(commentId);
-        if (!comment) return "either the commentId is not valid or the comment does not exist";
+        if (!comment) throw new AppError(StatusCodes.BAD_REQUEST, "either the commentId is not valid or the comment does not exist");
 
-        if (comment.commentedTo.toString() != reelId) return "the comment does not belong to this reel";
+        if (comment.commentedTo.toString() != reelId) throw new AppError(StatusCodes.BAD_REQUEST,"the comment does not belong to this reel");
 
         const reply = await this.CommentRepository.create({ article: commentText, commentedBy: userId, commentedTo: reelId, parentComment: commentId });
-        if (!reply) return "failed creation comment reply";
+        if (!reply) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "failed creation comment reply");
 
         return reply;
     }
 
-    async getAllComments({ userId, reelId }: { userId: string; reelId: string; }): Promise<IReelsCommentDocument[] | null | string> {
+    async getAllComments({ userId, reelId, query }: { userId: string; reelId: string; query: Record<string, any> }) {
         const reel = await this.ReelRepository.findReelById(reelId);
-        if (!reel) return "This reel does not exist";
+        if (!reel) throw new AppError(StatusCodes.BAD_REQUEST, "This reel does not exist");
 
-        const comments = await this.CommentRepository.getCommentsWithReplies({ reelId });
+        const comments = await this.CommentRepository.getCommentsWithReplies({ reelId, query });
 
         // console.log(comments);
 

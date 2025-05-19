@@ -16,7 +16,7 @@ export default class UserRepository {
         return await this.UserModel.findById(id);
     }
 
-    async findByUID(uid: number) {
+    async findByUID(uid: string) {
         return await this.UserModel.findOne({ uid });
     }
     

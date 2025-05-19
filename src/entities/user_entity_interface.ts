@@ -34,7 +34,7 @@ export interface IUserEntity {
     bio?: string;
     countryCode?: string;
     countryDialCode?: string;
-    uid: number;
+    uid: string;
     countryLanguages?: string[];
     credit?: number;
     userPoints?: number;

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { DatabaseNames } from "../../../Utils/enums";
 import { IReelsCommentDocument } from "./reels_comment_interface";
+import { DatabaseNames } from "../../../core/Utils/enums";
 
 const reelsCommentSchema = new mongoose.Schema<IReelsCommentDocument>({
     commentedBy: {
