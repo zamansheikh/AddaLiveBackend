@@ -18,6 +18,13 @@ export default class ReelController {
         }
     );
 
+    getAllReels = catchAsync(
+        async (req: Request, res: Response) => {
+            const allReels = await this.ReelService.getAllReel(req.query);
+            sendResponseEnhanced(res, allReels);
+        }
+    );
+
     editReel = catchAsync(
         async (req: Request, res: Response) => {
             const result = await this.ReelService.editReel({ reelID: req.body.reelID, reelCaption: req.body.reelCaption, userId: req.user!.id });

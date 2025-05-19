@@ -7,7 +7,7 @@ import { IReelService } from "./reel_service_interface";
 import { ReactionType } from "../../Utils/enums";
 import { IReelCommentRepository } from "../../repository/reels/comments/reel_comments_interface";
 import { IReelsCommentDocument } from "../../models/reels/comments/reels_comment_interface";
-import {  IReelsReactionDocument } from "../../models/reels/likes/reels_reaction_interface";
+import { IReelsReactionDocument } from "../../models/reels/likes/reels_reaction_interface";
 import { IReelDocument } from "../../models/reels/reel_interface";
 
 
@@ -37,6 +37,11 @@ export default class ReelsService implements IReelService {
             console.log("Cloudinary error => ", error);
             return "Upload failed";
         }
+    }
+
+    async getAllReel(query: Record<string, any>): Promise<IReelDocument[] | string | null> {
+
+        return await this.ReelRepository.getAllReels(query);
     }
 
     async editReel({ reelID, reelCaption, userId }: { reelID: string, reelCaption: string, userId: string }) {
@@ -182,31 +187,33 @@ export default class ReelsService implements IReelService {
 
     async replyToComment({ userId, commentId, commentText, reelId }: { userId: string; commentId: string; commentText: string; reelId: string }): Promise<IReelsCommentDocument | string | null> {
         console.log(reelId);
-        
+
         const reel = await this.ReelRepository.findReelById(reelId);
-        if(!reel) return "either reelId is not valid or the reel does not exist";
+        if (!reel) return "either reelId is not valid or the reel does not exist";
 
         const comment = await this.CommentRepository.findCommentById(commentId);
-        if(!comment) return "either the commentId is not valid or the comment does not exist";
+        if (!comment) return "either the commentId is not valid or the comment does not exist";
 
-        if(comment.commentedTo.toString() != reelId) return "the comment does not belong to this reel";
-        
-        const reply = await this.CommentRepository.create({article: commentText, commentedBy: userId, commentedTo:reelId, parentComment: commentId });
-        if(!reply) return "failed creation comment reply";
+        if (comment.commentedTo.toString() != reelId) return "the comment does not belong to this reel";
+
+        const reply = await this.CommentRepository.create({ article: commentText, commentedBy: userId, commentedTo: reelId, parentComment: commentId });
+        if (!reply) return "failed creation comment reply";
 
         return reply;
     }
 
-     async getAllComments({ userId, reelId }: { userId: string; reelId: string; }): Promise<IReelsCommentDocument[] | null | string> {
-         
-        const comments =  await this.CommentRepository.getCommentsWithReplies({reelId});
+    async getAllComments({ userId, reelId }: { userId: string; reelId: string; }): Promise<IReelsCommentDocument[] | null | string> {
+        const reel = await this.ReelRepository.findReelById(reelId);
+        if (!reel) return "This reel does not exist";
+
+        const comments = await this.CommentRepository.getCommentsWithReplies({ reelId });
 
         // console.log(comments);
 
         return comments;
-        
-        
-     }
+
+
+    }
 
 }
 

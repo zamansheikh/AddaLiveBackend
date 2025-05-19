@@ -30,6 +30,7 @@ const reelService = new ReelsService(reelRepository, reactionRepository, comment
 const reelsController = new ReelController(reelService);
 
 router.post("/create", authenticate, upload.single('video'), validateRequest(UploadReelDto), customValidateFileResponse({ isvideo: true }), reelsController.createReel);
+router.get("/", authenticate, reelsController.getAllReels);
 router.put("/edit", authenticate,  validateRequest(EditReelDto), reelsController.editReel);
 router.delete("/delete/:reelId", authenticate, reelsController.deleteReel);
 router.post("/react", authenticate,  validateRequest(ReelReactionDto), reelsController.reactOnReel);

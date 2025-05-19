@@ -37,26 +37,26 @@ export default class ReelsCommentRepostitory implements IReelCommentRepository {
         const comments = await this.ReelCommentModel.aggregate([
             { $match: { commentedTo: new Types.ObjectId(reelId), parentComment: null } },
             { $lookup: { from: DatabaseNames.ReelsComments, localField: "_id", foreignField: "parentComment", as: "replies" } },
-            {
-                $project: {
-                    _id: 1,
-                    article: 1,
-                    commentedBy: 1,
-                    createdAt: 1,
-                    replies: {
-                        $map: {
-                            input: "$replies",
-                            as: "reply",
-                            in: {
-                                _id: "$$reply._id",
-                                article: "$$reply.article",
-                                commentedBy: "$$reply.commentedBy",
-                                createdAt: "$$reply.createdAt"
-                            }
-                        }
-                    }
-                }
-            }
+            // {
+            //     $project: {
+            //         _id: 1,
+            //         article: 1,
+            //         commentedBy: 1,
+            //         createdAt: 1,
+            //         replies: {
+            //             $map: {
+            //                 input: "$replies",
+            //                 as: "reply",
+            //                 in: {
+            //                     _id: "$$reply._id",
+            //                     article: "$$reply.article",
+            //                     commentedBy: "$$reply.commentedBy",
+            //                     createdAt: "$$reply.createdAt"
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
 
         ]);
         console.log("comments ===>>>", comments);

@@ -6,6 +6,8 @@ import { IReelsCommentDocument } from "../../models/reels/comments/reels_comment
 export interface IReelService {
     
     createReel({ ownerId, body, file }: { ownerId: string, body: Partial<Record<string, any>>, file?: Express.Multer.File }): Promise<IReelDocument | string | null>;
+    //! Todo use a different interface
+    getAllReel(query: Record<string, any>): Promise<IReelDocument[] | string | null>; 
     editReel({ reelID, reelCaption, userId }: { reelID: string, reelCaption: string, userId: string }): Promise<IReelDocument | string | null>;
     deleteReel({ reelID, userId }: { reelID: string, userId: string }): Promise<IReelDocument | string | null>;
     reactOnReels({ reelId, reaction_type, userID }: { reelId: string, reaction_type: string, userID: string }): Promise<IReelDocument | IReelsReactionDocument | string | null>;
