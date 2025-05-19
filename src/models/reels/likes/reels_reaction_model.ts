@@ -26,6 +26,6 @@ const reelsReactionSchema = new mongoose.Schema<IReelsReactionDocument>({
     }
 );
 
-const ReelsReactions = mongoose.model(DatabaseNames.ReelsReactions, reelsReactionSchema);
+const ReelsReactions = mongoose.model(DatabaseNames.ReelsReactions, reelsReactionSchema, DatabaseNames.ReelsReactions);
 
 export default ReelsReactions;

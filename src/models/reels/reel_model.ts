@@ -53,6 +53,6 @@ const reelSchema = new mongoose.Schema<IReelDocument>(
     }
 );
 
-const Reels = mongoose.model(DatabaseNames.Reels, reelSchema);
+const Reels = mongoose.model(DatabaseNames.Reels, reelSchema, DatabaseNames.Reels);
 
 export default Reels;

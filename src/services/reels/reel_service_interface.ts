@@ -4,6 +4,7 @@ import { IReelsReactionDocument } from "../../models/reels/likes/reels_reaction_
 import { IReelsCommentDocument } from "../../models/reels/comments/reels_comment_interface";
 
 export interface IReelService {
+    
     createReel({ ownerId, body, file }: { ownerId: string, body: Partial<Record<string, any>>, file?: Express.Multer.File }): Promise<IReelDocument | string | null>;
     editReel({ reelID, reelCaption, userId }: { reelID: string, reelCaption: string, userId: string }): Promise<IReelDocument | string | null>;
     deleteReel({ reelID, userId }: { reelID: string, userId: string }): Promise<IReelDocument | string | null>;
@@ -13,4 +14,5 @@ export interface IReelService {
     editComment({ userId, commentId, newComment }: { userId: string, commentId: string, newComment: string }): Promise<IReelDocument | IReelsCommentDocument | string | null>;
     reactOnComment({ userId, commentId, reaction_type }: { userId: string, commentId: string, reaction_type: string }): Promise<IReelsCommentDocument | IReelsReactionDocument | string | null>;
     replyToComment({ userId, commentId, commentText, reelId }: { userId: string, commentId: string, commentText: string, reelId: string }): Promise<IReelsCommentDocument | string | null>;
+    getAllComments({userId, reelId}: {userId: string, reelId: string}) : Promise<IReelsCommentDocument[] | null | string>;
 }

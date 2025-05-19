@@ -116,7 +116,7 @@ export default class ReelsService implements IReelService {
         const reel = await this.ReelRepository.findReelById(reelId);
         if (!reel) return "either wrong reel Id, or does not exist";
 
-        const comment = await this.CommentRepository.create({ commentedBy: userID, article: commentText, CommentedTo: reelId });
+        const comment = await this.CommentRepository.create({ commentedBy: userID, article: commentText, commentedTo: reelId });
         if (!comment) return "failed creating comment";
 
         const reelComment = await this.ReelRepository.updateCount({ reelId: reelId, count: 1, isReaction: false });
@@ -130,7 +130,7 @@ export default class ReelsService implements IReelService {
         const comment = await this.CommentRepository.findCommentById(commentId);
         if (!comment) return "Commnet does not exist";
         if (comment.commentedBy.toString() != userId) return "User is not authorized to delete this comment";
-        if (comment.CommentedTo.toString() != reelId) return "this reel id does not contain this comment";
+        if (comment.commentedTo.toString() != reelId) return "this reel id does not contain this comment";
 
         const deletedComment = await this.CommentRepository.deleteCommentByID(commentId);
         if (!deletedComment) return "deleting the comment failed";
@@ -189,13 +189,24 @@ export default class ReelsService implements IReelService {
         const comment = await this.CommentRepository.findCommentById(commentId);
         if(!comment) return "either the commentId is not valid or the comment does not exist";
 
-        if(comment.CommentedTo.toString() != reelId) return "the comment does not belong to this reel";
+        if(comment.commentedTo.toString() != reelId) return "the comment does not belong to this reel";
         
-        const reply = await this.CommentRepository.create({article: commentText, commentedBy: userId, CommentedTo:reelId, parentComment: commentId });
+        const reply = await this.CommentRepository.create({article: commentText, commentedBy: userId, commentedTo:reelId, parentComment: commentId });
         if(!reply) return "failed creation comment reply";
 
         return reply;
     }
+
+     async getAllComments({ userId, reelId }: { userId: string; reelId: string; }): Promise<IReelsCommentDocument[] | null | string> {
+         
+        const comments =  await this.CommentRepository.getCommentsWithReplies({reelId});
+
+        // console.log(comments);
+
+        return comments;
+        
+        
+     }
 
 }
 

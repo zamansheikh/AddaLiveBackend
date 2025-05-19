@@ -95,4 +95,13 @@ export default class ReelController {
         }
     );
 
+    getAllComments = catchAsync(
+        async (req: Request, res: Response) => {
+            const { id } = req.user!;
+            const { reelId } = req.params;
+            const comments = await this.ReelService.getAllComments({ reelId, userId: id });
+            sendResponseEnhanced(res, comments);
+        }
+    );
+
 }

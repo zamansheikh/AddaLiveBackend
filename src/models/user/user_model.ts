@@ -60,6 +60,6 @@ const userSchema = new mongoose.Schema<IUserDocument>(
     }
 );
 
-const User = mongoose.model(DatabaseNames.User, userSchema);
+const User = mongoose.model(DatabaseNames.User, userSchema, DatabaseNames.User);
 
 export default User;

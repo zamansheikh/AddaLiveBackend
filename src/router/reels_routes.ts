@@ -38,6 +38,7 @@ router.delete("/:reelId/comment/delete/:commentId", authenticate, reelsControlle
 router.put("/comment/edit", authenticate, validateRequest(EditCommentDto), reelsController.editComment);
 router.post("/comment/react", authenticate, validateRequest(ReactOnCommentDto), reelsController.reactOnComment);
 router.post("/comment/reply", authenticate, validateRequest(ReplyCommentDto),  reelsController.replyToComment);
+router.get("/:reelId/comments", authenticate, reelsController.getAllComments);
 
 
 export default router;

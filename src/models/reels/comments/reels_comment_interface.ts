@@ -3,7 +3,7 @@ import { Document, Model, Types } from "mongoose"
 
 export interface IReelsComment {
     commentedBy: Types.ObjectId,
-    CommentedTo: Types.ObjectId,
+    commentedTo: Types.ObjectId,
     article: string,
     parentComment?: string,
    reactionsCount?: number,

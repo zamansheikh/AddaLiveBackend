@@ -9,4 +9,5 @@ export interface IReelCommentRepository {
     deleteCommentByID(commentId: string):Promise<IReelsCommentDocument | null>;
     getAllComments(): Promise<IReelsCommentDocument[] | null>;
     updateCount(comentId: string, payload: Record<string, number>): Promise<IReelsCommentDocument | null>;
+    getCommentsWithReplies({reelId}: {reelId: string}):Promise<IReelsCommentDocument[] | null>
 }
