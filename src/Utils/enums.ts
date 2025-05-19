@@ -12,6 +12,7 @@ export enum DatabaseNames {
     Reels = "Reels",
     ReelsReactions = "Reels_Reactions",
     ReelsComments = "Reels_Comments",
+    Reels_comment_reaction = "Reels_Comments_Reactions",
 }
 
 export enum ReelStatus {

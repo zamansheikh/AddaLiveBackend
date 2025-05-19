@@ -5,6 +5,6 @@ export interface IReelCommentEntity {
     commentedBy: string,
     CommentedTo: string,
     article: string,
-    reactions: IReelsReaction[];
-    comments: IReelsComment[];
+    parentComment?: string,
+   reactionsCount?: number,
 }

@@ -2,9 +2,9 @@ import { IsString } from "class-validator";
 import { ReactionType } from "../../Utils/enums";
 
 
-export class ReelReactionDto {
+export  class ReactOnCommentDto {
     @IsString()
-    reelId!: string;
+    commentId!:string;
 
     @IsString()
     reaction_type!: ReactionType;

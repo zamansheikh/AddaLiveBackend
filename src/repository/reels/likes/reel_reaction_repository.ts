@@ -10,8 +10,8 @@ export default class ReelsReactionRepostitory implements IReelReactionRepository
     }
 
     async create(ReelEntity: IReelReactionEntity) { 
-        const reel =  new this.ReelReactionModel(ReelEntity);
-        return await reel.save();
+        const reelReaction =  new this.ReelReactionModel(ReelEntity);
+        return await reelReaction.save();
     }
 
     async findReelReactionById(id: string) { 
