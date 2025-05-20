@@ -3,8 +3,8 @@ import UserRepository from '../repository/user_repository';
 import User from '../models/user/user_model';
 import AdminUserService from '../services/admin/admin_user_service';
 import AdminUserController from '../controllers/admin/admin_user_controller';
-import { validateRequest } from '../middlewares/validate_request';
 import { ActivityZoneUpdateDto } from '../dtos/admin/activityzone_update_dto';
+import { validateRequest } from '../core/middlewares/validate_request';
 
 const router = express.Router();
 

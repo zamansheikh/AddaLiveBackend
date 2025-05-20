@@ -2,6 +2,8 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { error } from 'console';
 import { Request, Response, NextFunction } from 'express';
+import AppError from '../errors/app_errors';
+import { StatusCodes } from 'http-status-codes';
 
 export const validateRequest = (DTOClass: any) => {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -9,9 +11,9 @@ export const validateRequest = (DTOClass: any) => {
     const errors = await validate(dtoInstance);
 
     if (errors.length > 0) {
-        next(errors)
+      console.log();
+      throw new AppError(StatusCodes.BAD_REQUEST, errors.toString())
     }
-
     req.body = dtoInstance;
     next();
   };

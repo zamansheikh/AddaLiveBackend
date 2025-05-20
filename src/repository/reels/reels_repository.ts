@@ -1,6 +1,8 @@
+import { Query } from "mongoose";
 import { IReelEntity } from "../../entities/reel_entity_interface";
 import { IReelDocument, IReelModel } from "../../models/reels/reel_interface";
 import { IReelRepository } from "./reels_interface";
+import { QueryBuilder } from "../../core/Utils/query_builder";
 
 export default class ReelsRepository implements IReelRepository {
     ReelModel: IReelModel;
@@ -11,6 +13,17 @@ export default class ReelsRepository implements IReelRepository {
     async create(ReelEntity: IReelEntity) {
         const reel = new this.ReelModel(ReelEntity);
         return await reel.save();
+    }
+    async getAllReels(query: Record<string, any>) {
+        const qb = new QueryBuilder(this.ReelModel, query);
+        const result = qb.sort().paginate();
+        const pagination = await result.countTotal();
+        const data = await result.exec();
+
+        return {
+            pagination,
+            data
+        }
     }
 
     async findReelById(id: string) {

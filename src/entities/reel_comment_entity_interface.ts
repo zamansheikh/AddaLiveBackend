@@ -3,7 +3,7 @@ import { IReelsReaction } from "../models/reels/likes/reels_reaction_interface"
 
 export interface IReelCommentEntity {
     commentedBy: string,
-    CommentedTo: string,
+    commentedTo: string,
     article: string,
     parentComment?: string,
    reactionsCount?: number,

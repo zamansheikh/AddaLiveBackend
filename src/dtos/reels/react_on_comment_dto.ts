@@ -1,5 +1,6 @@
 import { IsString } from "class-validator";
-import { ReactionType } from "../../Utils/enums";
+import { ReactionType } from "../../core/Utils/enums";
+
 
 
 export  class ReactOnCommentDto {

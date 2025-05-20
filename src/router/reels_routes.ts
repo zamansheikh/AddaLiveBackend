@@ -3,13 +3,7 @@ import ReelsRepository from "../repository/reels/reels_repository";
 import Reels from "../models/reels/reel_model";
 import ReelsService from "../services/reels/reels_service";
 import ReelController from "../controllers/reel_controller";
-import { upload } from "../middlewares/multer";
-import { authenticate } from "../middlewares/auth_middleware";
-import { validateRequest } from "../middlewares/validate_request";
-import { UploadReelDto } from "../dtos/reels/upload_reel_dto";
-import { customValidateFileResponse } from "../middlewares/custom_validate_file_response";
 import { EditReelDto } from "../dtos/reels/edit_reel_dto";
-import { ReelReactionDto } from "../dtos/reels/reel_reaction_dto";
 import ReelsReactionRepostitory from "../repository/reels/likes/reel_reaction_repository";
 import ReelsReactions from "../models/reels/likes/reels_reaction_model";
 import ReelsCommentRepostitory from "../repository/reels/comments/reel_comments_repository";
@@ -19,6 +13,12 @@ import { ReelCommentDto } from "../dtos/reels/reel_comment_dto";
 import { EditCommentDto } from "../dtos/reels/edit_comment_dto";
 import {  ReactOnCommentDto } from "../dtos/reels/react_on_comment_dto";
 import { ReplyCommentDto } from "../dtos/reels/reply_comment_dto";
+import { authenticate } from "../core/middlewares/auth_middleware";
+import { upload } from "../core/middlewares/multer";
+import { UploadReelDto } from "../dtos/reels/upload_reel_dto";
+import { customValidateFileResponse } from "../core/middlewares/custom_validate_file_response";
+import { validateRequest } from "../core/middlewares/validate_request";
+import { ReelReactionDto } from "../dtos/reels/reel_reaction_dto";
 
 const router = express.Router();
 
@@ -30,6 +30,8 @@ const reelService = new ReelsService(reelRepository, reactionRepository, comment
 const reelsController = new ReelController(reelService);
 
 router.post("/create", authenticate, upload.single('video'), validateRequest(UploadReelDto), customValidateFileResponse({ isvideo: true }), reelsController.createReel);
+router.get("/", authenticate, reelsController.getAllReels);
+router.get("/:reelId/comments", authenticate, reelsController.getAllComments);
 router.put("/edit", authenticate,  validateRequest(EditReelDto), reelsController.editReel);
 router.delete("/delete/:reelId", authenticate, reelsController.deleteReel);
 router.post("/react", authenticate,  validateRequest(ReelReactionDto), reelsController.reactOnReel);

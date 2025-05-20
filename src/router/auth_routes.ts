@@ -3,11 +3,11 @@ import User from '../models/user/user_model';
 import UserRepository from "../repository/user_repository";
 import AuthService from "../services/auth/auth_services";
 import AuthController from "../controllers/auth_controller";
-import { validateRequest } from "../middlewares/validate_request";
 import { RegisterUserDto } from "../dtos/auth/register_with_google_dto";
 import { ProfileUpdateDto } from "../dtos/auth/profile_update_dto";
-import { authenticate } from "../middlewares/auth_middleware";
-import { upload } from "../middlewares/multer";
+import { upload } from "../core/middlewares/multer";
+import { authenticate } from "../core/middlewares/auth_middleware";
+import { validateRequest } from "../core/middlewares/validate_request";
 
 
 

@@ -1,6 +1,9 @@
+import { Types } from "mongoose";
 import { IReelCommentEntity } from "../../../entities/reel_comment_entity_interface";
 import { IReelsCommentDocument, IReelsCommentModel } from "../../../models/reels/comments/reels_comment_interface";
 import { IReelCommentRepository } from "./reel_comments_interface";
+import { DatabaseNames } from "../../../core/Utils/enums";
+import { QueryBuilder } from "../../../core/Utils/query_builder";
 
 export default class ReelsCommentRepostitory implements IReelCommentRepository {
     ReelCommentModel: IReelsCommentModel;
@@ -8,8 +11,8 @@ export default class ReelsCommentRepostitory implements IReelCommentRepository {
         this.ReelCommentModel = ReelCommentModel;
     }
 
-    async create(ReelEntity: IReelCommentEntity) { 
-        const reel =  new this.ReelCommentModel(ReelEntity);
+    async create(ReelEntity: IReelCommentEntity) {
+        const reel = new this.ReelCommentModel(ReelEntity);
         return await reel.save();
     }
 
@@ -22,13 +25,31 @@ export default class ReelsCommentRepostitory implements IReelCommentRepository {
     }
 
     async findCommentByIdAndUpdate(commentId: string, payload: Record<string, string>): Promise<IReelsCommentDocument | null> {
-        return await this.ReelCommentModel.findByIdAndUpdate(commentId, payload, {new: true});
+        return await this.ReelCommentModel.findByIdAndUpdate(commentId, payload, { new: true });
     }
     async getAllComments(): Promise<IReelsCommentDocument[] | null> {
         return await this.ReelCommentModel.find();
     }
     async updateCount(comentId: string, payload: Record<string, number>): Promise<IReelsCommentDocument | null> {
-        return await this.ReelCommentModel.findByIdAndUpdate(comentId, {$inc: payload}, {new: true});
+        return await this.ReelCommentModel.findByIdAndUpdate(comentId, { $inc: payload }, { new: true });
+    }
+
+    async getCommentsWithReplies({ reelId, query }: { reelId: string; query: Record<string, any> }) {
+        const qb = new QueryBuilder<IReelsCommentDocument>(this.ReelCommentModel, query);
+
+        const result = qb
+            .aggregate(
+                { commentedTo: new Types.ObjectId(reelId), parentComment: null },
+                { from: DatabaseNames.ReelsComments, localField: "_id", foreignField: "parentComment", as: "replies" }
+            )
+            .paginate()
+        const pagination = await result.countTotal();
+        const data = await result.exec();
+
+        return {
+            pagination,
+            data
+        }
     }
 
 } 

@@ -9,6 +9,7 @@ import mongoose from 'mongoose';
 import AuthRouter from "./router/auth_routes";
 import AdminRouter from "./router/admin_routes";
 import ReelsRouter from "./router/reels_routes";
+import globalErrorHandler from './core/errors/global_error_handlar';
 
 
 // Initialize dotenv for environment variables
@@ -23,6 +24,7 @@ app.use(morgan('dev')); // Logging middleware
 app.use(express.urlencoded({extended: true}));
 app.use(express.json()); // Parse JSON request bodies
 
+
 // Session middleware
 app.use(
   session({
@@ -36,6 +38,8 @@ app.use(
 app.use("/api/auth", AuthRouter);
 app.use("/api/admin", AdminRouter);
 app.use("/api/reels", ReelsRouter);
+
+app.use(globalErrorHandler);
 
 const PORT = process.env.PORT || 8000;
 const MONGOURL = process.env.MONGO_URL || 'mongodb://localhost:27017/livestreaming';

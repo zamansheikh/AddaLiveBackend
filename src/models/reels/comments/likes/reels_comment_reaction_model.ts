@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { IReelsReactionDocument } from "../../likes/reels_reaction_interface";
-import { DatabaseNames, ReactionType } from "../../../../Utils/enums";
+import { DatabaseNames, ReactionType } from "../../../../core/Utils/enums";
 
 const reelsCoomentReactionSchema = new mongoose.Schema<IReelsReactionDocument>({
     reactedBy: {

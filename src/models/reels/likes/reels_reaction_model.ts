@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { DatabaseNames, ReactionType } from "../../../Utils/enums";
 import { IReelsReactionDocument } from "./reels_reaction_interface";
+import { DatabaseNames, ReactionType } from "../../../core/Utils/enums";
 
 const reelsReactionSchema = new mongoose.Schema<IReelsReactionDocument>({
     reactedBy: {
@@ -26,6 +26,6 @@ const reelsReactionSchema = new mongoose.Schema<IReelsReactionDocument>({
     }
 );
 
-const ReelsReactions = mongoose.model(DatabaseNames.ReelsReactions, reelsReactionSchema);
+const ReelsReactions = mongoose.model(DatabaseNames.ReelsReactions, reelsReactionSchema, DatabaseNames.ReelsReactions);
 
 export default ReelsReactions;

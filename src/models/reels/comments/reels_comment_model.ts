@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { DatabaseNames } from "../../../Utils/enums";
 import { IReelsCommentDocument } from "./reels_comment_interface";
+import { DatabaseNames } from "../../../core/Utils/enums";
 
 const reelsCommentSchema = new mongoose.Schema<IReelsCommentDocument>({
     commentedBy: {
@@ -8,12 +8,16 @@ const reelsCommentSchema = new mongoose.Schema<IReelsCommentDocument>({
         required: true,
         ref: DatabaseNames.User,
     },
-    CommentedTo: {
+    commentedTo: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
         ref: DatabaseNames.Reels,
     },
-    parentComment: mongoose.Schema.Types.ObjectId,
+    parentComment: {
+        type: mongoose.Schema.Types.ObjectId,
+        default: null,
+        ref: DatabaseNames.ReelsComments
+    },
     article: {
         type: String,
         required: true,
@@ -29,6 +33,6 @@ const reelsCommentSchema = new mongoose.Schema<IReelsCommentDocument>({
 
 );
 
-const Comments = mongoose.model(DatabaseNames.ReelsComments, reelsCommentSchema);
+const Comments = mongoose.model(DatabaseNames.ReelsComments, reelsCommentSchema,DatabaseNames.ReelsComments);
 
 export default Comments;

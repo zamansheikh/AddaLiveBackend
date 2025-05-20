@@ -1,9 +1,9 @@
 
+import { CloudinaryFolder } from "../../core/Utils/enums";
+import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
 import { IUserEntity } from "../../entities/user_entity_interface";
 import { IUserRepository } from "../../repository/user_repository_interface";
 import jwt from 'jsonwebtoken';
-import { uploadFileToCloudinary } from "../../Utils/upload_file_cloudinary";
-import { CloudinaryFolder } from "../../Utils/enums";
 
 export default class AuthService {
     UserRepository: IUserRepository;

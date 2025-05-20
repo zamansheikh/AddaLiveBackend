@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import { IAuthService } from "../services/auth/auth_service_interface";
 
 import { StatusCodes } from "http-status-codes";
-import catchAsync from "../Utils/catch_async";
-import sendResponse from "../Utils/send_response";
+import catchAsync from "../core/Utils/catch_async";
+import sendResponse from "../core/Utils/send_response";
 
 export default class AuthController {
     authService: IAuthService;

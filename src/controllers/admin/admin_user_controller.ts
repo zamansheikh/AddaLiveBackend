@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { IAdminUserService } from "../../services/admin/admin_user_service";
-import catchAsync from "../../Utils/catch_async";
-import sendResponse from "../../Utils/send_response";
 import { StatusCodes } from "http-status-codes";
+import catchAsync from "../../core/Utils/catch_async";
+import sendResponse from "../../core/Utils/send_response";
 
 export default class AdminUserController {
     AdminUserService: IAdminUserService;

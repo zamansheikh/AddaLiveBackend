@@ -1,7 +1,7 @@
 import { IsEmail, IsNumber,  IsString, MinLength } from 'class-validator';
 
 export class RegisterUserDto {
-  @IsEmail()
+  @IsString()
   email!: string;
 
   @IsString()
@@ -17,7 +17,7 @@ export class RegisterUserDto {
   @IsString()
   last_name!: string;
 
-  @IsNumber()
+  @IsString()
   uid!: number;
   
 }

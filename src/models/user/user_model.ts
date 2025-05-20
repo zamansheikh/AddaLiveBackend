@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { IUserDocument } from "../user/user_model_interface";
-import { DatabaseNames } from "../../Utils/enums";
+import { DatabaseNames } from "../../core/Utils/enums";
 
 const userSchema = new mongoose.Schema<IUserDocument>(
     {
@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema<IUserDocument>(
         bio: String,
         country_code: String,
         country_dial_code: String,
-        uid: {type: Number, required: true, unique: true},
+        uid: {type: String, required: true, unique: true},
         country_languages: [String],
         credit: { type: Number, default: 0 },
         userPoints: { type: Number, default: 0 },
@@ -60,6 +60,6 @@ const userSchema = new mongoose.Schema<IUserDocument>(
     }
 );
 
-const User = mongoose.model(DatabaseNames.User, userSchema);
+const User = mongoose.model(DatabaseNames.User, userSchema, DatabaseNames.User);
 
 export default User;
