@@ -1,7 +1,7 @@
 import { IsString } from "class-validator";
 
 
-export class PostEditComment {
+export class PostEditCommentDto {
     @IsString()
     commentId!: string;
 

@@ -4,7 +4,9 @@ export interface IPost {
     ownerId: Types.ObjectId | string;
     postCaption?: string,
     status?: string;
-    mediaUrl: string;
+    mediaUrl?: string;
+    reactionCount?: number;
+    commentCount?: number;
     topRank?: number;
 }
 

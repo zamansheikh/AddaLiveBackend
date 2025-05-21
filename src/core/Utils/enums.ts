@@ -27,6 +27,8 @@ export enum ReelStatus {
 
 export enum CloudinaryFolder {
   Reels = "reels",
-  UserPRofile = "user_profiles"
+  UserPRofile = "user_profiles",
+  PostImages = 'post_images',
+  PostVideos = 'post_videos'
 }
 

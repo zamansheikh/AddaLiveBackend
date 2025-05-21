@@ -2,7 +2,7 @@ import { IsString } from "class-validator";
 
 export class PostReplyCommentDto {
         @IsString()
-        reelId!: string;
+        postId!: string;
     
         @IsString()
         commentId!: string;

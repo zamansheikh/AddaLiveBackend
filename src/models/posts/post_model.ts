@@ -13,6 +13,14 @@ const postSchema = new mongoose.Schema<IPostDocument>({
         enum: ReelStatus,
         default: ReelStatus.active,
     },
+    reactionCount: {
+        type: Number,
+        default: 0,
+    },
+    commentCount: {
+        type: Number,
+        default: 0,
+    },
     mediaUrl: String,
     topRank: Number,
 }, {
