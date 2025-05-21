@@ -1,5 +1,5 @@
 import { IPagination } from "../../../core/Utils/query_builder";
-import { IReelCommentEntity } from "../../../entities/reel_comment_entity_interface";
+import { IReelCommentEntity } from "../../../entities/reel/reel_comment_entity_interface";
 import { IReelsCommentDocument } from "../../../models/reels/comments/reels_comment_interface";
 
 

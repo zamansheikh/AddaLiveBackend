@@ -1,4 +1,3 @@
-import { IReelEntity } from "../../entities/reel_entity_interface";
 import { IReelReactionRepository } from "../../repository/reels/likes/reel_reaction_interface";
 import { IReelRepository } from "../../repository/reels/reels_interface";
 import { IReelService } from "./reel_service_interface";
@@ -10,6 +9,7 @@ import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary"
 import { CloudinaryFolder, ReactionType } from "../../core/Utils/enums";
 import AppError from "../../core/errors/app_errors";
 import { StatusCodes } from "http-status-codes";
+import { IReelEntity } from "../../entities/reel/reel_entity_interface";
 
 
 

@@ -1,5 +1,5 @@
 import { IPagination } from "../../core/Utils/query_builder";
-import { IReelEntity } from "../../entities/reel_entity_interface";
+import { IReelEntity } from "../../entities/reel/reel_entity_interface";
 import { IReelDocument } from "../../models/reels/reel_interface";
 
 export interface IReelRepository {

@@ -1,6 +1,7 @@
-import { ReelStatus } from "../core/Utils/enums";
-import { IReelsComment } from "../models/reels/comments/reels_comment_interface";
-import { IReelsReaction } from "../models/reels/likes/reels_reaction_interface";
+
+import { ReelStatus } from "../../core/Utils/enums";
+import { IReelsComment } from "../../models/reels/comments/reels_comment_interface";
+import { IReelsReaction } from "../../models/reels/likes/reels_reaction_interface";
 import { IReelEntity } from "./reel_entity_interface";
 
 

@@ -1,9 +1,9 @@
 import { Types } from "mongoose";
-import { IReelCommentEntity } from "../../../entities/reel_comment_entity_interface";
 import { IReelsCommentDocument, IReelsCommentModel } from "../../../models/reels/comments/reels_comment_interface";
 import { IReelCommentRepository } from "./reel_comments_interface";
 import { DatabaseNames } from "../../../core/Utils/enums";
 import { QueryBuilder } from "../../../core/Utils/query_builder";
+import { IReelCommentEntity } from "../../../entities/reel/reel_comment_entity_interface";
 
 export default class ReelsCommentRepostitory implements IReelCommentRepository {
     ReelCommentModel: IReelsCommentModel;
