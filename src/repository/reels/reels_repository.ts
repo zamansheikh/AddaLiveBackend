@@ -1,8 +1,8 @@
 import { Query } from "mongoose";
-import { IReelEntity } from "../../entities/reel_entity_interface";
 import { IReelDocument, IReelModel } from "../../models/reels/reel_interface";
 import { IReelRepository } from "./reels_interface";
 import { QueryBuilder } from "../../core/Utils/query_builder";
+import { IReelEntity } from "../../entities/reel/reel_entity_interface";
 
 export default class ReelsRepository implements IReelRepository {
     ReelModel: IReelModel;

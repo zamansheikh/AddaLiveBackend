@@ -1,4 +1,4 @@
-import { ReactionType } from "../core/Utils/enums";
+import { ReactionType } from "../../core/Utils/enums";
 
 export interface IReelReactionEntity {
     reactedBy: string;

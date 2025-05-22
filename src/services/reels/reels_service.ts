@@ -1,4 +1,3 @@
-import { IReelEntity } from "../../entities/reel_entity_interface";
 import { IReelReactionRepository } from "../../repository/reels/likes/reel_reaction_interface";
 import { IReelRepository } from "../../repository/reels/reels_interface";
 import { IReelService } from "./reel_service_interface";
@@ -10,6 +9,7 @@ import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary"
 import { CloudinaryFolder, ReactionType } from "../../core/Utils/enums";
 import AppError from "../../core/errors/app_errors";
 import { StatusCodes } from "http-status-codes";
+import { IReelEntity } from "../../entities/reel/reel_entity_interface";
 
 
 
@@ -47,7 +47,7 @@ export default class ReelsService implements IReelService {
     async editReel({ reelID, reelCaption, userId }: { reelID: string, reelCaption: string, userId: string }) {
         const reel = await this.ReelRepository.findReelById(reelID);
         if (!reel) throw new AppError(StatusCodes.BAD_REQUEST, "Reel Does not exist");
-        if (reel.ownerId != userId) return "User does not have permission to edit the reel";
+        if (reel.ownerId != userId) throw new AppError(StatusCodes.BAD_REQUEST, "User does not have permission to edit the reel");
         return await this.ReelRepository.findReelByIdAndUpdate(reelID, { reelCaption })
     }
 
@@ -56,7 +56,7 @@ export default class ReelsService implements IReelService {
         if (!reel) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "reel not found");
         if (reel.ownerId.toString() != userId) return "user is not authorized to delete the reel";
 
-        const deletedReel = this.ReelRepository.deleteReelById(reelID);
+        const deletedReel = await this.ReelRepository.deleteReelById(reelID);
         return deletedReel;
     }
 
@@ -117,7 +117,6 @@ export default class ReelsService implements IReelService {
     }
 
     async commnetOnReels({ reelId, commentText, userID }: { reelId: string, commentText: string, userID: string }): Promise<IReelDocument | IReelsCommentDocument | string | null> {
-        console.log(reelId, commentText, userID);
         // checking if the reel exists
         const reel = await this.ReelRepository.findReelById(reelId);
         if (!reel) throw new AppError(StatusCodes.BAD_REQUEST, "either wrong reel Id, or does not exist");
@@ -135,8 +134,9 @@ export default class ReelsService implements IReelService {
 
         const comment = await this.CommentRepository.findCommentById(commentId);
         if (!comment) throw new AppError(StatusCodes.BAD_REQUEST, "Commnet does not exist");
-        if (comment.commentedBy.toString() != userId) return "User is not authorized to delete this comment";
-        if (comment.commentedTo.toString() != reelId) return "this reel id does not contain this comment";
+        if (comment.commentedBy.toString() != userId) throw new AppError(StatusCodes.BAD_REQUEST, "User is not authorized to delete this comment");
+        if (comment.commentedTo.toString() != reelId) throw new AppError(StatusCodes.BAD_REQUEST, "this reel id does not contain this comment");
+
 
         const deletedComment = await this.CommentRepository.deleteCommentByID(commentId);
         if (!deletedComment) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "deleting the comment failed");
@@ -187,7 +187,6 @@ export default class ReelsService implements IReelService {
     }
 
     async replyToComment({ userId, commentId, commentText, reelId }: { userId: string; commentId: string; commentText: string; reelId: string }): Promise<IReelsCommentDocument | string | null> {
-        console.log(reelId);
 
         const reel = await this.ReelRepository.findReelById(reelId);
         if (!reel) throw new AppError(StatusCodes.BAD_REQUEST,"either reelId is not valid or the reel does not exist");

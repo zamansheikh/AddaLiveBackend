@@ -1,4 +1,4 @@
-import { IReelReactionEntity } from "../../../entities/reel_reaction_entitiy_interface";
+import { IReelReactionEntity } from "../../../entities/reel/reel_reaction_entitiy_interface";
 import { IReelReactionModel, IReelsReaction } from "../../../models/reels/likes/reels_reaction_interface";
 import { IReelReactionRepository } from "./reel_reaction_interface";
 
