@@ -18,6 +18,10 @@ export enum DatabaseNames {
     PostReactions = "post_reactions",
     PostComments = "post_comments",
     PostCommentReactions = "post_comment_reactions",
+
+    stories = "stories",
+    story_reactions= "story_reactions", 
+
 }
 
 export enum ReelStatus {
@@ -29,6 +33,7 @@ export enum CloudinaryFolder {
   Reels = "reels",
   UserPRofile = "user_profiles",
   PostImages = 'post_images',
-  PostVideos = 'post_videos'
+  PostVideos = 'post_videos',
+  userStories = 'user_stories'
 }
 
