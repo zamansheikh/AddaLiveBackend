@@ -1,0 +1,36 @@
+export const postStructure  = {
+    $project: {
+        _id: 1,
+        ownerId: 1,
+        postCaption: 1,
+        status: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        reactionCount: 1,
+        commentCount: 1,
+        topRank: 1,
+        latestReactions: 1,
+        mediaUrl: 1,
+        myReaction: {
+            reaction_type: 1
+        },
+        userInfo: {
+            _id: 1,
+            name: 1,
+            avatar: 1
+        }
+    }
+};
+
+
+export const postReactionStructure = {
+    reactedBy: 1,
+    reactedTo: 1,
+    reaction_type: 1,
+    createdAt: 1,
+    userInfo: {
+        _id: 1,
+        name: 1,
+        avatar: 1 // or whatever other fields you want
+    }
+}

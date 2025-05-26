@@ -5,6 +5,7 @@ import { QueryBuilder } from "../../core/Utils/query_builder";
 import { IReelEntity } from "../../entities/reel/reel_entity_interface";
 import { DatabaseNames } from "../../core/Utils/enums";
 import mongoose from "mongoose";
+import { reelReactionStructure, reelStructure } from "./reels_reposotory_constants";
 
 export default class ReelsRepository implements IReelRepository {
     ReelModel: IReelModel;
@@ -18,7 +19,6 @@ export default class ReelsRepository implements IReelRepository {
     }
     async getAllReels(query: Record<string, any>) {
         const userId = new mongoose.Types.ObjectId(query.userId);
-        console.log(userId);
 
         const qb = new QueryBuilder(this.ReelModel, query);
         const result = qb.aggregate(
@@ -30,9 +30,7 @@ export default class ReelsRepository implements IReelRepository {
                         foreignField: "_id",
                         as: "userInfo"
                     }
-
                 },
-
                 {
                     $lookup: {
                         from: "reels_reactions",
@@ -61,7 +59,6 @@ export default class ReelsRepository implements IReelRepository {
                 {
                     $unwind: "$userInfo"
                 },
-
                 {
                     $lookup: {
                         from: DatabaseNames.ReelsReactions,
@@ -76,51 +73,19 @@ export default class ReelsRepository implements IReelRepository {
                                     localField: "reactedBy",
                                     foreignField: "_id",
                                     as: "userInfo"
-
                                 },
                             },
                             {
                                 $unwind: "$userInfo"
                             },
                             {
-                                $project: {
-                                    reactedBy: 1,
-                                    reactedTo: 1,
-                                    reaction_type: 1,
-                                    createdAt: 1,
-                                    userInfo: {
-                                        _id: 1,
-                                        name: 1,
-                                        avatar: 1 // or whatever other fields you want
-                                    }
-                                }
+                                $project: reelReactionStructure
                             }
 
                         ], as: "latestReactions"
                     }
                 },
-                {
-                    $project: {
-                        reelCaption: 1,
-                        reelUrl: 1,
-                        createdAt: 1,
-                        reactions: 1,
-                        comments: 1,
-                        video_length: 1,
-                        video_maximum_length: 1,
-                        status: 1,
-                        topRank: 1,
-                        latestReactions: 1,
-                        myReaction: {
-                            reaction_type: 1
-                        },
-                        userInfo: {
-                            _id: 1,
-                            name: 1,
-                            avatar: 1
-                        }
-                    }
-                },
+                reelStructure
             ]
         ).paginate();
         const pagination = await result.countTotal();
