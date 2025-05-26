@@ -35,13 +35,15 @@ export default class PostsCommentRepostitory implements IPostCommentRepository {
         return await this.PostCommentModel.findByIdAndUpdate(comentId, { $inc: payload }, { new: true });
     }
 
-    async getCommentsWithReplies({postId, query}: {postId: string, query: Record<string, any>}) {
+    async getCommentsWithReplies({ postId, query }: { postId: string, query: Record<string, any> }) {
         const qb = new QueryBuilder<IPostCommentDocument>(this.PostCommentModel, query);
 
         const result = qb
             .aggregate(
-                { commentedTo: new Types.ObjectId(postId), parentComment: null },
-                { from: DatabaseNames.PostComments, localField: "_id", foreignField: "parentComment", as: "replies" }
+                [
+                    { $match: { commentedTo: new Types.ObjectId(postId), parentComment: null } },
+                    { $lookup: { from: DatabaseNames.PostComments, localField: "_id", foreignField: "parentComment", as: "replies" } }
+                ]
             )
             .paginate()
         const pagination = await result.countTotal();

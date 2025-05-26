@@ -42,6 +42,7 @@ router.delete("/:postId/comment/delete/:commentId", authenticate, postController
 router.put("/comment/edit", authenticate, validateRequest(PostEditCommentDto), postController.editComment);
 router.post("/comment/react", authenticate, validateRequest(PostReactOnCommentDto), postController.reactOnComment);
 router.post("/comment/reply", authenticate, validateRequest(PostReplyCommentDto),  postController.replyToComment);
+router.post("/:postId/comments", authenticate, validateRequest(PostReplyCommentDto),  postController.getAllComments);
 
 
 export default router;
