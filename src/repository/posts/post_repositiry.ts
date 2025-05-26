@@ -45,7 +45,7 @@ export default class PostRepository implements IPostRepository {
                                     $expr: {
                                         $and: [
                                             { $eq: ["$reactedTo", "$$postId"] },
-                                            { $eq: ["$reactedBy", "$$userId"] }
+                                            { $eq: ["$", "$$userId"] }
                                         ]
                                     }
                                 }

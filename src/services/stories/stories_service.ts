@@ -45,10 +45,16 @@ export default class StoryService implements IStoryService {
             throw new AppError(StatusCodes.BAD_REQUEST, "reaction_type is of wrong type");
         }
 
+        const story = await this.StoryRepository.getStorybyId(storyId);
+
+        if(!story) throw new AppError(StatusCodes.BAD_REQUEST, "The story id is invalid");
+
         const existingReactions = await this.ReactionRepository.findConditionally({
             reactedTo: storyId,
             reactedBy: userId,
         });
+
+      
 
         // If reaction exists
         if (existingReactions && existingReactions.length > 0) {

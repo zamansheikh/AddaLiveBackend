@@ -40,7 +40,9 @@ export default class StoryController {
 
     getAllStories = catchAsync(
         async (req: Request, res: Response) => {
-            const story = await this.StoryService.getAllStory(req.query);
+            let query = req.query;
+            query["userId"] = req.user!.id;
+            const story = await this.StoryService.getAllStory(query);
             sendResponseEnhanced(res, story);
         }
     );

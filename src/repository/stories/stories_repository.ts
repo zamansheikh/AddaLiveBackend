@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+import { DatabaseNames } from "../../core/Utils/enums";
 import { IPagination, QueryBuilder } from "../../core/Utils/query_builder";
 import { IStory, IStoryDocument, IStoryModel } from "../../entities/storeis/IStories";
 import { IStoryReaction, IStoryReactionModel } from "../../entities/storeis/story_reaction_interface";
@@ -29,8 +31,64 @@ class StoriesRepository implements IStoryRepository {
     }
 
     async getAllStories(query: Record<string, any>): Promise<{ pagination: IPagination, data: IStoryDocument[] } | null> {
+        const userId = new mongoose.Types.ObjectId(query.userId);
         const qb = new QueryBuilder(this.StoryModel, query);
-        const res = qb.sort().paginate();
+        const res = qb.aggregate(
+            [
+                {
+                    $lookup: {
+                        from: DatabaseNames.User,
+                        localField: "ownerId",
+                        foreignField: "_id",
+                        as: "userInfo",
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "story_reactions",
+                        let: { userId: userId, storyId: "$_id" },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $and: [
+                                            { $eq: ["$reactedTo", "$$storyId"] },
+                                            { $eq: ["$reactedBy", "$$userId"] }
+                                        ]
+                                    }
+                                }
+                            },
+
+                        ],
+                        as: "myReaction",
+                    }
+                },
+                { $unwind: "$userInfo" },
+                {
+                    $unwind: {
+                        path: "$myReaction",
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        ownerId: 1,
+                        mediaUrl: 1,
+                        reactionCount: 1,
+                        createdAt: 1,
+                        myReaction: {
+                            reaction_type: 1
+                        },
+                        userInfo: {
+                            _id: 1,
+                            name: 1,
+                            avatar: 1
+                        }
+                    }
+                }
+            ]
+        ).paginate();
 
         const pagination = await res.countTotal();
         const data = await res.exec();
