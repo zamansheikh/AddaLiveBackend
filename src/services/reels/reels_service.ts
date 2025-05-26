@@ -40,7 +40,6 @@ export default class ReelsService implements IReelService {
     }
 
     async getAllReel(query: Record<string, any>) {
-
         return await this.ReelRepository.getAllReels(query);
     }
 
@@ -65,7 +64,6 @@ export default class ReelsService implements IReelService {
 
             throw new AppError(StatusCodes.BAD_REQUEST, "reaction_type is of wrong type");
         }
-
         const existingReactions = await this.ReactionRepository.findReelReactionsConditionally({
             reactedTo: reelId,
             reactedBy: userID,

@@ -10,7 +10,7 @@ export enum ReactionType {
 export enum DatabaseNames {
     User = "users",
     Reels = "reels",
-    ReelsReactions = "reels_reactions",
+    ReelsReactions = "reels_reactions", 
     ReelsComments = "reels_comments",
     Reels_comment_reaction = "reels_comments_reactions",
 

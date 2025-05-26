@@ -52,7 +52,7 @@ export class QueryBuilder<T> {
         return this;
     }
     paginate() {
-        const limit = Number(this.query?.limit || 9999);
+        const limit = Number(this.query?.limit || 10);
         const page = Number(this.query?.page || 1);
         const skip = (page - 1) * limit;
 
@@ -65,12 +65,9 @@ export class QueryBuilder<T> {
         return this;
     }
 
-    aggregate(match: PipelineStage.Match["$match"], lookup: PipelineStage.Lookup["$lookup"]) {
+    aggregate(initialPipeline: PipelineStage[]) {
         this.useAggregate = true;
-        this.aggregatePipeline = [
-            { $match: match },
-            { $lookup: lookup }
-        ];
+        this.aggregatePipeline = initialPipeline;
         return this;
     }
 
