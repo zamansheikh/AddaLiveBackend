@@ -3,9 +3,16 @@ import { IFriendship, IFriendshipDocument } from "../../entities/friendship/frie
 
 export default interface IFriendshipRepository {
     createFriendRequest(friendship: IFriendship): Promise<IFriendshipDocument | null>;
+
     updateFriendRequsetStatus(id: string, status:FriendshipStatus): Promise<IFriendshipDocument | null>;
+
     deleteFriendship(id: string): Promise<IFriendshipDocument | null>;
+
     getRequestLists(userId:string, requestType: RequestTypes): Promise<IFriendshipDocument[] | null>;
+
     getFriendList(userId:string): Promise<IFriendshipDocument[] | null>;
+
     getMutalFriends(user1:string, user2: string): Promise<IFriendshipDocument[] | null>;
+
+    getRequestConditionally(condition: Record<string, any>): Promise<IFriendshipDocument[] | null>;
 }

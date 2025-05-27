@@ -12,11 +12,12 @@ class FriendshipRepository implements IFriendshipRepository {
 
 
     async createFriendRequest(friendship: IFriendship): Promise<IFriendshipDocument | null> {
-        return null;
+        const friendReq = new this.friendsModel(friendship);
+        return await friendReq.save();
     }
 
     async deleteFriendship(id: string): Promise<IFriendshipDocument | null> {
-        return null;
+        return await this.friendsModel.findByIdAndDelete(id);
     }
 
     async getFriendList(userId: string): Promise<IFriendshipDocument[] | null> {
@@ -33,6 +34,10 @@ class FriendshipRepository implements IFriendshipRepository {
 
     async updateFriendRequsetStatus(id: string, status: FriendshipStatus): Promise<IFriendshipDocument | null> {
         return null;
+    }
+
+    async getRequestConditionally(condition: Record<string, any>): Promise<IFriendshipDocument[] | null> {
+        return await this.friendsModel.find(condition);
     }
 
 }
