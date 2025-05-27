@@ -1,4 +1,4 @@
-import { Model, Types } from "mongoose";
+import { Document, Model, Types } from "mongoose";
 
 export interface IStoryReaction {
     reactedBy: Types.ObjectId;
@@ -11,4 +11,4 @@ export interface IStoryReactionDocument extends IStoryReaction, Document {
     updatedAt: Date;
 }
 
-export interface IStoryReactionModel extends Model<IStoryReactionDocument> { };
+export interface IStoryReactionModel extends Model<IStoryReactionDocument> {};

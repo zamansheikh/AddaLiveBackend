@@ -75,9 +75,10 @@ export default class PostService implements IPostService {
 
     async reactOnPosts({ postId, reaction_type, userID }: { postId: string; reaction_type: string; userID: string; }): Promise<IPostDocument | IPostsReactionDocument | null> {
         if (!Object.values(ReactionType).includes(reaction_type as ReactionType)) {
-
             throw new AppError(StatusCodes.BAD_REQUEST, "reaction_type is of wrong type");
         }
+        const post = await this.PostRepository.findPostById(postId);
+        if (!post) throw new AppError(StatusCodes.BAD_REQUEST, "the post id is not valid");
 
         const existingReactions = await this.ReactionRepository.findPostReactionsConditionally({
             reactedTo: postId,
@@ -119,7 +120,7 @@ export default class PostService implements IPostService {
     async commnetOnPosts({ postId, commentText, userID }: { postId: string; commentText: string; userID: string; }): Promise<IPostDocument | IPostCommentDocument | null> {
         const reel = await this.PostRepository.findPostById(postId);
         if (!reel) throw new AppError(StatusCodes.BAD_REQUEST, "either wrong post Id, or does not exist");
-console.log(postId, commentText, userID);
+        console.log(postId, commentText, userID);
 
         const comment = await this.CommentRepository.create({ commentedBy: new Types.ObjectId(userID), article: commentText, commentedTo: new Types.ObjectId(postId) } as IPostComment);
         if (!comment) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "failed creating comment");

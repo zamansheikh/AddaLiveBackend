@@ -20,8 +20,6 @@ export default class PostRepository implements IPostRepository {
     async getAllPosts(query: Record<string, any>) {
         const userId = new mongoose.Types.ObjectId(query.userId);
 
-        console.log(userId);
-
 
         const qb = new QueryBuilder(this.PostModel, query);
 

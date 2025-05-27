@@ -1,11 +1,10 @@
-import { IStoryReaction } from "../../../entities/storeis/story_reaction_interface";
+import { IStoryReaction, IStoryReactionDocument } from "../../../entities/storeis/story_reaction_interface";
 
 
 export interface IStoryReactionRepository {
-    create(entity: IStoryReaction): Promise<IStoryReaction | null>;
-    delete(id: string): Promise<IStoryReaction | null>;
-    findConditionally(condition: Record<string, any>): Promise<IStoryReaction[] | null>;
-    
-    findAndUpdate(id: string,  payload: Record<string, any>): Promise<IStoryReaction | null>;
-    findById(id: string): Promise<IStoryReaction | null>;
+    create(entity: IStoryReaction): Promise<IStoryReactionDocument | null>;
+    delete(id: string): Promise<IStoryReactionDocument | null>;
+    findConditionally(condition: Record<string, any>): Promise<IStoryReactionDocument[] | null>;
+    findAndUpdate(id: string,  payload: Record<string, any>): Promise<IStoryReactionDocument | null>;
+    findById(id: string): Promise<IStoryReactionDocument | null>;
 }   
