@@ -20,7 +20,9 @@ export default class ReelController {
 
     getAllReels = catchAsync(
         async (req: Request, res: Response) => {
-            const allReels = await this.ReelService.getAllReel(req.query);
+            let query = req.query;
+            query["userId"] = req.user!.id;
+            const allReels = await this.ReelService.getAllReel(query);
             sendResponseEnhanced(res, allReels);
         }
     );

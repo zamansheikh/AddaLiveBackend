@@ -10,6 +10,8 @@ import AuthRouter from "./router/auth_routes";
 import AdminRouter from "./router/admin_routes";
 import ReelsRouter from "./router/reels_routes";
 import PostRouter from "./router/post_routes";
+import StoryRouter from "./router/story_routes";
+
 import globalErrorHandler from './core/errors/global_error_handlar';
 
 
@@ -40,6 +42,7 @@ app.use("/api/auth", AuthRouter);
 app.use("/api/admin", AdminRouter);
 app.use("/api/reels", ReelsRouter);
 app.use("/api/posts", PostRouter);
+app.use("/api/stories", StoryRouter);
 
 app.use(globalErrorHandler);
 

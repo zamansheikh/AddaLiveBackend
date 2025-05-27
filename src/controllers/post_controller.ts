@@ -24,7 +24,9 @@ export default class PostController {
 
     getAllPosts = catchAsync(
         async (req: Request, res: Response) => {
-            const allPosts = await this.PostService.getAllPost(req.query);
+            let query = req.query;
+            query["userId"] = req.user!.id;
+            const allPosts = await this.PostService.getAllPost(query);
             sendResponseEnhanced(res, allPosts);
         }
     );

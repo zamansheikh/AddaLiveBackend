@@ -39,8 +39,8 @@ export default class ReelsCommentRepostitory implements IReelCommentRepository {
 
         const result = qb
             .aggregate(
-                { commentedTo: new Types.ObjectId(reelId), parentComment: null },
-                { from: DatabaseNames.ReelsComments, localField: "_id", foreignField: "parentComment", as: "replies" }
+                [{$match: { commentedTo: new Types.ObjectId(reelId), parentComment: null }},
+               {$lookup:  { from: DatabaseNames.ReelsComments, localField: "_id", foreignField: "parentComment", as: "replies" }}]
             )
             .paginate()
         const pagination = await result.countTotal();

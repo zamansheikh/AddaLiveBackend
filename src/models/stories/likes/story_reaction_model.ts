@@ -1,8 +1,9 @@
-import mongoose from "mongoose";
-import { IPostsReaction, IPostsReactionDocument } from "../../../entities/posts/posts_reaction_interface";
-import { DatabaseNames, ReactionType } from "../../../core/Utils/enums";
 
-const postReactionSchema = new mongoose.Schema<IPostsReactionDocument>({
+import mongoose from "mongoose";
+import { DatabaseNames, ReactionType } from "../../../core/Utils/enums";
+import { IStoryReactionDocument } from "../../../entities/storeis/story_reaction_interface";
+
+const storyReactionSchema = new mongoose.Schema<IStoryReactionDocument>({
     reactedBy: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
@@ -16,10 +17,9 @@ const postReactionSchema = new mongoose.Schema<IPostsReactionDocument>({
         default: ReactionType.Like,
         enum: ReactionType,
     }
-}, {
-    timestamps: true,
-});
 
-const PostReactions = mongoose.model(DatabaseNames.PostReactions, postReactionSchema, DatabaseNames.PostReactions);
+}, { timestamps: true });
 
-export default PostReactions;
+const StoryReaction = mongoose.model(DatabaseNames.story_reactions, storyReactionSchema, DatabaseNames.story_reactions);
+
+export default StoryReaction;
