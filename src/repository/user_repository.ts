@@ -1,7 +1,6 @@
 import mongoose, { mongo } from "mongoose";
-import { QueryBuilder } from "../core/Utils/query_builder";
 import { IUserEntity } from "../entities/user_entity_interface";
-import { IUserDocument, IUserModel } from "../models/user/user_model_interface";
+import { IUserModel } from "../models/user/user_model_interface";
 import { IUserRepository } from "./user_repository_interface";
 import { DatabaseNames } from "../core/Utils/enums";
 
