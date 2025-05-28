@@ -29,7 +29,18 @@ class FriendshipRepository implements IFriendshipRepository {
     }
 
     async getRequestLists(userId: string, requestType: RequestTypes): Promise<IFriendshipDocument[] | null> {
-        return null;
+        let query: Record<string, any> = [];
+
+        if (requestType == RequestTypes.sent) {
+            query = { sender: userId };
+        } else {
+            query = { reciever: userId };
+        }
+
+        console.log(query);
+        
+
+        return await this.friendsModel.find(query);
     }
 
     async updateFriendRequsetStatus(id: string, status: FriendshipStatus): Promise<IFriendshipDocument | null> {

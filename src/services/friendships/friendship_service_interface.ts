@@ -7,7 +7,7 @@ export default interface IFriendshipService {
 
     acceptFriendRequest(body: { myId: Types.ObjectId, userId: Types.ObjectId }): Promise<IFriendshipDocument | null>;
 
-    removeFromFriend(body: IFriendship): Promise<IFriendshipDocument | null>;
+    removeFromFriend(body: { myId: Types.ObjectId, userId: Types.ObjectId }): Promise<IFriendshipDocument | null>;
 
     deleteFriendRequest(body: { myId: Types.ObjectId, userId: Types.ObjectId }): Promise<IFriendshipDocument | null>;
 

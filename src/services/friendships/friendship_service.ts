@@ -4,7 +4,7 @@ import { IFriendship, IFriendshipDocument } from "../../entities/friendship/frie
 import IFriendshipRepository from "../../repository/friendships/friendship_repository_interface";
 import IFriendshipService from "./friendship_service_interface";
 import { Types } from "mongoose";
-import { FriendshipStatus } from "../../core/Utils/enums";
+import { FriendshipStatus, RequestTypes } from "../../core/Utils/enums";
 
 
 class FriendshipService implements IFriendshipService {
@@ -17,7 +17,8 @@ class FriendshipService implements IFriendshipService {
     async sendFriendRequest(body: IFriendship): Promise<IFriendshipDocument | null> {
         const prevDoc = await this.friendRepo.getRequestConditionally({ sender: body.sender, reciever: body.reciever });
         if (prevDoc && prevDoc.length > 0) {
-            if(prevDoc[0].sender.toString() != body.sender.toString()) throw new AppError(StatusCodes.BAD_REQUEST, "user is not a sender to the existing document the receiver is");
+            if (prevDoc[0].sender.toString() != body.sender.toString()) throw new AppError(StatusCodes.BAD_REQUEST, "user is not a sender to the existing document the receiver is");
+            if (prevDoc[0].status == FriendshipStatus.rejected) throw new AppError(StatusCodes.BAD_REQUEST, "You have already been rejected");
             return prevDoc[0];
         }
         const newRequest = await this.friendRepo.createFriendRequest(body);
@@ -34,9 +35,12 @@ class FriendshipService implements IFriendshipService {
 
         if (prevDoc && prevDoc.length == 0) throw new AppError(StatusCodes.BAD_REQUEST, "No document found");
         if (prevDoc[0].reciever.toString() != body.myId.toString()) throw new AppError(StatusCodes.BAD_REQUEST, "this user is not the reciever of the request");
+        if (prevDoc[0].status == FriendshipStatus.rejected) throw new AppError(StatusCodes.BAD_REQUEST, "The request has already been rejected");
 
         const accepted = await this.friendRepo.updateFriendRequsetStatus((prevDoc[0]._id as Types.ObjectId).toString(), FriendshipStatus.accepted);
         if (!accepted) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Updating status to accepted failed");
+
+        // TODO: send the reciever a notificaiton saying his friend request has been accepted
 
         return accepted;
     }
@@ -44,7 +48,7 @@ class FriendshipService implements IFriendshipService {
     async cancelFriendRequest(body: IFriendship): Promise<IFriendshipDocument | null> {
         const prevDoc = await this.friendRepo.getRequestConditionally({ sender: body.sender, reciever: body.reciever });
         if (!prevDoc || (prevDoc && prevDoc.length == 0)) throw new AppError(StatusCodes.BAD_REQUEST, "The request document does not exist");
-        if(prevDoc[0].sender.toString() != body.sender.toJSON()) throw new AppError(StatusCodes.BAD_REQUEST, "this user is not the sender of the request");
+        if (prevDoc[0].sender.toString() != body.sender.toJSON()) throw new AppError(StatusCodes.BAD_REQUEST, "this user is not the sender of the request");
 
         const cancelledReq = await this.friendRepo.deleteFriendship(prevDoc[0]._id as string);
         if (!cancelledReq) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "removing the document from db failed");
@@ -77,16 +81,21 @@ class FriendshipService implements IFriendshipService {
     }
 
     async recievedRequsetLists(userId: string): Promise<IFriendshipDocument[] | null> {
-        return null;
+         return await this.friendRepo.getRequestLists(userId, RequestTypes.recieved);
     }
 
-    async removeFromFriend(body: IFriendship): Promise<IFriendshipDocument | null> {
-        return null;
+    async removeFromFriend(body: { myId: Types.ObjectId, userId: Types.ObjectId }): Promise<IFriendshipDocument | null> {
+        const prevDoc = await this.friendRepo.getRequestConditionally({ sender: body.myId, reciever: body.userId });
+        if (prevDoc && prevDoc.length == 0) throw new AppError(StatusCodes.BAD_REQUEST, "No document found");
+        if (prevDoc[0].status == FriendshipStatus.rejected || prevDoc[0].status == FriendshipStatus.pending) throw new AppError(StatusCodes.BAD_REQUEST, "These users are not friends yet");
+        const unfriend = await this.friendRepo.deleteFriendship((prevDoc[0]._id as Types.ObjectId).toString());
+        if (!unfriend) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Unfriending failed");
+        return unfriend;
     }
 
 
     async sentRequsetLists(userId: string): Promise<IFriendshipDocument[] | null> {
-        return null;
+        return await this.friendRepo.getRequestLists(userId, RequestTypes.sent);
     }
 
 }

@@ -22,7 +22,7 @@ router.put("/delete-request/", authenticate,  validateRequest(FriendRequestDto),
 router.delete("/remove-friend/:userId", authenticate, friendController.removeFromFriend);
 
 router.get("/all-sent-requests", authenticate, friendController.getSentFriendRequestList);
-router.get("/all-recieved_requests", authenticate, friendController.getRecievedFriendRequestList);
+router.get("/all-recieved-requests", authenticate, friendController.getRecievedFriendRequestList);
 
 
 
