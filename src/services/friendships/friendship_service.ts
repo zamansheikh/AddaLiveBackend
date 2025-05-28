@@ -73,15 +73,15 @@ class FriendshipService implements IFriendshipService {
     }
 
     async myFriendLists(userId: string): Promise<IFriendshipDocument[] | null> {
-        return null;
+        return await this.friendRepo.getFriendList(userId);
     }
 
     async othersFriendLists(userId: string): Promise<IFriendshipDocument[] | null> {
-        return null;
+        return await this.friendRepo.getFriendList(userId);
     }
 
     async recievedRequsetLists(userId: string): Promise<IFriendshipDocument[] | null> {
-         return await this.friendRepo.getRequestLists(userId, RequestTypes.recieved);
+        return await this.friendRepo.getRequestLists(userId, RequestTypes.recieved);
     }
 
     async removeFromFriend(body: { myId: Types.ObjectId, userId: Types.ObjectId }): Promise<IFriendshipDocument | null> {

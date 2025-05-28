@@ -21,7 +21,13 @@ class FriendshipRepository implements IFriendshipRepository {
     }
 
     async getFriendList(userId: string): Promise<IFriendshipDocument[] | null> {
-        return null;
+        return await this.friendsModel.find({
+            $or: [
+                { sender: userId },
+                { reciever: userId }, // corrected spelling
+            ],
+            status: FriendshipStatus.accepted
+        });
     }
 
     async getMutalFriends(user1: string, user2: string): Promise<IFriendshipDocument[] | null> {
@@ -37,9 +43,7 @@ class FriendshipRepository implements IFriendshipRepository {
             query = { reciever: userId };
         }
 
-        console.log(query);
-        
-
+        query["status"] = FriendshipStatus.pending;
         return await this.friendsModel.find(query);
     }
 

@@ -75,14 +75,18 @@ class FriendshipController {
 
     getMyFriendList = catchAsync(
         async (req: Request, res: Response) => {
-
+            const { id } = req.user!;
+            const myFriends = await this.service.myFriendLists(id);
+            sendResponseEnhanced(res, myFriends);
 
         }
     );
 
     getOthersFriendList = catchAsync(
         async (req: Request, res: Response) => {
-
+            const { userId } = req.params!;
+            const myFriends = await this.service.othersFriendLists(userId);
+            sendResponseEnhanced(res, myFriends);
 
         }
     );

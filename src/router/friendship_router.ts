@@ -24,6 +24,9 @@ router.delete("/remove-friend/:userId", authenticate, friendController.removeFro
 router.get("/all-sent-requests", authenticate, friendController.getSentFriendRequestList);
 router.get("/all-recieved-requests", authenticate, friendController.getRecievedFriendRequestList);
 
+router.get("/get-my-friends", authenticate, friendController.getMyFriendList)
+router.get("/get-friends/:userId", authenticate, friendController.getOthersFriendList);
+
 
 
 
