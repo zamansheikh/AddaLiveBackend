@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import catchAsync from "../core/Utils/catch_async";
-import { IStoryService } from "../services/stories/story_service_repository";
+import { IStoryService } from "../services/stories/story_service_interface";
 import { sendResponseEnhanced } from "../core/Utils/send_response";
 
 export default class StoryController {

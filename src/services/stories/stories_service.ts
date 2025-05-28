@@ -5,7 +5,7 @@ import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary"
 import { IStoryDocument } from "../../entities/storeis/IStories";
 import { IStoryReactionRepository } from "../../repository/stories/likes/story_reaction_repository_interface";
 import { IStoryRepository } from "../../repository/stories/story_repository_interface";
-import { IStoryService } from "./story_service_repository";
+import { IStoryService } from "./story_service_interface";
 import AppError from "../../core/errors/app_errors";
 import { StatusCodes } from "http-status-codes";
 import { IStoryReaction, IStoryReactionDocument } from "../../entities/storeis/story_reaction_interface";
@@ -39,14 +39,11 @@ export default class StoryService implements IStoryService {
         return await this.StoryRepository.getAllStories(query);
     }
 
-    async likeOnStory({ reaction_type, storyId, userId }: { reaction_type: string; userId: string; storyId: string; }): Promise<IStoryDocument | IStoryReaction | null> {
+    async likeOnStory({ reaction_type, storyId, userId }: { reaction_type: string; userId: string; storyId: string; }): Promise<IStoryDocument | IStoryReactionDocument | null> {
         if (!Object.values(ReactionType).includes(reaction_type as ReactionType)) {
-
             throw new AppError(StatusCodes.BAD_REQUEST, "reaction_type is of wrong type");
         }
-
         const story = await this.StoryRepository.getStorybyId(storyId);
-
         if(!story) throw new AppError(StatusCodes.BAD_REQUEST, "The story id is invalid");
 
         const existingReactions = await this.ReactionRepository.findConditionally({
