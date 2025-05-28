@@ -55,7 +55,110 @@ class FriendshipRepository implements IFriendshipRepository {
     }
 
     async getMutalFriends(user1: string, user2: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IFriendshipDocument[] } | null> {
-        return null;
+        const userA = new mongoose.Types.ObjectId(user1);
+        const userB = new mongoose.Types.ObjectId(user2);
+
+
+        const qb = new QueryBuilder(this.friendsModel, query);
+        const result = qb.aggregate([
+            {
+                $match: {
+                    status: FriendshipStatus.accepted
+                }
+            },
+
+            {
+                $facet: {
+                    userAFriends: [
+                        {
+                            $match: {
+                                $or: [
+                                    { sender: userA },
+                                    { reciever: userA }
+                                ]
+                            }
+                        },
+                        {
+                            $project: {
+                                friend: {
+                                    $cond: [
+                                        { $eq: ["$sender", userA] },
+                                        "$reciever",
+                                        "$sender"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $match: {
+                                friend: { $ne: userB }
+                            }
+                        }
+                    ],
+                    userBFriends: [
+                        {
+                            $match: {
+                                $or: [
+                                    { sender: userB },
+                                    { reciever: userB }
+                                ]
+                            }
+                        },
+                        {
+                            $project: {
+                                friend: {
+                                    $cond: [
+                                        { $eq: ["$sender", userB] },
+                                        "$reciever",
+                                        "$sender"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $match: {
+                                friend: { $ne: userA }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                $project: {
+                    mutualFriends: {
+                        $setIntersection: [
+                            "$userAFriends.friend",
+                            "$userBFriends.friend"
+                        ]
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: DatabaseNames.User, // your actual users collection name
+                    localField: "mutualFriends",
+                    foreignField: "_id",
+                    as: "mutualFriendDetails"
+                }
+            },
+            {
+                $unwind: "$mutualFriends"
+            },
+            {
+                $unwind: "$mutualFriendDetails"
+            },
+            {
+                $group: {
+                    _id: null,
+                    mutualFriends: { $push: "$mutualFriendDetails" }
+                }
+            }
+
+        ]).paginate();
+
+        const pagination = await result.countTotal();
+        const data = await result.exec();
+        return { pagination, data };
     }
 
     async getRequestLists(userId: string, requestType: RequestTypes, query: Record<string, any>): Promise<{ pagination: IPagination, data: IFriendshipDocument[] } | null> {

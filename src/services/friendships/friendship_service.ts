@@ -72,7 +72,7 @@ class FriendshipService implements IFriendshipService {
 
     async getMutualFriends(user1: string, user2: string, query: Record<string, any>): Promise<{pagination: IPagination, data: IFriendshipDocument[]} | null> {
         const mutualFriends = await this.friendRepo.getMutalFriends(user1, user2, query);
-        return null;
+        return mutualFriends;
     }
 
     async myFriendLists(userId: string, query: Record<string, any>): Promise<{pagination: IPagination, data: IFriendshipDocument[]} | null> {
