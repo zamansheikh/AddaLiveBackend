@@ -1,6 +1,6 @@
 import { FriendshipStatus, RequestTypes } from "../../core/Utils/enums";
-import {  IFriendship, IFriendshipDocument, IFriendshipModel } from "../../entities/friendship/friendship_model_interface";
-import IFriendshipRepository from "./friendship_repository_interface";
+import { IFriendship, IFriendshipDocument, IFriendshipModel } from "../../entities/friendship/friendship_model_interface";
+import IFriendshipRepository, { ICondition } from "./friendship_repository_interface";
 
 class FriendshipRepository implements IFriendshipRepository {
 
@@ -33,11 +33,17 @@ class FriendshipRepository implements IFriendshipRepository {
     }
 
     async updateFriendRequsetStatus(id: string, status: FriendshipStatus): Promise<IFriendshipDocument | null> {
-        return null;
+        return await this.friendsModel.findByIdAndUpdate(id, { status }, { new: true });
     }
 
-    async getRequestConditionally(condition: Record<string, any>): Promise<IFriendshipDocument[] | null> {
-        return await this.friendsModel.find(condition);
+    async getRequestConditionally(condition: ICondition): Promise<IFriendshipDocument[]> {
+        const searchCondition = {
+            $or: [
+                { sender: condition.sender, reciever: condition.reciever, },
+                { sender: condition.reciever, reciever: condition.sender, }
+            ]
+        }
+        return await this.friendsModel.find(searchCondition);
     }
 
 }

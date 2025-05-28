@@ -13,9 +13,10 @@ class FriendshipController {
 
     sendFriendRequest = catchAsync(
         async (req: Request, res: Response) => {
-            const { recieverId } = req.body;
+            const { userId } = req.body;
+
             const { id } = req.user!;
-            const friendship = await this.service.sendFriendRequest({ reciever: new Types.ObjectId(recieverId as string), sender: new Types.ObjectId(id) });
+            const friendship = await this.service.sendFriendRequest({ reciever: new Types.ObjectId(userId as string), sender: new Types.ObjectId(id) });
             sendResponseEnhanced(res, friendship);
         }
     );
@@ -23,15 +24,19 @@ class FriendshipController {
 
     acceptFriendRequest = catchAsync(
         async (req: Request, res: Response) => {
-
-
+            const { userId } = req.body;
+            const { id } = req.user!;
+            const acceptedRequest = await this.service.acceptFriendRequest({ userId: new Types.ObjectId(userId), myId: new Types.ObjectId(id) });
+            sendResponseEnhanced(res, acceptedRequest);
         }
     );
 
     deleteFriendRequest = catchAsync(
         async (req: Request, res: Response) => {
-
-
+            const { userId } = req.body;
+            const { id } = req.user!;
+            const acceptedRequest = await this.service.deleteFriendRequest({ userId: new Types.ObjectId(userId), myId: new Types.ObjectId(id) });
+            sendResponseEnhanced(res, acceptedRequest);
         }
     );
 

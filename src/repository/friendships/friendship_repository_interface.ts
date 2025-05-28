@@ -1,5 +1,12 @@
+import { Types } from "mongoose";
 import { FriendshipStatus, RequestTypes } from "../../core/Utils/enums";
 import { IFriendship, IFriendshipDocument } from "../../entities/friendship/friendship_model_interface";
+
+
+export interface ICondition {
+    reciever: Types.ObjectId,
+    sender: Types.ObjectId
+}
 
 export default interface IFriendshipRepository {
     createFriendRequest(friendship: IFriendship): Promise<IFriendshipDocument | null>;
@@ -14,5 +21,5 @@ export default interface IFriendshipRepository {
 
     getMutalFriends(user1:string, user2: string): Promise<IFriendshipDocument[] | null>;
 
-    getRequestConditionally(condition: Record<string, any>): Promise<IFriendshipDocument[] | null>;
+    getRequestConditionally(condition: ICondition): Promise<IFriendshipDocument[]>;
 }
