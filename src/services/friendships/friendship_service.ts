@@ -5,6 +5,7 @@ import IFriendshipRepository from "../../repository/friendships/friendship_repos
 import IFriendshipService from "./friendship_service_interface";
 import { Types } from "mongoose";
 import { FriendshipStatus, RequestTypes } from "../../core/Utils/enums";
+import { IPagination } from "../../core/Utils/query_builder";
 
 
 class FriendshipService implements IFriendshipService {
@@ -19,6 +20,7 @@ class FriendshipService implements IFriendshipService {
         if (prevDoc && prevDoc.length > 0) {
             if (prevDoc[0].sender.toString() != body.sender.toString()) throw new AppError(StatusCodes.BAD_REQUEST, "user is not a sender to the existing document the receiver is");
             if (prevDoc[0].status == FriendshipStatus.rejected) throw new AppError(StatusCodes.BAD_REQUEST, "You have already been rejected");
+            if (prevDoc[0].status == FriendshipStatus.accepted) throw new AppError(StatusCodes.BAD_REQUEST, "you are already friends");
             return prevDoc[0];
         }
         const newRequest = await this.friendRepo.createFriendRequest(body);
@@ -68,20 +70,21 @@ class FriendshipService implements IFriendshipService {
         return rejected;
     }
 
-    async getMutualFriends(user1: string, user2: string): Promise<IFriendshipDocument[] | null> {
+    async getMutualFriends(user1: string, user2: string, query: Record<string, any>): Promise<{pagination: IPagination, data: IFriendshipDocument[]} | null> {
+        const mutualFriends = await this.friendRepo.getMutalFriends(user1, user2, query);
         return null;
     }
 
-    async myFriendLists(userId: string): Promise<IFriendshipDocument[] | null> {
-        return await this.friendRepo.getFriendList(userId);
+    async myFriendLists(userId: string, query: Record<string, any>): Promise<{pagination: IPagination, data: IFriendshipDocument[]} | null> {
+        return await this.friendRepo.getFriendList(userId, query);
     }
 
-    async othersFriendLists(userId: string): Promise<IFriendshipDocument[] | null> {
-        return await this.friendRepo.getFriendList(userId);
+    async othersFriendLists(userId: string, query: Record<string, any>): Promise<{pagination: IPagination, data: IFriendshipDocument[]} | null> {
+        return await this.friendRepo.getFriendList(userId, query);
     }
 
-    async recievedRequsetLists(userId: string): Promise<IFriendshipDocument[] | null> {
-        return await this.friendRepo.getRequestLists(userId, RequestTypes.recieved);
+    async recievedRequsetLists(userId: string, query: Record<string, any>): Promise<{pagination: IPagination, data: IFriendshipDocument[]} | null> {
+        return await this.friendRepo.getRequestLists(userId, RequestTypes.recieved, query);
     }
 
     async removeFromFriend(body: { myId: Types.ObjectId, userId: Types.ObjectId }): Promise<IFriendshipDocument | null> {
@@ -94,8 +97,8 @@ class FriendshipService implements IFriendshipService {
     }
 
 
-    async sentRequsetLists(userId: string): Promise<IFriendshipDocument[] | null> {
-        return await this.friendRepo.getRequestLists(userId, RequestTypes.sent);
+    async sentRequsetLists(userId: string, query: Record<string, any>): Promise<{pagination: IPagination, data: IFriendshipDocument[]} | null> {
+        return await this.friendRepo.getRequestLists(userId, RequestTypes.sent, query);
     }
 
 }

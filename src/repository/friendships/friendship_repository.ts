@@ -1,6 +1,9 @@
-import { FriendshipStatus, RequestTypes } from "../../core/Utils/enums";
+import mongoose from "mongoose";
+import { DatabaseNames, FriendshipStatus, RequestTypes } from "../../core/Utils/enums";
+import { IPagination, QueryBuilder } from "../../core/Utils/query_builder";
 import { IFriendship, IFriendshipDocument, IFriendshipModel } from "../../entities/friendship/friendship_model_interface";
 import IFriendshipRepository, { ICondition } from "./friendship_repository_interface";
+import { friendShipUserLookUp, friendUnwind, requestListStructure } from "./friendship_constant";
 
 class FriendshipRepository implements IFriendshipRepository {
 
@@ -20,31 +23,71 @@ class FriendshipRepository implements IFriendshipRepository {
         return await this.friendsModel.findByIdAndDelete(id);
     }
 
-    async getFriendList(userId: string): Promise<IFriendshipDocument[] | null> {
-        return await this.friendsModel.find({
-            $or: [
-                { sender: userId },
-                { reciever: userId }, // corrected spelling
-            ],
-            status: FriendshipStatus.accepted
-        });
+    async getFriendList(id: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IFriendshipDocument[] } | null> {
+        const userId = new mongoose.Types.ObjectId(id);
+        const qb = new QueryBuilder(this.friendsModel, query);
+
+        const result = qb.aggregate(
+            [
+                {
+                    $match: {
+                        $or: [
+                            { sender: userId },
+                            { reciever: userId }, // corrected spelling
+                        ],
+                        status: FriendshipStatus.accepted
+                    }
+                },
+                friendShipUserLookUp("sender", "senderInfo"),
+                friendShipUserLookUp("reciever", "recieverInfo"),
+                friendUnwind("senderInfo"),
+                friendUnwind("recieverInfo"),
+                requestListStructure
+
+            ]
+        ).paginate();
+
+
+        const data = await result.exec();
+        const pagination = await result.countTotal();
+
+        return { pagination, data };
     }
 
-    async getMutalFriends(user1: string, user2: string): Promise<IFriendshipDocument[] | null> {
+    async getMutalFriends(user1: string, user2: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IFriendshipDocument[] } | null> {
         return null;
     }
 
-    async getRequestLists(userId: string, requestType: RequestTypes): Promise<IFriendshipDocument[] | null> {
-        let query: Record<string, any> = [];
+    async getRequestLists(userId: string, requestType: RequestTypes, query: Record<string, any>): Promise<{ pagination: IPagination, data: IFriendshipDocument[] } | null> {
+        let condition: Record<string, any> = [];
+        console.log(userId);
 
         if (requestType == RequestTypes.sent) {
-            query = { sender: userId };
+            condition = { sender: new mongoose.Types.ObjectId(userId) };
         } else {
-            query = { reciever: userId };
+            condition = { reciever: new mongoose.Types.ObjectId(userId) };
         }
 
-        query["status"] = FriendshipStatus.pending;
-        return await this.friendsModel.find(query);
+        condition["status"] = FriendshipStatus.pending;
+
+        const qb = new QueryBuilder(this.friendsModel, query);
+
+        const result = qb.aggregate(
+            [
+                { $match: condition },
+                friendShipUserLookUp("sender", "senderInfo"),
+                friendShipUserLookUp("reciever", "recieverInfo"),
+                friendUnwind("senderInfo"),
+                friendUnwind("recieverInfo"),
+                requestListStructure
+
+            ]
+        ).paginate();
+
+        const data = await result.exec();
+        const pagination = await result.countTotal();
+
+        return { pagination, data };
     }
 
     async updateFriendRequsetStatus(id: string, status: FriendshipStatus): Promise<IFriendshipDocument | null> {

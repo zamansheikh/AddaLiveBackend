@@ -1,7 +1,11 @@
+import mongoose, { mongo } from "mongoose";
+import { QueryBuilder } from "../core/Utils/query_builder";
 import { IUserEntity } from "../entities/user_entity_interface";
-import { IUserModel } from "../models/user/user_model_interface";
+import { IUserDocument, IUserModel } from "../models/user/user_model_interface";
+import { IUserRepository } from "./user_repository_interface";
+import { DatabaseNames } from "../core/Utils/enums";
 
-export default class UserRepository {
+export default class UserRepository implements IUserRepository {
     UserModel: IUserModel;
     constructor(UserModel: IUserModel) {
         this.UserModel = UserModel;
@@ -19,8 +23,8 @@ export default class UserRepository {
     async findByUID(uid: string) {
         return await this.UserModel.findOne({ uid });
     }
-    
-    async findAllUser(){
+
+    async findAllUser() {
         return await this.UserModel.find();
     }
 
@@ -28,8 +32,68 @@ export default class UserRepository {
         return await this.UserModel.find({ [field]: value });
     }
 
-    async findUserByIdAndUpdate(id:string, payload:Record<string, any>) {
-        return await this.UserModel.findByIdAndUpdate(id, payload, {new:true});
+    async findUserByIdAndUpdate(id: string, payload: Record<string, any>) {
+        return await this.UserModel.findByIdAndUpdate(id, payload, { new: true });
+    }
+
+    async getUserDetails(details: { userId: string; myId: string; }) {
+        console.log(details);
+        const user = await this.UserModel.aggregate([
+            { $match: { _id: new mongoose.Types.ObjectId(details.userId) } },
+            {
+                $lookup: {
+                    from: DatabaseNames.friendships,
+                    let: { userId: "$_id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $or: [
+                                        {
+                                            $and: [
+                                                { $eq: ["$sender", new mongoose.Types.ObjectId(details.myId)] },
+                                                { $eq: ["$reciever", "$$userId"] }
+                                            ]
+                                        },
+                                        {
+                                            $and: [
+                                                { $eq: ["$sender", "$$userId"] },
+                                                { $eq: ["$reciever", new mongoose.Types.ObjectId(details.myId)] }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        { $limit: 1 }
+                    ],
+                    as: "friendshipData"
+                }
+            },
+            {
+                $addFields: {
+                    friendship: {
+                        $cond: [
+                            { $gt: [{ $size: "$friendshipData" }, 0] },
+                            {
+                                $let: {
+                                    vars: { f: { $arrayElemAt: ["$friendshipData", 0] } },
+                                    in: {
+                                        status: "$$f.status",
+                                        isSender: {
+                                            $cond: [{ $eq: ["$$f.sender", new mongoose.Types.ObjectId(details.myId)] }, true, false]
+                                        }
+                                    }
+                                }
+                            },
+                            null
+                        ]
+                    }
+                }
+            },
+            { $project: { friendshipData: 0 } }
+        ]);
+        return user[0] ?? null;
     }
 }
 

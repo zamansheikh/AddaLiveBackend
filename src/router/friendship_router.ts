@@ -27,6 +27,8 @@ router.get("/all-recieved-requests", authenticate, friendController.getRecievedF
 router.get("/get-my-friends", authenticate, friendController.getMyFriendList)
 router.get("/get-friends/:userId", authenticate, friendController.getOthersFriendList);
 
+router.get("/mutual-friends/:userId/", authenticate, friendController.getMutualFriends);
+
 
 
 

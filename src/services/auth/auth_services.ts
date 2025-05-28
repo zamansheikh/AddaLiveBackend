@@ -1,4 +1,6 @@
 
+import { StatusCodes } from "http-status-codes";
+import AppError from "../../core/errors/app_errors";
 import { CloudinaryFolder } from "../../core/Utils/enums";
 import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
 import { IUserEntity } from "../../entities/user_entity_interface";
@@ -16,6 +18,7 @@ export default class AuthService {
         const SECRET = process.env.JWT_SECRET || "jwt_secret";
         if (!existingUser) {
             const newUser = await this.UserRepository.create(UserData);
+            if(!newUser) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "creating the user failed");
             const token = jwt.sign({ id: newUser._id }, SECRET);
             return { user: newUser, token };
         }
@@ -23,8 +26,8 @@ export default class AuthService {
         return { user: existingUser, token };
     }
 
-    async retrieveUserDetails(id: string) {
-        return await this.UserRepository.findUserById(id);
+    async retrieveUserDetails(id: string, myId: string) {
+        return await this.UserRepository.getUserDetails({userId: id, myId});
     }
 
     async updateProfile({ id, profileData, file }: { id: string, profileData: Partial<Record<string, any>>, file?: Express.Multer.File }) {

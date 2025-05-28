@@ -60,7 +60,8 @@ class FriendshipController {
     getSentFriendRequestList = catchAsync(
         async (req: Request, res: Response) => {
             const { id } = req.user!;
-            const allSentRequest = await this.service.sentRequsetLists(id);
+            const query = req.query;
+            const allSentRequest = await this.service.sentRequsetLists(id, query);
             sendResponseEnhanced(res, allSentRequest);
         }
     );
@@ -68,7 +69,8 @@ class FriendshipController {
     getRecievedFriendRequestList = catchAsync(
         async (req: Request, res: Response) => {
             const { id } = req.user!;
-            const allSentRequest = await this.service.recievedRequsetLists(id);
+            const query = req.query;
+            const allSentRequest = await this.service.recievedRequsetLists(id, query);
             sendResponseEnhanced(res, allSentRequest);
         }
     );
@@ -76,7 +78,8 @@ class FriendshipController {
     getMyFriendList = catchAsync(
         async (req: Request, res: Response) => {
             const { id } = req.user!;
-            const myFriends = await this.service.myFriendLists(id);
+            const query = req.query;
+            const myFriends = await this.service.myFriendLists(id, query);
             sendResponseEnhanced(res, myFriends);
 
         }
@@ -85,7 +88,8 @@ class FriendshipController {
     getOthersFriendList = catchAsync(
         async (req: Request, res: Response) => {
             const { userId } = req.params!;
-            const myFriends = await this.service.othersFriendLists(userId);
+            const query = req.query;
+            const myFriends = await this.service.othersFriendLists(userId, query);
             sendResponseEnhanced(res, myFriends);
 
         }
@@ -93,8 +97,11 @@ class FriendshipController {
 
     getMutualFriends = catchAsync(
         async (req: Request, res: Response) => {
-
-
+            const { id } = req.user!;
+            const { userId } = req.params;
+            const query = req.query;
+            const mutualFriends = await this.service.getMutualFriends(id, userId, query);
+            sendResponseEnhanced(res, mutualFriends);
         }
     );
 
