@@ -35,8 +35,9 @@ export default class AuthController {
     });
 
     getUserDetails = catchAsync( async(req: Request, res:Response) => {
+        const{id} = req.user!;
         const userID = req.params.id;
-        const user = await this.authService.retrieveUserDetails(userID);
+        const user = await this.authService.retrieveUserDetails(userID, id);
         sendResponse(res, {
             statusCode: StatusCodes.ACCEPTED,
             success: true,

@@ -22,6 +22,8 @@ export enum DatabaseNames {
     stories = "stories",
     story_reactions= "story_reactions", 
 
+    friendships = "friendships"
+
 }
 
 export enum ReelStatus {
@@ -37,3 +39,13 @@ export enum CloudinaryFolder {
   userStories = 'user_stories'
 }
 
+export enum FriendshipStatus {
+  accepted = "accepted",
+  rejected = 'rejected',
+  pending = 'pending',
+}
+
+export enum RequestTypes {
+  sent = "sent",
+  recieved = "recieved"
+}
