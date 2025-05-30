@@ -22,7 +22,10 @@ export enum DatabaseNames {
     stories = "stories",
     story_reactions= "story_reactions", 
 
-    friendships = "friendships"
+    friendships = "friendships",
+
+    conversations = "conversations",
+    messages = "messages"
 
 }
 

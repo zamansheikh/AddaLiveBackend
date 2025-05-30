@@ -57,8 +57,7 @@ class FriendshipRepository implements IFriendshipRepository {
     async getMutalFriends(user1: string, user2: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IFriendshipDocument[] } | null> {
         const userA = new mongoose.Types.ObjectId(user1);
         const userB = new mongoose.Types.ObjectId(user2);
-
-
+        
         const qb = new QueryBuilder(this.friendsModel, query);
         const result = qb.aggregate([
             {
