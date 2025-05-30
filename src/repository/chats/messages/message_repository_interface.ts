@@ -3,16 +3,18 @@ import { IMessage, IMessageDocument } from "../../../entities/chats/message_inte
 
 export default interface IMessageRepository {
 
-    createMessage(message: IMessage): Promise<IMessageDocument | null> 
-    
+    createMessage(message: IMessage): Promise<IMessageDocument | null>
+
     updateSeenStatus(roomId: string): Promise<IMessageDocument[] | null>
-    
-    getMessages(roomId: string): Promise<{pagination: IPagination, data: IMessageDocument[] | null}>
+
+    getMessages(roomId: string): Promise<{ pagination: IPagination, data: IMessageDocument[] | null }>
 
     getMessageById(messageId: string): Promise<IMessageDocument | null>
 
     updateMessage(messageId: string, updates: Partial<IMessage>): Promise<IMessageDocument | null>
 
     deleteMessage(messageId: string): Promise<IMessageDocument | null>;
+
+    deleteAllMessage(roomId: string): Promise<boolean | null>;
 
 }

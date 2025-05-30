@@ -13,6 +13,7 @@ import ReelsRouter from "./router/reels_routes";
 import PostRouter from "./router/post_routes";
 import StoryRouter from "./router/story_routes";
 import FriendShipRouter from "./router/friendship_router"
+import ChatRouter from "./router/chat_router"
 // error handlers
 import globalErrorHandler from './core/errors/global_error_handlar';
 
@@ -46,6 +47,7 @@ app.use("/api/reels", ReelsRouter);
 app.use("/api/posts", PostRouter);
 app.use("/api/stories", StoryRouter);
 app.use("/api/friends", FriendShipRouter);
+app.use("/api/chat", ChatRouter);
 
 app.use(globalErrorHandler);
 
