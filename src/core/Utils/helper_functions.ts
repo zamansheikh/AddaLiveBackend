@@ -6,7 +6,7 @@ export const generateFileHash = (buffer: Buffer): string => {
 };
 
 export function isVideoFile(filename: string): boolean {
-  const videoExtensions = ['.mp4', '.mov', '.avi', '.wmv', '.flv', '.mkv', '.webm', '.mpeg'];
+  const videoExtensions = ['.mp4', '.mov', '.avi', '.wmv', '.flv', '.mkv', '.webm', '.mpeg', '.mp3', '.wav', '.ogg', '.aac', '.flac'];
   const ext = filename.toLowerCase().split('.').pop();
   return ext ? videoExtensions.includes(`.${ext}`) : false;
 }
