@@ -6,6 +6,7 @@ const conversationSchema = new mongoose.Schema<IConversationDocument>({
     roomId: {
         type: String,
         required: true,
+        unique: true,
     },
     senderId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -17,7 +18,7 @@ const conversationSchema = new mongoose.Schema<IConversationDocument>({
         ref: DatabaseNames.User,
         required: true,
     },
-    lastMsg: {
+    lastMessage: {
         type: String,
         required: true,
     },

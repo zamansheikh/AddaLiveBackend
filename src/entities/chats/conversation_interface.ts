@@ -5,7 +5,7 @@ export interface IConversation {
     roomId: string,
     senderId: Types.ObjectId,
     receiverId: Types.ObjectId,
-    lastMessage: string,
+    lastMessage?: string,
     seenStatus?: boolean,
 }
 

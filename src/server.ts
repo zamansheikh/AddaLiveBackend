@@ -47,7 +47,7 @@ app.use("/api/reels", ReelsRouter);
 app.use("/api/posts", PostRouter);
 app.use("/api/stories", StoryRouter);
 app.use("/api/friends", FriendShipRouter);
-app.use("/api/chat", ChatRouter);
+app.use("/api/chats", ChatRouter);
 
 app.use(globalErrorHandler);
 

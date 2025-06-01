@@ -39,7 +39,9 @@ export enum CloudinaryFolder {
   UserPRofile = "user_profiles",
   PostImages = 'post_images',
   PostVideos = 'post_videos',
-  userStories = 'user_stories'
+  userStories = 'user_stories',
+  messageImages = 'message_photos',
+  messageVideos = 'message_videos',
 }
 
 export enum FriendshipStatus {

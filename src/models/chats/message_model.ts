@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 import { DatabaseNames } from "../../core/Utils/enums";
+import { IMessageDocument } from "../../entities/chats/message_interface";
 
-const messageSchema = new mongoose.Schema({
+const messageSchema = new mongoose.Schema<IMessageDocument>({
     roomId: {
         type: String,
         required: true,
@@ -28,7 +29,6 @@ const messageSchema = new mongoose.Schema({
         default: false,
     },
     
-
 }, {
     timestamps: true
 });

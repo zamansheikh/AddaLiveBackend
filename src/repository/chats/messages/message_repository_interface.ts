@@ -5,9 +5,9 @@ export default interface IMessageRepository {
 
     createMessage(message: IMessage): Promise<IMessageDocument | null>
 
-    updateSeenStatus(roomId: string): Promise<IMessageDocument[] | null>
+    updateSeenStatus(roomId: string): Promise<IUpdateResult | null>
 
-    getMessages(roomId: string): Promise<{ pagination: IPagination, data: IMessageDocument[] | null }>
+    getMessages(roomId: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IMessageDocument[] }>
 
     getMessageById(messageId: string): Promise<IMessageDocument | null>
 
@@ -17,4 +17,10 @@ export default interface IMessageRepository {
 
     deleteAllMessage(roomId: string): Promise<boolean | null>;
 
+}
+
+export interface IUpdateResult {
+    acknowledged: boolean,
+    matchedCount: number,
+    modifiedCount: number,
 }

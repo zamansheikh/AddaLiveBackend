@@ -3,7 +3,7 @@ import { Model, Types } from "mongoose";
 export interface IMessage {
     roomId: string,
     senderId: Types.ObjectId,
-    recieverId: string,
+    recieverId: Types.ObjectId,
     text?: string,
     file?: string,
     seen?: boolean,

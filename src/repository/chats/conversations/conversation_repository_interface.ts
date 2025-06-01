@@ -4,7 +4,7 @@ import { IConversation, IConversationDocument } from "../../../entities/chats/co
 export interface IConversationRepostiry {
     createConversation(conversation: IConversation): Promise<IConversationDocument | null>
 
-    getConversationById(id: string): Promise<IConversationDocument | null>
+    getConversationByRoomId(id: string): Promise<IConversationDocument | null>
 
     getAllConversatins(myId: string): Promise<{ pagination: IPagination, data: IConversationDocument[] }>
 

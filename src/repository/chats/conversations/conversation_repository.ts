@@ -11,7 +11,8 @@ export default class ConversationRepository implements IConversationRepostiry {
     }
 
     async createConversation(conversation: IConversation): Promise<IConversationDocument | null> {
-        return null
+        const newConversation = new this.model(conversation);
+        return await newConversation.save();
     }
 
     async deleteConversation(roomId: string): Promise<IConversationDocument | null> {
@@ -19,17 +20,15 @@ export default class ConversationRepository implements IConversationRepostiry {
     }
 
     async getAllConversatins(myId: string): Promise<{ pagination: IPagination; data: IConversationDocument[]; }> {
-        
-        return {pagination: {} as IPagination, data: []};
+        return { pagination: {} as IPagination, data: [] };
     }
 
-    async getConversationById(id: string): Promise<IConversationDocument | null> {
-        return null;
-    
+    async getConversationByRoomId(id: string): Promise<IConversationDocument | null> {
+        return await this.model.findOne({ roomId: id });
     }
 
     async updateConversation(roomId: string, data: Partial<IConversation>): Promise<IConversationDocument | null> {
-        return null; 
+        return await this.model.findOneAndUpdate({ roomId }, data, { new: true });
     }
 
 
