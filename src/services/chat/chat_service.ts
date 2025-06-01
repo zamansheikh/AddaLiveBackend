@@ -9,7 +9,7 @@ import { IMessage, IMessageDocument, IMessageModel } from "../../entities/chats/
 import { IConversationRepostiry } from "../../repository/chats/conversations/conversation_repository_interface";
 import IMessageRepository, { IUpdateResult } from "../../repository/chats/messages/message_repository_interface";
 import IChatService from "./chat_service_interface";
-import { send } from "process";
+import SocketServer from "../../core/sockets/socket_server";
 
 export default class ChatService implements IChatService {
     msgRepo: IMessageRepository;
@@ -32,16 +32,23 @@ export default class ChatService implements IChatService {
         if (!sendMessage) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to send message");
 
         const prevConversation = await this.converseRepo.getConversationByRoomId(message.roomId);
+        let conversation;
         if (prevConversation) {
-            const updatedConversation = await this.converseRepo.updateConversation(message.roomId, { lastMessage: sendMessage.text });
-            if (!updatedConversation) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update conversation");
-            // Todo: if socket connected, send the updated conversation
+            conversation = await this.converseRepo.updateConversation(message.roomId, { lastMessage: sendMessage.text });
+            if (!conversation) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update conversation");
         } else {
-            const newConversation = await this.converseRepo.createConversation({ lastMessage: sendMessage.text, roomId: message.roomId, receiverId: message.recieverId, senderId: message.senderId });
-            if (!newConversation) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to create conversation");
-            // Todo: if socket connected, send the new conversation
+            const conversation = await this.converseRepo.createConversation({ lastMessage: sendMessage.text, roomId: message.roomId, receiverId: message.recieverId, senderId: message.senderId });
+            if (!conversation) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to create conversation");
         }
-        //TODO: if socket connected: send in socket else send fcm notificaiton
+
+        // to get the socket singleton instance
+        const ioInstance = SocketServer.getInstance();
+        if (ioInstance.isUserOnline(message.recieverId.toString())) {
+            ioInstance.getIO().to(ioInstance.getSocketId(message.recieverId.toString())!).emit("newMessage", sendMessage);
+            ioInstance.getIO().to(ioInstance.getSocketId(message.recieverId.toString())!).emit("newConversation", conversation);
+        } else {
+            //Todo: send firebase notification
+        }
         return sendMessage;
     }
 

@@ -4,6 +4,8 @@ import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import session from 'express-session';
+import http from 'http';
+
 // import mongoClient from "mongodb";
 import mongoose from 'mongoose';
 // router imports
@@ -16,6 +18,7 @@ import FriendShipRouter from "./router/friendship_router"
 import ChatRouter from "./router/chat_router"
 // error handlers
 import globalErrorHandler from './core/errors/global_error_handlar';
+import SocketServer from './core/sockets/socket_server';
 
 
 // Initialize dotenv for environment variables
@@ -24,10 +27,16 @@ dotenv.config();
 // Create the Express application
 const app: Application = express();
 
+const server = http.createServer(app);
+
+
+// socket connection to the http server 
+SocketServer.initialize(server);
+
 // Middleware
 app.use(cors()); // Enable CORS
 app.use(morgan('dev')); // Logging middleware
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); // Parse JSON request bodies
 
 
@@ -40,6 +49,7 @@ app.use(
   })
 );
 
+
 // Routes
 app.use("/api/auth", AuthRouter);
 app.use("/api/admin", AdminRouter);
@@ -51,6 +61,9 @@ app.use("/api/chats", ChatRouter);
 
 app.use(globalErrorHandler);
 
+
+
+
 const PORT = process.env.PORT || 8000;
 const MONGOURL = process.env.MONGO_URL || 'mongodb://localhost:27017/livestreaming';
 
@@ -58,7 +71,7 @@ mongoose.connect(MONGOURL).then(
   () => {
     console.log("DB Connected");
     // Start the server
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
   }
