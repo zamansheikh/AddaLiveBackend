@@ -69,16 +69,12 @@ export default class ChatService implements IChatService {
 
     }
 
-    // async deleteConversations(myId: string, roomId: string): Promise<IConversationDocument | null> {
+    async deleteConversations(myId: string, roomId: string): Promise<IConversationDocument | null> {
 
-    //     const conversation = await this.converseRepo.getConversationByRoomId(roomId);
-    //     if(!roomId) throw new AppError(StatusCodes.NOT_FOUND, "Conversation not found");
-    //     if(conversation?.senderId.toString() !== myId && conversation?.receiverId.toString() !== myId)
 
-    //      await this.converseRepo.deleteConversation(roomId);
 
-    //      return null
-    // }
+         return null
+    }
 
     async getAllConversations(myId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IConversationDocument[]; }> {
         const allConversations = await this.converseRepo.getAllConversatins(myId, query);
