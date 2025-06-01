@@ -14,7 +14,7 @@ export default class MessageRepository implements IMessageRepository {
 
     async createMessage(message: IMessage): Promise<IMessageDocument | null> {
         const newMessage = await this.model.create(message);
-        return await newMessage.save();
+        return (await newMessage.populate('senderId', 'email name avatar')).populate('recieverId', 'email name avatar');
     }
 
     async deleteMessage(messageId: string): Promise<IMessageDocument | null> {
@@ -36,23 +36,14 @@ export default class MessageRepository implements IMessageRepository {
             {$project: {
                 _id: 1,
                 roomId: 1,
-                senderId: 1,
-                recieverId: 1,
+                senderId: "$senderInfo",
+                recieverId: "$recieverInfo",
                 text:1,
                 file: 1,
                 seen: 1,
                 createdAt: 1,
                 updatedAt: 1,
-                senderInfo: {
-                    name: 1,
-                    avatar: 1,
-                    email: 1
-                },
-                recieverInfo: {
-                    name: 1,
-                    avatar: 1,
-                    email: 1
-                }
+                
             }}
         ]).paginate();
         const pagination = await result.countTotal();

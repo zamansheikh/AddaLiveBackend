@@ -28,8 +28,8 @@ router.delete("/delete-message/:messageId", authenticate, chatController.deleteM
 router.put("/edit-message/:messageId", authenticate, validateRequest(EditMessageDto), chatController.editMessage);
 router.get("/all-message/:recieverId", authenticate, chatController.getAllMessages);
 
-// router.get("/all-conversation/", authenticate, chatController.getAllMessages);
-// router.delete("/delete-conversation/:conversationId", authenticate, chatController.getAllMessages);
+router.get("/all-conversation", authenticate, chatController.getAllConversations);
+router.delete("/delete-conversation/:conversationId", authenticate, chatController.deleteConversations);
 
 
 export default router;

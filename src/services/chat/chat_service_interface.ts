@@ -14,8 +14,8 @@ export default interface IChatService {
 
     getAllMessage(roomId: string, query: Record<string, any>): Promise<{pagination: IPagination, data: IMessageDocument[] }>
 
-    getAllConversations(myId: string): Promise<{pagination: IPagination, data: IConversationDocument[] }>
+    getAllConversations(myId: string, query: Record<string, any>): Promise<{pagination: IPagination, data: IConversationDocument[] }>
 
-    deleteConversations(myId: string): Promise<IConversationDocument| null>
+    deleteConversations(myId: string, roomId: string): Promise<IConversationDocument| null>
      
 }

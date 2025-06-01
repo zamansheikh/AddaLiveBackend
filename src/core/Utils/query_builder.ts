@@ -1,4 +1,6 @@
 import { Model, Query, FilterQuery, PipelineStage } from "mongoose";
+import AppError from "../errors/app_errors";
+import { StatusCodes } from "http-status-codes";
 
 export class QueryBuilder<T> {
     private model: Model<T>;
@@ -13,7 +15,7 @@ export class QueryBuilder<T> {
         this.modelQuery = this.model.find();
     }
 
-    search(searchableFields: string[]) {
+    search(searchableFields: string[], isObjectId = false) {
         const searchTerm = this.query?.searchTerm as string;
         if (searchTerm) {
             const conditions: FilterQuery<T>[] = searchableFields.map((field) => ({
@@ -29,6 +31,23 @@ export class QueryBuilder<T> {
             }
         }
 
+        return this;
+    }
+
+    find(searchableFields: string[]) {
+        if (this.useAggregate) throw new AppError(StatusCodes.BAD_REQUEST, "Not Aggregation Query");
+        const searchTerm = this.query?.searchTerm as string;
+        if (searchTerm) {
+            const conditions: FilterQuery<T>[] = searchableFields.map((field) => ({
+                [field]: searchTerm
+            })) as FilterQuery<T>[];
+            this.modelQuery = this.model.find({ $or: conditions });
+        }
+        return this;
+    }
+
+    populateField(field: string, populateWith: string) {
+        this.modelQuery = this.modelQuery.populate(field, populateWith);
         return this;
     }
 

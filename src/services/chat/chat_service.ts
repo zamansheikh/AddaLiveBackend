@@ -1,6 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import AppError from "../../core/errors/app_errors";
-import { CloudinaryFolder } from "../../core/Utils/enums";
+import { CloudinaryFolder, SocketChannels } from "../../core/Utils/enums";
 import { isVideoFile } from "../../core/Utils/helper_functions";
 import { IPagination } from "../../core/Utils/query_builder";
 import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
@@ -44,8 +44,8 @@ export default class ChatService implements IChatService {
         // to get the socket singleton instance
         const ioInstance = SocketServer.getInstance();
         if (ioInstance.isUserOnline(message.recieverId.toString())) {
-            ioInstance.getIO().to(ioInstance.getSocketId(message.recieverId.toString())!).emit("newMessage", sendMessage);
-            ioInstance.getIO().to(ioInstance.getSocketId(message.recieverId.toString())!).emit("newConversation", conversation);
+            ioInstance.getIO().to(ioInstance.getSocketId(message.recieverId.toString())!).emit(SocketChannels.newMessage, sendMessage);
+            ioInstance.getIO().to(ioInstance.getSocketId(message.recieverId.toString())!).emit(SocketChannels.newConversation, conversation);
         } else {
             //Todo: send firebase notification
         }
@@ -69,12 +69,20 @@ export default class ChatService implements IChatService {
 
     }
 
-    async deleteConversations(myId: string): Promise<IConversationDocument | null> {
-        return null;
-    }
+    // async deleteConversations(myId: string, roomId: string): Promise<IConversationDocument | null> {
 
-    async getAllConversations(myId: string): Promise<{ pagination: IPagination; data: IConversationDocument[]; }> {
-        return { pagination: {} as IPagination, data: [] };
+    //     const conversation = await this.converseRepo.getConversationByRoomId(roomId);
+    //     if(!roomId) throw new AppError(StatusCodes.NOT_FOUND, "Conversation not found");
+    //     if(conversation?.senderId.toString() !== myId && conversation?.receiverId.toString() !== myId)
+
+    //      await this.converseRepo.deleteConversation(roomId);
+
+    //      return null
+    // }
+
+    async getAllConversations(myId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IConversationDocument[]; }> {
+        const allConversations = await this.converseRepo.getAllConversatins(myId, query);
+        return allConversations;
     }
 
 }

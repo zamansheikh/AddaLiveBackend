@@ -6,7 +6,7 @@ export interface IConversationRepostiry {
 
     getConversationByRoomId(id: string): Promise<IConversationDocument | null>
 
-    getAllConversatins(myId: string): Promise<{ pagination: IPagination, data: IConversationDocument[] }>
+    getAllConversatins(myId: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IConversationDocument[] }>
 
     updateConversation(roomId: string, data: Partial<IConversation>): Promise<IConversationDocument | null>;
 

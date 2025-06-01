@@ -54,3 +54,10 @@ export enum RequestTypes {
   sent = "sent",
   recieved = "recieved"
 }
+
+export enum SocketChannels {
+  newMessage = "newMessage",
+  newConversation = "newConversation",
+}
+
+

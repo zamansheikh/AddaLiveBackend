@@ -42,21 +42,22 @@ export default class ChatController {
     getAllMessages = catchAsync(async (req: Request, res: Response) => {
         const { recieverId } = req.params;
         const { id } = req.user!;
-        const roomId = [ recieverId, id].sort().join("-");
+        const roomId = [recieverId, id].sort().join("-");
         const query = req.query;
         const messages = await this.service.getAllMessage(roomId, query);
         sendResponseEnhanced(res, messages);
     });
 
     getAllConversations = catchAsync(async (req: Request, res: Response) => {
-
-
+        const { id } = req.user!;
+        const conversations = await this.service.getAllConversations(id, req.query);
+        sendResponseEnhanced(res, conversations);
     });
 
     deleteConversations = catchAsync(async (req: Request, res: Response) => {
-
-
+        const { id } = req.user!;
+        const { conversationId } = req.params;
+        const deleted = await this.service.deleteConversations(id, conversationId);
+        sendResponseEnhanced(res, deleted);
     });
-
-
 }
