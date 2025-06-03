@@ -23,11 +23,24 @@ const conversationSchema = new mongoose.Schema<IConversationDocument>({
         required: true,
     },
 
+    deletedFor: [
+        {
+            userId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: DatabaseNames.User,
+            },
+            deleteAt: {
+                type: Date,
+                default: Date.now,
+            }
+        }
+    ],
+
     seenStatus: {
         type: Boolean,
         default: false,
     },
-    
+
 }, {
     timestamps: true
 });

@@ -28,7 +28,8 @@ export default class ChatController {
     editMessage = catchAsync(async (req: Request, res: Response) => {
         const { messageId } = req.params;
         const { newText } = req.body;
-        const edited = await this.service.editMessage(messageId, { text: newText });
+        const { id } = req.user!;
+        const edited = await this.service.editMessage(id, messageId, { text: newText });
         sendResponseEnhanced(res, edited);
 
     });

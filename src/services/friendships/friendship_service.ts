@@ -63,7 +63,8 @@ class FriendshipService implements IFriendshipService {
 
         if (prevDoc && prevDoc.length == 0) throw new AppError(StatusCodes.BAD_REQUEST, "No document found");
         if (prevDoc[0].reciever.toString() != body.myId.toString()) throw new AppError(StatusCodes.BAD_REQUEST, "this user is not the reciever of the request");
-
+        if (prevDoc[0].status == FriendshipStatus.rejected) throw new AppError(StatusCodes.BAD_REQUEST, "The request has already been rejected")
+        if (prevDoc[0].status == FriendshipStatus.accepted) throw new AppError(StatusCodes.BAD_REQUEST, "Already friends")
         const rejected = await this.friendRepo.updateFriendRequsetStatus((prevDoc[0]._id as Types.ObjectId).toString(), FriendshipStatus.rejected);
         if (!rejected) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Updating status to rejected failed");
 

@@ -22,7 +22,7 @@ export default class MessageRepository implements IMessageRepository {
     }
 
     async getMessageById(messageId: string): Promise<IMessageDocument | null> {
-        return null;
+        return await this.model.findById(messageId);
     }
 
     async getMessages(roomId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IMessageDocument[] }> {

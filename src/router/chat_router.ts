@@ -29,7 +29,7 @@ router.put("/edit-message/:messageId", authenticate, validateRequest(EditMessage
 router.get("/all-message/:recieverId", authenticate, chatController.getAllMessages);
 
 router.get("/all-conversation", authenticate, chatController.getAllConversations);
-router.delete("/delete-conversation/:conversationId", authenticate, chatController.deleteConversations);
+// router.delete("/delete-conversation/:conversationId", authenticate, chatController.deleteConversations);
 
 
 export default router;

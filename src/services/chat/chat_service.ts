@@ -32,14 +32,22 @@ export default class ChatService implements IChatService {
         if (!sendMessage) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to send message");
 
         const prevConversation = await this.converseRepo.getConversationByRoomId(message.roomId);
+        console.log("prev conversation", prevConversation);
+
         let conversation;
         if (prevConversation) {
             conversation = await this.converseRepo.updateConversation(message.roomId, { lastMessage: sendMessage.text });
             if (!conversation) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update conversation");
         } else {
+
             const conversation = await this.converseRepo.createConversation({ lastMessage: sendMessage.text, roomId: message.roomId, receiverId: message.recieverId, senderId: message.senderId });
+            console.log("creaating connvertsation", conversation);
+
             if (!conversation) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to create conversation");
         }
+
+        console.log("conversation == >> ", conversation);
+
 
         // to get the socket singleton instance
         const ioInstance = SocketServer.getInstance();
@@ -60,7 +68,13 @@ export default class ChatService implements IChatService {
         return this.msgRepo.deleteMessage(messageId);
     }
 
-    async editMessage(nessageId: string, message: Partial<IMessage>): Promise<IMessageDocument | null> {
+    async editMessage(myId: string, nessageId: string, message: Partial<IMessage>): Promise<IMessageDocument | null> {
+        
+        const msg = await this.msgRepo.getMessageById(nessageId);
+        if (!msg) throw new AppError(StatusCodes.NOT_FOUND, "Message not found")
+
+        if(msg.senderId.toString() != myId) throw new AppError(StatusCodes.BAD_REQUEST, "This is not your message");
+
         return await this.msgRepo.updateMessage(nessageId, message);
     }
 
@@ -71,9 +85,10 @@ export default class ChatService implements IChatService {
 
     async deleteConversations(myId: string, roomId: string): Promise<IConversationDocument | null> {
 
+        const deletedConversation = await this.converseRepo.deleteConversation(myId, roomId);
+        if (!deletedConversation) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to delete conversation");
 
-
-         return null
+        return deletedConversation;
     }
 
     async getAllConversations(myId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IConversationDocument[]; }> {
