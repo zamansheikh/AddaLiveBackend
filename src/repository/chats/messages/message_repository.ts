@@ -1,6 +1,8 @@
 import IMessageRepository, { IUpdateResult } from "./message_repository_interface";
 import { IMessage, IMessageDocument, IMessageModel } from "../../../entities/chats/message_interface";
 import { IPagination, QueryBuilder } from "../../../core/Utils/query_builder";
+import AppError from "../../../core/errors/app_errors";
+import { StatusCodes } from "http-status-codes";
 
 
 export default class MessageRepository implements IMessageRepository {
@@ -24,14 +26,15 @@ export default class MessageRepository implements IMessageRepository {
     }
 
     async getMessages(roomId: string, query: Record<string, any>, textFrom?: string): Promise<{ pagination: IPagination; data: IMessageDocument[] }> {
-
         const qb = new QueryBuilder(this.model, query);
+        const myId = query.myId;
+        if(!myId) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "My UserId is missing");
         let findQuery;
         if (textFrom) {
-            findQuery = qb.find({ roomId: roomId, createdAt: { $gt: textFrom } });
+            findQuery = qb.find({ roomId: roomId, createdAt: { $gt: textFrom }, deletedFor: { $not:  { $elemMatch: { userId: myId}},}});
         }
         else {
-            findQuery = qb.find({ roomId: roomId });
+            findQuery = qb.find({ roomId: roomId, deletedFor: { $not:  { $elemMatch: { userId: myId}},} });
         }
         const result = findQuery.populateField("senderId", "email name avatar").populateField("recieverId", "email name avatar").sort().paginate();
         const pagination = await result.countTotal();

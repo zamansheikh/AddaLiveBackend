@@ -20,7 +20,7 @@ const messageSchema = new mongoose.Schema<IMessageDocument>({
 
     deletedFor: [
         {
-            userId: {type: mongoose.Schema.Types.ObjectId, ref: DatabaseNames.User},
+            userId: { type: mongoose.Schema.Types.ObjectId, ref: DatabaseNames.User },
             isActive: {
                 type: Boolean,
                 default: true,
@@ -42,7 +42,7 @@ const messageSchema = new mongoose.Schema<IMessageDocument>({
         type: Boolean,
         default: false,
     },
-    
+
 }, {
     timestamps: true
 });

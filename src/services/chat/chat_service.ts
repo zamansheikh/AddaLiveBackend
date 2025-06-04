@@ -67,10 +67,21 @@ export default class ChatService implements IChatService {
 
     async deleteMessage(messageId: string, myId: string): Promise<IMessageDocument | null> {
         const msg = await this.msgRepo.getMessageById(messageId);
-        if(!msg) throw new AppError(StatusCodes.NOT_FOUND, "Message not found");
-        if(msg.senderId.toString() != myId) throw new AppError(StatusCodes.BAD_REQUEST, "This is not your message");
-        
-        return this.msgRepo.deleteMessage(messageId);
+        if (!msg) throw new AppError(StatusCodes.NOT_FOUND, "Message not found");
+        if (msg.senderId.toString() != myId) throw new AppError(StatusCodes.BAD_REQUEST, "This is not your message");
+        if (msg.deletedFor && msg.deletedFor.length > 0) {
+            const length = msg.deletedFor.length;
+            for (let i = 0; i < length; i++) {
+                if (msg.deletedFor[i].userId.toString() === myId) {
+                    throw new AppError(StatusCodes.BAD_REQUEST, "This message is already deleted");
+                }
+            }
+        }
+        msg.deletedFor?.push({ userId: new mongoose.Types.ObjectId(myId), deleteAt: new Date() });
+        const deleted = await msg.save();
+        if (!deleted) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to delete the message");
+        return deleted;
+
     }
 
     async editMessage(myId: string, nessageId: string, message: Partial<IMessage>): Promise<IMessageDocument | null> {
@@ -84,6 +95,7 @@ export default class ChatService implements IChatService {
     }
 
     async getAllMessage(roomId: string, query: Record<string, any>, myId: string): Promise<{ pagination: IPagination; data: IMessageDocument[]; }> {
+        query["myId"] = myId;
         const conversation = await this.converseRepo.getConversationByRoomId(roomId);
         if (!conversation) throw new AppError(StatusCodes.NOT_FOUND, "Conversation not found");
         if (conversation.deletedFor && conversation.deletedFor.length > 0) {
