@@ -18,6 +18,20 @@ const messageSchema = new mongoose.Schema<IMessageDocument>({
         required: true,
     },
 
+    deletedFor: [
+        {
+            userId: {type: mongoose.Schema.Types.ObjectId, ref: DatabaseNames.User},
+            isActive: {
+                type: Boolean,
+                default: true,
+            },
+            deleteAt: {
+                type: Date,
+                default: Date.now,
+            }
+        }
+    ],
+
     text: {
         type: String,
     },

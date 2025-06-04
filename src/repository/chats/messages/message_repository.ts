@@ -1,8 +1,6 @@
-import { defaultMaxListeners } from "events";
 import IMessageRepository, { IUpdateResult } from "./message_repository_interface";
 import { IMessage, IMessageDocument, IMessageModel } from "../../../entities/chats/message_interface";
 import { IPagination, QueryBuilder } from "../../../core/Utils/query_builder";
-import { messagesUserLookUp, messsageUnwind } from "./message_constants";
 
 
 export default class MessageRepository implements IMessageRepository {
@@ -25,27 +23,17 @@ export default class MessageRepository implements IMessageRepository {
         return await this.model.findById(messageId);
     }
 
-    async getMessages(roomId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IMessageDocument[] }> {
+    async getMessages(roomId: string, query: Record<string, any>, textFrom?: string): Promise<{ pagination: IPagination; data: IMessageDocument[] }> {
+
         const qb = new QueryBuilder(this.model, query);
-        const result = qb.aggregate([
-            { $match: { roomId: roomId } },
-            messagesUserLookUp("senderId", "senderInfo"),
-            messagesUserLookUp("recieverId", "recieverInfo"),
-            messsageUnwind("senderInfo"),
-            messsageUnwind("recieverInfo"),
-            {$project: {
-                _id: 1,
-                roomId: 1,
-                senderId: "$senderInfo",
-                recieverId: "$recieverInfo",
-                text:1,
-                file: 1,
-                seen: 1,
-                createdAt: 1,
-                updatedAt: 1,
-                
-            }}
-        ]).paginate();
+        let findQuery;
+        if (textFrom) {
+            findQuery = qb.find({ roomId: roomId, createdAt: { $gt: textFrom } });
+        }
+        else {
+            findQuery = qb.find({ roomId: roomId });
+        }
+        const result = findQuery.populateField("senderId", "email name avatar").populateField("recieverId", "email name avatar").sort().paginate();
         const pagination = await result.countTotal();
         const data = await result.exec();
         return { pagination, data };

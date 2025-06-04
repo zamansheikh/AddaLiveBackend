@@ -5,6 +5,7 @@ import { Types } from "mongoose";
 export interface IDeletedFor {
  userId: Types.ObjectId,
  deleteAt: Date,
+ isActive?: boolean,
 }
 
 

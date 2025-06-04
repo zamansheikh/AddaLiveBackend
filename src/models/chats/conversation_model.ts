@@ -29,6 +29,10 @@ const conversationSchema = new mongoose.Schema<IConversationDocument>({
                 type: mongoose.Schema.Types.ObjectId,
                 ref: DatabaseNames.User,
             },
+            isActive: {
+                type: Boolean,
+                default: true,
+            },
             deleteAt: {
                 type: Date,
                 default: Date.now,

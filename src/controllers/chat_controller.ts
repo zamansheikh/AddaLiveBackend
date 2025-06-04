@@ -36,7 +36,8 @@ export default class ChatController {
 
     deleteMessage = catchAsync(async (req: Request, res: Response) => {
         const { messageId } = req.params;
-        const deleted = await this.service.deleteMessage(messageId);
+        const {id} = req.user!;
+        const deleted = await this.service.deleteMessage(messageId, id);
         sendResponseEnhanced(res, deleted);
     });
 
@@ -45,7 +46,7 @@ export default class ChatController {
         const { id } = req.user!;
         const roomId = [recieverId, id].sort().join("-");
         const query = req.query;
-        const messages = await this.service.getAllMessage(roomId, query);
+        const messages = await this.service.getAllMessage(roomId, query, id);
         sendResponseEnhanced(res, messages);
     });
 

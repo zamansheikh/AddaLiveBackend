@@ -10,9 +10,9 @@ export default interface IChatService {
 
     editMessage(myId: string, nessageId: string, message: Partial<IMessage>): Promise<IMessageDocument | null>
 
-    deleteMessage(messageId: string): Promise<IMessageDocument | null>
+    deleteMessage(messageId: string, myId: string): Promise<IMessageDocument | null>
 
-    getAllMessage(roomId: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IMessageDocument[] }>
+    getAllMessage(roomId: string, query: Record<string, any>, myId: string): Promise<{ pagination: IPagination, data: IMessageDocument[] }>
 
     getAllConversations(myId: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IConversationDocument[] }>
 

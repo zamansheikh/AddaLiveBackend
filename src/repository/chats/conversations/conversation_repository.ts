@@ -23,7 +23,7 @@ export default class ConversationRepository implements IConversationRepostiry {
 
         const userIdStr = myId.toString();
 
-        const existingEntryIndex = conversation.deletedFor?.findIndex(entry => entry.userId.toString() === userIdStr);
+        const existingEntryIndex = conversation.deletedFor?.findIndex(entry => entry.userId.toString() == userIdStr);
         const now = new Date();
         if (existingEntryIndex !== -1) {
             // Update existing deleteAt timestamp
@@ -40,16 +40,14 @@ export default class ConversationRepository implements IConversationRepostiry {
     }
 
     async getAllConversatins(myId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IConversationDocument[]; }> {
-        query["searchTerm"] = myId.toString();
+       
         const qb = new QueryBuilder(this.model, query);
         const result = qb.find({
             $and: [
                 { $or: [{ senderId: myId }, { receiverId: myId }] },
                 {
                     deletedFor: {
-                        $not: {
-                            $elemMatch: { userId: myId }
-                        }
+                        $not:  { $elemMatch: { userId: myId, isActive: true }},
                     }
                 }
             ],
