@@ -10,6 +10,7 @@ import { authenticate } from "../core/middlewares/auth_middleware";
 import { validateRequest } from "../core/middlewares/validate_request";
 import UserStats from "../models/userstats/userstats_model";
 import UserStatsRepository from "../repository/userstats/userstats_repository";
+import { GiftUserDto } from "../dtos/auth/gift_user_dto";
 
 
 
@@ -27,6 +28,7 @@ const authController = new AuthController(authService);
 router.post("/register-google", validateRequest(RegisterUserDto), authController.registerWithGoogle)
 router.put("/update-profile", authenticate, upload.single('avatar'), validateRequest(ProfileUpdateDto), authController.updateProfile)
 router.get("/user/:id", authenticate, authController.getUserDetails);
+router.put("/user/gift", authenticate, validateRequest(GiftUserDto), authController.giftUser)
 
 export default router;
 
