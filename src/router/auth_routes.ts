@@ -8,6 +8,8 @@ import { ProfileUpdateDto } from "../dtos/auth/profile_update_dto";
 import { upload } from "../core/middlewares/multer";
 import { authenticate } from "../core/middlewares/auth_middleware";
 import { validateRequest } from "../core/middlewares/validate_request";
+import UserStats from "../models/userstats/userstats_model";
+import UserStatsRepository from "../repository/userstats/userstats_repository";
 
 
 
@@ -15,7 +17,8 @@ import { validateRequest } from "../core/middlewares/validate_request";
 const router = express.Router();
 
 const userRepository = new UserRepository(User);
-const authService = new AuthService(userRepository);
+const userstatsRepository = new UserStatsRepository(UserStats);
+const authService = new AuthService(userRepository, userstatsRepository);
 const authController = new AuthController(authService);
 
 

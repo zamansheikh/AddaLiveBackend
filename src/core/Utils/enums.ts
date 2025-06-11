@@ -25,7 +25,9 @@ export enum DatabaseNames {
     friendships = "friendships",
 
     conversations = "conversations",
-    messages = "messages"
+    messages = "messages",
+
+    userStats = 'userstats'
 
 }
 
@@ -61,3 +63,8 @@ export enum SocketChannels {
 }
 
 
+export enum GiftTypes {
+  rose = 'rose',
+  love = 'love',
+  car = 'car',
+}

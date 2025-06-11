@@ -3,6 +3,7 @@ import { IUserEntity } from "../entities/user_entity_interface";
 import { IUserModel } from "../models/user/user_model_interface";
 import { IUserRepository } from "./user_repository_interface";
 import { DatabaseNames } from "../core/Utils/enums";
+import { DatabaseSync } from "node:sqlite";
 
 export default class UserRepository implements IUserRepository {
     UserModel: IUserModel;
@@ -36,7 +37,6 @@ export default class UserRepository implements IUserRepository {
     }
 
     async getUserDetails(details: { userId: string; myId: string; }) {
-        console.log(details);
         const user = await this.UserModel.aggregate([
             { $match: { _id: new mongoose.Types.ObjectId(details.userId) } },
             {
@@ -67,6 +67,20 @@ export default class UserRepository implements IUserRepository {
                         { $limit: 1 }
                     ],
                     as: "friendshipData"
+                }
+            },
+            {
+                $lookup: {
+                    from: DatabaseNames.userStats,
+                    localField: "_id",
+                    foreignField: "userId",
+                    as: "stats"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$stats",
+                    preserveNullAndEmptyArrays: true
                 }
             },
             {
