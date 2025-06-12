@@ -23,7 +23,6 @@ const conversationSchema = new mongoose.Schema<IConversationDocument>({
         required: true,
     },
 
-<<<<<<< HEAD
     deletedFor: [
         {
             userId: {
@@ -41,17 +40,11 @@ const conversationSchema = new mongoose.Schema<IConversationDocument>({
         }
     ],
 
-=======
->>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
     seenStatus: {
         type: Boolean,
         default: false,
     },
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
 }, {
     timestamps: true
 });

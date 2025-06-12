@@ -147,6 +147,8 @@ export default class AuthService implements IAuthService {
             });
         }
 
+        // todo: later create transaction documents
+
         const updatedUserStats = await userStats.save({ session });
 
         await session.commitTransaction();
