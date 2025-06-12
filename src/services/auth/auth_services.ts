@@ -16,6 +16,7 @@ export default class AuthService implements IAuthService {
 
     UserRepository: IUserRepository;
     UserStatsRepository: IUserStatsRepository
+
     constructor(UserRepository: IUserRepository, UserStatsRepository: IUserStatsRepository) {
         this.UserRepository = UserRepository;
         this.UserStatsRepository = UserStatsRepository;
@@ -24,6 +25,7 @@ export default class AuthService implements IAuthService {
     async registerWithGoogle(UserData: IUserEntity) {
         const existingUser = await this.UserRepository.findByUID(UserData.uid);
         const SECRET = process.env.JWT_SECRET || "jwt_secret";
+
         if (!existingUser) {
             const newUser = await this.UserRepository.create(UserData);
             // if a instance exists with this new _id that is a false data and is being purged.
@@ -42,6 +44,7 @@ export default class AuthService implements IAuthService {
             const token = jwt.sign({ id: newUser._id }, SECRET);
             return { user: userWithStats, token };
         }
+
         let userStats = await this.UserStatsRepository.getUserStats(existingUser._id as string);
         // every user should have their respective stats created
 
@@ -123,6 +126,7 @@ export default class AuthService implements IAuthService {
 
         // checking if already the item exists in the list of gifts
         let giftSent = false;
+        
         if (userStats.gifts && userStats.gifts.length > 0) {
             const length = userStats.gifts.length;
             for (let i = 0; i < length; i++) {
@@ -143,11 +147,13 @@ export default class AuthService implements IAuthService {
         }
 
         const updatedUserStats = await userStats.save({ session });
-        if (!updatedUserStats) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "updating user stats failed");
 
         await session.commitTransaction();
         session.endSession();
-        
+
+        if (!updatedUserStats) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "updating user stats failed");
+
+
         const userWithStats = userToGift.toObject();
         userWithStats.stats = updatedUserStats;
         return userWithStats;
