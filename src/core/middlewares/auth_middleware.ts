@@ -28,6 +28,12 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
 
   const token = authHeader.split(' ')[1];
 
+<<<<<<< HEAD
+=======
+
+  
+
+>>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
   try {
     const decoded = jwt.verify(token, secret) as JwtPayload;
     req.user = decoded; // Extend Request type to fix TS error

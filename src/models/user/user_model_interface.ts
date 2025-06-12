@@ -1,5 +1,8 @@
 import mongoose, { Document, Model } from 'mongoose';
+<<<<<<< HEAD
 import { IUserStats } from '../../entities/userstats/userstats_interface';
+=======
+>>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
 
 export interface IAuthData{
     authData: {
@@ -46,7 +49,10 @@ export interface UserData {
         createdAt?: Date;
         expire?: Date;
     };
+<<<<<<< HEAD
     stats?:IUserStats
+=======
+>>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
 }
 
 //  Create the document type (instance methods + fields)

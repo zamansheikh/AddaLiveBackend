@@ -28,16 +28,24 @@ export default class ChatController {
     editMessage = catchAsync(async (req: Request, res: Response) => {
         const { messageId } = req.params;
         const { newText } = req.body;
+<<<<<<< HEAD
         const { id } = req.user!;
         const edited = await this.service.editMessage(id, messageId, { text: newText });
+=======
+        const edited = await this.service.editMessage(messageId, { text: newText });
+>>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
         sendResponseEnhanced(res, edited);
 
     });
 
     deleteMessage = catchAsync(async (req: Request, res: Response) => {
         const { messageId } = req.params;
+<<<<<<< HEAD
         const {id} = req.user!;
         const deleted = await this.service.deleteMessage(messageId, id);
+=======
+        const deleted = await this.service.deleteMessage(messageId);
+>>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
         sendResponseEnhanced(res, deleted);
     });
 
@@ -46,7 +54,11 @@ export default class ChatController {
         const { id } = req.user!;
         const roomId = [recieverId, id].sort().join("-");
         const query = req.query;
+<<<<<<< HEAD
         const messages = await this.service.getAllMessage(roomId, query, id);
+=======
+        const messages = await this.service.getAllMessage(roomId, query);
+>>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
         sendResponseEnhanced(res, messages);
     });
 

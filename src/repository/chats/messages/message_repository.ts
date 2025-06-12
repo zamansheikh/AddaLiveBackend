@@ -1,8 +1,16 @@
+<<<<<<< HEAD
 import IMessageRepository, { IUpdateResult } from "./message_repository_interface";
 import { IMessage, IMessageDocument, IMessageModel } from "../../../entities/chats/message_interface";
 import { IPagination, QueryBuilder } from "../../../core/Utils/query_builder";
 import AppError from "../../../core/errors/app_errors";
 import { StatusCodes } from "http-status-codes";
+=======
+import { defaultMaxListeners } from "events";
+import IMessageRepository, { IUpdateResult } from "./message_repository_interface";
+import { IMessage, IMessageDocument, IMessageModel } from "../../../entities/chats/message_interface";
+import { IPagination, QueryBuilder } from "../../../core/Utils/query_builder";
+import { messagesUserLookUp, messsageUnwind } from "./message_constants";
+>>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
 
 
 export default class MessageRepository implements IMessageRepository {
@@ -22,6 +30,7 @@ export default class MessageRepository implements IMessageRepository {
     }
 
     async getMessageById(messageId: string): Promise<IMessageDocument | null> {
+<<<<<<< HEAD
         return await this.model.findById(messageId);
     }
 
@@ -37,6 +46,32 @@ export default class MessageRepository implements IMessageRepository {
             findQuery = qb.find({ roomId: roomId, deletedFor: { $not:  { $elemMatch: { userId: myId}},} });
         }
         const result = findQuery.populateField("senderId", "email name avatar").populateField("recieverId", "email name avatar").sort().paginate();
+=======
+        return null;
+    }
+
+    async getMessages(roomId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IMessageDocument[] }> {
+        const qb = new QueryBuilder(this.model, query);
+        const result = qb.aggregate([
+            { $match: { roomId: roomId } },
+            messagesUserLookUp("senderId", "senderInfo"),
+            messagesUserLookUp("recieverId", "recieverInfo"),
+            messsageUnwind("senderInfo"),
+            messsageUnwind("recieverInfo"),
+            {$project: {
+                _id: 1,
+                roomId: 1,
+                senderId: "$senderInfo",
+                recieverId: "$recieverInfo",
+                text:1,
+                file: 1,
+                seen: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                
+            }}
+        ]).paginate();
+>>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
         const pagination = await result.countTotal();
         const data = await result.exec();
         return { pagination, data };

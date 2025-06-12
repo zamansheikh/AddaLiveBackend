@@ -8,6 +8,7 @@ export default interface IChatService {
 
     updateSeenStatus(roomId: string): Promise<IUpdateResult | null>;
 
+<<<<<<< HEAD
     editMessage(myId: string, nessageId: string, message: Partial<IMessage>): Promise<IMessageDocument | null>
 
     deleteMessage(messageId: string, myId: string): Promise<IMessageDocument | null>
@@ -18,4 +19,16 @@ export default interface IChatService {
 
     deleteConversations(myId: string, roomId: string): Promise<IConversationDocument | null>
 
+=======
+    editMessage(nessageId: string, message: Partial<IMessage>): Promise<IMessageDocument | null>
+
+    deleteMessage(messageId: string): Promise<IMessageDocument | null>
+
+    getAllMessage(roomId: string, query: Record<string, any>): Promise<{pagination: IPagination, data: IMessageDocument[] }>
+
+    getAllConversations(myId: string, query: Record<string, any>): Promise<{pagination: IPagination, data: IConversationDocument[] }>
+
+    deleteConversations(myId: string, roomId: string): Promise<IConversationDocument| null>
+     
+>>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
 }

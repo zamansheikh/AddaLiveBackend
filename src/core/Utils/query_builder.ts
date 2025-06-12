@@ -34,11 +34,23 @@ export class QueryBuilder<T> {
         return this;
     }
 
+<<<<<<< HEAD
     find(condition: Record<string, unknown>) {
         if (this.useAggregate) throw new AppError(StatusCodes.BAD_REQUEST, "Not Aggregation Query");
 
         this.modelQuery = this.model.find(condition);
 
+=======
+    find(searchableFields: string[]) {
+        if (this.useAggregate) throw new AppError(StatusCodes.BAD_REQUEST, "Not Aggregation Query");
+        const searchTerm = this.query?.searchTerm as string;
+        if (searchTerm) {
+            const conditions: FilterQuery<T>[] = searchableFields.map((field) => ({
+                [field]: searchTerm
+            })) as FilterQuery<T>[];
+            this.modelQuery = this.model.find({ $or: conditions });
+        }
+>>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
         return this;
     }
 
