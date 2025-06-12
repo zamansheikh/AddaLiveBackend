@@ -102,6 +102,7 @@ export default class AuthService implements IAuthService {
 
         if (diamonds) {
             if (mystats.diamonds! < diamonds) throw new AppError(StatusCodes.BAD_REQUEST, "insufficient diamonds");
+            // TODO: later the diamond amount will be extracted from db
             mystats.diamonds! -= diamonds;
             const updatedMyStats = await mystats.save({ session });
             if (!updatedMyStats) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "updating my stats failed");
