@@ -1,8 +1,16 @@
+<<<<<<< HEAD
+import IMessageRepository, { IUpdateResult } from "./message_repository_interface";
+import { IMessage, IMessageDocument, IMessageModel } from "../../../entities/chats/message_interface";
+import { IPagination, QueryBuilder } from "../../../core/Utils/query_builder";
+import AppError from "../../../core/errors/app_errors";
+import { StatusCodes } from "http-status-codes";
+=======
 import { defaultMaxListeners } from "events";
 import IMessageRepository, { IUpdateResult } from "./message_repository_interface";
 import { IMessage, IMessageDocument, IMessageModel } from "../../../entities/chats/message_interface";
 import { IPagination, QueryBuilder } from "../../../core/Utils/query_builder";
 import { messagesUserLookUp, messsageUnwind } from "./message_constants";
+>>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
 
 
 export default class MessageRepository implements IMessageRepository {
@@ -22,6 +30,23 @@ export default class MessageRepository implements IMessageRepository {
     }
 
     async getMessageById(messageId: string): Promise<IMessageDocument | null> {
+<<<<<<< HEAD
+        return await this.model.findById(messageId);
+    }
+
+    async getMessages(roomId: string, query: Record<string, any>, textFrom?: string): Promise<{ pagination: IPagination; data: IMessageDocument[] }> {
+        const qb = new QueryBuilder(this.model, query);
+        const myId = query.myId;
+        if(!myId) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "My UserId is missing");
+        let findQuery;
+        if (textFrom) {
+            findQuery = qb.find({ roomId: roomId, createdAt: { $gt: textFrom }, deletedFor: { $not:  { $elemMatch: { userId: myId}},}});
+        }
+        else {
+            findQuery = qb.find({ roomId: roomId, deletedFor: { $not:  { $elemMatch: { userId: myId}},} });
+        }
+        const result = findQuery.populateField("senderId", "email name avatar").populateField("recieverId", "email name avatar").sort().paginate();
+=======
         return null;
     }
 
@@ -46,6 +71,7 @@ export default class MessageRepository implements IMessageRepository {
                 
             }}
         ]).paginate();
+>>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
         const pagination = await result.countTotal();
         const data = await result.exec();
         return { pagination, data };

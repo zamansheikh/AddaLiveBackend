@@ -10,6 +10,10 @@ import { IConversationRepostiry } from "../../repository/chats/conversations/con
 import IMessageRepository, { IUpdateResult } from "../../repository/chats/messages/message_repository_interface";
 import IChatService from "./chat_service_interface";
 import SocketServer from "../../core/sockets/socket_server";
+<<<<<<< HEAD
+import mongoose from "mongoose";
+=======
+>>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
 
 export default class ChatService implements IChatService {
     msgRepo: IMessageRepository;
@@ -32,9 +36,23 @@ export default class ChatService implements IChatService {
         if (!sendMessage) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to send message");
 
         const prevConversation = await this.converseRepo.getConversationByRoomId(message.roomId);
+<<<<<<< HEAD
+
+        let conversation;
+        if (prevConversation) {
+            if (prevConversation.deletedFor && prevConversation.deletedFor.length > 0) {
+                const length = prevConversation.deletedFor.length;
+                for (let i = 0; i < length; i++) {
+                    prevConversation.deletedFor[i].isActive = false;
+                }
+            }
+            prevConversation.lastMessage = sendMessage.text;
+            conversation = await prevConversation.save();
+=======
         let conversation;
         if (prevConversation) {
             conversation = await this.converseRepo.updateConversation(message.roomId, { lastMessage: sendMessage.text });
+>>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
             if (!conversation) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update conversation");
         } else {
             const conversation = await this.converseRepo.createConversation({ lastMessage: sendMessage.text, roomId: message.roomId, receiverId: message.recieverId, senderId: message.senderId });
@@ -56,6 +74,49 @@ export default class ChatService implements IChatService {
         return await this.msgRepo.updateSeenStatus(roomId);
     }
 
+<<<<<<< HEAD
+    async deleteMessage(messageId: string, myId: string): Promise<IMessageDocument | null> {
+        const msg = await this.msgRepo.getMessageById(messageId);
+        if (!msg) throw new AppError(StatusCodes.NOT_FOUND, "Message not found");
+        if (msg.senderId.toString() != myId) throw new AppError(StatusCodes.BAD_REQUEST, "This is not your message");
+        if (msg.deletedFor && msg.deletedFor.length > 0) {
+            const length = msg.deletedFor.length;
+            for (let i = 0; i < length; i++) {
+                if (msg.deletedFor[i].userId.toString() === myId) {
+                    throw new AppError(StatusCodes.BAD_REQUEST, "This message is already deleted");
+                }
+            }
+        }
+        msg.deletedFor?.push({ userId: new mongoose.Types.ObjectId(myId), deleteAt: new Date() });
+        const deleted = await msg.save();
+        if (!deleted) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to delete the message");
+        return deleted;
+
+    }
+
+    async editMessage(myId: string, nessageId: string, message: Partial<IMessage>): Promise<IMessageDocument | null> {
+
+        const msg = await this.msgRepo.getMessageById(nessageId);
+        if (!msg) throw new AppError(StatusCodes.NOT_FOUND, "Message not found")
+
+        if (msg.senderId.toString() != myId) throw new AppError(StatusCodes.BAD_REQUEST, "This is not your message");
+
+        return await this.msgRepo.updateMessage(nessageId, message);
+    }
+
+    async getAllMessage(roomId: string, query: Record<string, any>, myId: string): Promise<{ pagination: IPagination; data: IMessageDocument[]; }> {
+        query["myId"] = myId;
+        const conversation = await this.converseRepo.getConversationByRoomId(roomId);
+        if (!conversation) throw new AppError(StatusCodes.NOT_FOUND, "Conversation not found");
+        if (conversation.deletedFor && conversation.deletedFor.length > 0) {
+            const length = conversation.deletedFor.length;
+            for (let i = 0; i < length; i++) {
+                if (conversation.deletedFor[i].userId.toString() === myId) {
+                    return await this.msgRepo.getMessages(roomId, query, conversation.deletedFor[i].deleteAt.toString());
+                }
+            }
+        }
+=======
     async deleteMessage(messageId: string): Promise<IMessageDocument | null> {
         return this.msgRepo.deleteMessage(messageId);
     }
@@ -65,15 +126,38 @@ export default class ChatService implements IChatService {
     }
 
     async getAllMessage(roomId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IMessageDocument[]; }> {
+>>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
         return await this.msgRepo.getMessages(roomId, query);
 
     }
 
     async deleteConversations(myId: string, roomId: string): Promise<IConversationDocument | null> {
 
+<<<<<<< HEAD
+        const conversation = await this.converseRepo.getConversationByRoomId(roomId);
+        if (!conversation) throw new AppError(StatusCodes.NOT_FOUND, "Conversation not found");
+
+        const existingEntryIndex = conversation.deletedFor?.findIndex(entry => entry.userId.toString() === myId);
+        const now = new Date();
+
+        if (existingEntryIndex !== -1) {
+            conversation.deletedFor![existingEntryIndex!].deleteAt = now;
+        } else {
+            conversation.deletedFor!.push({
+                userId: new mongoose.Types.ObjectId(myId),
+                deleteAt: now,
+            });
+        }
+        const deleted = await conversation.save();
+
+        if (!deleted) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "failed to delete the conversation");
+        return deleted;
+
+=======
 
 
          return null
+>>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
     }
 
     async getAllConversations(myId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IConversationDocument[]; }> {
