@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import catchAsync from "../core/Utils/catch_async";
 import IChatService from "../services/chat/chat_service_interface";
 import { sendResponseEnhanced } from "../core/Utils/send_response";
+import { Types } from "mongoose";
 
 export default class ChatController {
     service: IChatService;
@@ -11,10 +12,11 @@ export default class ChatController {
     }
 
     sendMessage = catchAsync(async (req: Request, res: Response) => {
-        const { sender, reciever, text } = req.body;
-        const roomId = [sender, reciever].sort().join("-");
+        const { id } = req.user!
+        const { reciever, text } = req.body;
+        const roomId = [id, reciever].sort().join("-");
         const file = req.file;
-        const sendMessage = await this.service.sendMessage({ senderId: sender, recieverId: reciever, text, roomId }, file);
+        const sendMessage = await this.service.sendMessage({ senderId: new Types.ObjectId(id), recieverId: new Types.ObjectId(reciever), roomId, text }, file);
         sendResponseEnhanced(res, sendMessage);
     });
 
@@ -36,7 +38,7 @@ export default class ChatController {
 
     deleteMessage = catchAsync(async (req: Request, res: Response) => {
         const { messageId } = req.params;
-        const {id} = req.user!;
+        const { id } = req.user!;
         const deleted = await this.service.deleteMessage(messageId, id);
         sendResponseEnhanced(res, deleted);
     });

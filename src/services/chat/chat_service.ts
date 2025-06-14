@@ -10,19 +10,29 @@ import { IConversationRepostiry } from "../../repository/chats/conversations/con
 import IMessageRepository, { IUpdateResult } from "../../repository/chats/messages/message_repository_interface";
 import IChatService from "./chat_service_interface";
 import SocketServer from "../../core/sockets/socket_server";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
+import { IUserRepository } from "../../repository/user_repository_interface";
 
 export default class ChatService implements IChatService {
     msgRepo: IMessageRepository;
     converseRepo: IConversationRepostiry;
+    userRepo: IUserRepository
 
-    constructor(msgRepo: IMessageRepository, converseRepo: IConversationRepostiry) {
+    constructor(msgRepo: IMessageRepository, converseRepo: IConversationRepostiry, userRepo: IUserRepository) {
         this.msgRepo = msgRepo;
         this.converseRepo = converseRepo;
+        this.userRepo = userRepo;
     }
 
     async sendMessage(message: IMessage, file?: Express.Multer.File): Promise<IMessageDocument | null> {
         let messageBody: Record<string, any> = message;
+        console.log(message.recieverId.toString());
+        
+        const sender = await this.userRepo.findUserById(message.senderId.toString());
+        const reciever = await this.userRepo.findUserById(message.recieverId.toString());
+        if (!reciever) throw new AppError(StatusCodes.NOT_FOUND, "Reciever not found");
+        if (!sender) throw new AppError(StatusCodes.NOT_FOUND, "Sender not found");
+
         if (file) {
             const isVideo = isVideoFile(file.originalname);
             const mediaUrl = await uploadFileToCloudinary({ isVideo, file, folder: isVideo ? CloudinaryFolder.messageVideos : CloudinaryFolder.messageImages });
@@ -46,7 +56,7 @@ export default class ChatService implements IChatService {
             conversation = await prevConversation.save();
             if (!conversation) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update conversation");
         } else {
-            const conversation = await this.converseRepo.createConversation({ lastMessage: sendMessage.text, roomId: message.roomId, receiverId: message.recieverId, senderId: message.senderId });
+            const conversation = await this.converseRepo.createConversation({ lastMessage: sendMessage.text, roomId: message.roomId, receiverId: new Types.ObjectId( message.recieverId), senderId: new Types.ObjectId(message.senderId) });
             if (!conversation) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to create conversation");
         }
 

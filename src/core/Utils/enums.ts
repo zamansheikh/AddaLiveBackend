@@ -25,13 +25,9 @@ export enum DatabaseNames {
     friendships = "friendships",
 
     conversations = "conversations",
-<<<<<<< HEAD
     messages = "messages",
 
     userStats = 'userstats'
-=======
-    messages = "messages"
->>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
 
 }
 
@@ -67,11 +63,8 @@ export enum SocketChannels {
 }
 
 
-<<<<<<< HEAD
 export enum GiftTypes {
   rose = 'rose',
   love = 'love',
   car = 'car',
 }
-=======
->>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef

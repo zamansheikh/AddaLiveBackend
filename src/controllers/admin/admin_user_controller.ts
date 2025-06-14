@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { IAdminUserService } from "../../services/admin/admin_user_service";
 import { StatusCodes } from "http-status-codes";
 import catchAsync from "../../core/Utils/catch_async";
-import sendResponse from "../../core/Utils/send_response";
+import sendResponse, { sendResponseEnhanced } from "../../core/Utils/send_response";
 
 export default class AdminUserController {
     AdminUserService: IAdminUserService;
@@ -30,13 +30,6 @@ export default class AdminUserController {
 
         const result = await this.AdminUserService.updateActivityZone({ id: id, zone: zone, dateTill: date_till });
 
-        sendResponse(res, {
-            statusCode: StatusCodes.ACCEPTED,
-            success: true,
-            message: result == null? req.body.id == null? "User Id is required": "Something unexpected occured" :`The user has been successfully assigned to the ${zone} zone.`,
-            result: [
-                result
-            ]
-        });
+       sendResponseEnhanced(res, result);
     });
 }

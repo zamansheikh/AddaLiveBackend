@@ -87,7 +87,7 @@ export default class ReelsRepository implements IReelRepository {
                 },
                 reelStructure
             ]
-        ).paginate();
+        ).sort().paginate();
         const pagination = await result.countTotal();
         const data = await result.exec();
 

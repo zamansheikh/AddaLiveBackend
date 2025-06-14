@@ -19,8 +19,6 @@ export default class PostRepository implements IPostRepository {
     }
     async getAllPosts(query: Record<string, any>) {
         const userId = new mongoose.Types.ObjectId(query.userId);
-
-
         const qb = new QueryBuilder(this.PostModel, query);
 
         const result = qb.aggregate(
@@ -43,7 +41,7 @@ export default class PostRepository implements IPostRepository {
                                     $expr: {
                                         $and: [
                                             { $eq: ["$reactedTo", "$$postId"] },
-                                            { $eq: ["$", "$$userId"] }
+                                            { $eq: ["$reactedBy", "$$userId"] }
                                         ]
                                     }
                                 }
@@ -90,7 +88,7 @@ export default class PostRepository implements IPostRepository {
                 },
                 postStructure
             ]
-        ).paginate();
+        ).sort().paginate();
         const pagination = await result.countTotal();
         const data = await result.exec();
 

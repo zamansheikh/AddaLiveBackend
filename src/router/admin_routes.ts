@@ -1,4 +1,4 @@
-import express from 'express';
+ import express from 'express';
 import UserRepository from '../repository/user_repository';
 import User from '../models/user/user_model';
 import AdminUserService from '../services/admin/admin_user_service';

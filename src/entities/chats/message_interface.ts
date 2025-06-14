@@ -3,8 +3,8 @@ import { IDeletedFor } from "./conversation_interface";
 
 export interface IMessage {
     roomId: string,
-    senderId: Types.ObjectId,
-    recieverId: Types.ObjectId,
+    senderId: Types.ObjectId | string,
+    recieverId: Types.ObjectId | string,
     deletedFor?: IDeletedFor[]
     text?: string,
     file?: string,
