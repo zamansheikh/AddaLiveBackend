@@ -2,6 +2,7 @@
 
 import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
+import { registerGroupRoomHandler } from "./handlers/group_room_handler";
 
 export default class SocketServer {
     private static instance: SocketServer;
@@ -41,6 +42,8 @@ export default class SocketServer {
                 this.onlineUsers.set(userId, socket.id);
                 console.log(`User ${userId} connected with socket ID: ${socket.id}`);
             }
+
+            registerGroupRoomHandler(this.io, socket);
 
             socket.on("disconnect", () => {
                 if (userId) {
