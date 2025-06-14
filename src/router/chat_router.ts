@@ -10,14 +10,17 @@ import ChatService from '../services/chat/chat_service';
 import ChatController from '../controllers/chat_controller';
 import { upload } from '../core/middlewares/multer';
 import EditMessageDto from '../dtos/chat/edit_message_dto';
+import UserRepository from '../repository/user_repository';
+import User from '../models/user/user_model';
 
 
 const router = express.Router();
 
 const messageRepo = new MessageRepository(Messages);
 const conversationRepo = new ConversationRepository(conversation);
+const userRepository = new UserRepository(User);
 
-const chatSerive = new ChatService(messageRepo, conversationRepo);
+const chatSerive = new ChatService(messageRepo, conversationRepo, userRepository);
 const chatController = new ChatController(chatSerive);
 
 

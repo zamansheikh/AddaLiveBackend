@@ -10,22 +10,29 @@ import { IConversationRepostiry } from "../../repository/chats/conversations/con
 import IMessageRepository, { IUpdateResult } from "../../repository/chats/messages/message_repository_interface";
 import IChatService from "./chat_service_interface";
 import SocketServer from "../../core/sockets/socket_server";
-<<<<<<< HEAD
-import mongoose from "mongoose";
-=======
->>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
+import mongoose, { Types } from "mongoose";
+import { IUserRepository } from "../../repository/user_repository_interface";
 
 export default class ChatService implements IChatService {
     msgRepo: IMessageRepository;
     converseRepo: IConversationRepostiry;
+    userRepo: IUserRepository
 
-    constructor(msgRepo: IMessageRepository, converseRepo: IConversationRepostiry) {
+    constructor(msgRepo: IMessageRepository, converseRepo: IConversationRepostiry, userRepo: IUserRepository) {
         this.msgRepo = msgRepo;
         this.converseRepo = converseRepo;
+        this.userRepo = userRepo;
     }
 
     async sendMessage(message: IMessage, file?: Express.Multer.File): Promise<IMessageDocument | null> {
         let messageBody: Record<string, any> = message;
+        console.log(message.recieverId.toString());
+        
+        const sender = await this.userRepo.findUserById(message.senderId.toString());
+        const reciever = await this.userRepo.findUserById(message.recieverId.toString());
+        if (!reciever) throw new AppError(StatusCodes.NOT_FOUND, "Reciever not found");
+        if (!sender) throw new AppError(StatusCodes.NOT_FOUND, "Sender not found");
+
         if (file) {
             const isVideo = isVideoFile(file.originalname);
             const mediaUrl = await uploadFileToCloudinary({ isVideo, file, folder: isVideo ? CloudinaryFolder.messageVideos : CloudinaryFolder.messageImages });
@@ -36,7 +43,6 @@ export default class ChatService implements IChatService {
         if (!sendMessage) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to send message");
 
         const prevConversation = await this.converseRepo.getConversationByRoomId(message.roomId);
-<<<<<<< HEAD
 
         let conversation;
         if (prevConversation) {
@@ -48,14 +54,9 @@ export default class ChatService implements IChatService {
             }
             prevConversation.lastMessage = sendMessage.text;
             conversation = await prevConversation.save();
-=======
-        let conversation;
-        if (prevConversation) {
-            conversation = await this.converseRepo.updateConversation(message.roomId, { lastMessage: sendMessage.text });
->>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
             if (!conversation) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update conversation");
         } else {
-            const conversation = await this.converseRepo.createConversation({ lastMessage: sendMessage.text, roomId: message.roomId, receiverId: message.recieverId, senderId: message.senderId });
+            const conversation = await this.converseRepo.createConversation({ lastMessage: sendMessage.text, roomId: message.roomId, receiverId: new Types.ObjectId( message.recieverId), senderId: new Types.ObjectId(message.senderId) });
             if (!conversation) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to create conversation");
         }
 
@@ -74,7 +75,6 @@ export default class ChatService implements IChatService {
         return await this.msgRepo.updateSeenStatus(roomId);
     }
 
-<<<<<<< HEAD
     async deleteMessage(messageId: string, myId: string): Promise<IMessageDocument | null> {
         const msg = await this.msgRepo.getMessageById(messageId);
         if (!msg) throw new AppError(StatusCodes.NOT_FOUND, "Message not found");
@@ -116,24 +116,12 @@ export default class ChatService implements IChatService {
                 }
             }
         }
-=======
-    async deleteMessage(messageId: string): Promise<IMessageDocument | null> {
-        return this.msgRepo.deleteMessage(messageId);
-    }
-
-    async editMessage(nessageId: string, message: Partial<IMessage>): Promise<IMessageDocument | null> {
-        return await this.msgRepo.updateMessage(nessageId, message);
-    }
-
-    async getAllMessage(roomId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IMessageDocument[]; }> {
->>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
         return await this.msgRepo.getMessages(roomId, query);
 
     }
 
     async deleteConversations(myId: string, roomId: string): Promise<IConversationDocument | null> {
 
-<<<<<<< HEAD
         const conversation = await this.converseRepo.getConversationByRoomId(roomId);
         if (!conversation) throw new AppError(StatusCodes.NOT_FOUND, "Conversation not found");
 
@@ -153,11 +141,6 @@ export default class ChatService implements IChatService {
         if (!deleted) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "failed to delete the conversation");
         return deleted;
 
-=======
-
-
-         return null
->>>>>>> 3daa7017c0d1b6a65da4bab0dbe1fda4aa7177ef
     }
 
     async getAllConversations(myId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IConversationDocument[]; }> {

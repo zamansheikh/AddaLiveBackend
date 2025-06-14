@@ -14,6 +14,7 @@ class FriendshipService implements IFriendshipService {
     constructor(repo: IFriendshipRepository) {
         this.friendRepo = repo;
     }
+    
 
     async sendFriendRequest(body: IFriendship): Promise<IFriendshipDocument | null> {
         const prevDoc = await this.friendRepo.getRequestConditionally({ sender: body.sender, reciever: body.reciever });

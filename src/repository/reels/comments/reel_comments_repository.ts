@@ -39,8 +39,48 @@ export default class ReelsCommentRepostitory implements IReelCommentRepository {
 
         const result = qb
             .aggregate(
-                [{$match: { commentedTo: new Types.ObjectId(reelId), parentComment: null }},
-               {$lookup:  { from: DatabaseNames.ReelsComments, localField: "_id", foreignField: "parentComment", as: "replies" }}]
+                [
+                    { $match: { commentedTo: new Types.ObjectId(reelId), parentComment: null } },
+                    { $lookup: { from: DatabaseNames.User, localField: "commentedBy", foreignField: "_id", as: "commentedByInfo" } },
+                    {
+                        $lookup: {
+                            from: DatabaseNames.ReelsComments,
+                            let: { id: "$_id" },
+                            pipeline: [
+                                { $match: { $expr: { $eq: ["$parentComment", "$$id"] } } },
+                                { $lookup: { from: DatabaseNames.User, localField: "commentedBy", foreignField: "_id", as: "commentedByInfo" } },
+                            ],
+                            as: "replies",
+                        }
+                    },
+                    { $unwind: "$commentedByInfo" },
+                    {
+                        $project: {
+                            article: 1,
+                            _id: 1,
+                            reactionCount: 1,
+                            createdAt: 1,
+                            updatedAt: 1,
+                            commentedByInfo: {
+                                _id: 1,
+                                name: 1,
+                                avatar: 1,
+                            },
+                            replies: {
+                                article: 1,
+                                _id: 1,
+                                reactionCount: 1,
+                                createdAt: 1,
+                                updatedAt: 1,
+                                commentedByInfo: {
+                                    _id: 1,
+                                    name: 1,
+                                    avatar: 1,
+                                },
+                            },
+                        }
+                    }
+                ]
             )
             .paginate()
         const pagination = await result.countTotal();

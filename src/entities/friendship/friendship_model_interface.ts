@@ -12,4 +12,5 @@ export interface IFriendshipDocument extends IFriendship, Document {
     updatedAt: Date,
 }
 
+
 export interface IFriendshipModel extends Model<IFriendshipDocument> {}
