@@ -8,32 +8,32 @@ export enum ReactionType {
 }
 
 export enum DatabaseNames {
-    User = "users",
-    Reels = "reels",
-    ReelsReactions = "reels_reactions", 
-    ReelsComments = "reels_comments",
-    Reels_comment_reaction = "reels_comments_reactions",
+  User = "users",
+  Reels = "reels",
+  ReelsReactions = "reels_reactions",
+  ReelsComments = "reels_comments",
+  Reels_comment_reaction = "reels_comments_reactions",
 
-    Post = "posts",
-    PostReactions = "post_reactions",
-    PostComments = "post_comments",
-    PostCommentReactions = "post_comment_reactions",
+  Post = "posts",
+  PostReactions = "post_reactions",
+  PostComments = "post_comments",
+  PostCommentReactions = "post_comment_reactions",
 
-    stories = "stories",
-    story_reactions= "story_reactions", 
+  stories = "stories",
+  story_reactions = "story_reactions",
 
-    friendships = "friendships",
+  friendships = "friendships",
 
-    conversations = "conversations",
-    messages = "messages",
+  conversations = "conversations",
+  messages = "messages",
 
-    userStats = 'userstats'
+  userStats = 'userstats'
 
 }
 
 export enum ReelStatus {
   active = "active",
-  inactive= "inactive",
+  inactive = "inactive",
 }
 
 export enum CloudinaryFolder {
@@ -60,6 +60,22 @@ export enum RequestTypes {
 export enum SocketChannels {
   newMessage = "newMessage",
   newConversation = "newConversation",
+
+  createRoom = "create-room",
+  deleteRoom = "delete-room",
+  roomList = "room-list",
+  joinRoom = "join-room",
+  leaveRoom = "leave-room",
+  userJoined = 'user-joined',
+  userLeft = 'user-left',
+  banUser = 'ban-user',
+  banned = 'banned',
+  userBanned = 'user-banned',
+  roomClosed = "room-closed",
+  inviteUser = "invite-user",
+  invited = "invited",
+  getRooms = "get-rooms",
+  error = "error-message",
 }
 
 
