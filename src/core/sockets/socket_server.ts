@@ -51,6 +51,7 @@ export default class SocketServer {
                     console.log(`User ${userId} disconnected`);
                 }
             });
+            socket.on("close")
         });
     }
 

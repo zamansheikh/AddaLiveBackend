@@ -18,6 +18,6 @@ export class RegisterUserDto {
   last_name!: string;
 
   @IsString()
-  uid!: number;
+  uid!: string;
   
 }
