@@ -43,7 +43,7 @@ export default class SocketServer {
                 console.log(`User ${userId} connected with socket ID: ${socket.id}`);
             }
 
-            registerGroupRoomHandler(this.io, socket);
+            registerGroupRoomHandler(this.io, socket, this.onlineUsers);
 
             socket.on("disconnect", () => {
                 if (userId) {
@@ -51,7 +51,7 @@ export default class SocketServer {
                     console.log(`User ${userId} disconnected`);
                 }
             });
-            socket.on("close")
+           
         });
     }
 
