@@ -1,16 +1,12 @@
 import { Socket, Server } from 'socket.io';
 import { SocketChannels } from '../../Utils/enums';
 import { StatusCodes } from 'http-status-codes';
+import { RoomData } from '../socket_server';
 
-interface RoomData {
-    hostId: string;
-    members: Set<string>;
-    bannedUsers: Set<string>;
-}
 
-const hostedRooms: Record<string, RoomData> = {};
 
-export function registerGroupRoomHandler(io: Server, socket: Socket, onlineUsers: Map<string, string>) {
+
+export function registerGroupRoomHandler(io: Server, socket: Socket, onlineUsers: Map<string, string>, hostedRooms: Record<string, RoomData>) {
     const userId = socket.handshake.query.userId as string;
 
 
