@@ -3,21 +3,31 @@
 import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
 import { registerGroupRoomHandler } from "./handlers/group_room_handler";
+import { SocketChannels } from "../Utils/enums";
+
+export interface RoomData {
+    hostId: string;
+    members: Set<string>;
+    bannedUsers: Set<string>;
+}
+
 
 export default class SocketServer {
     private static instance: SocketServer;
     private io: Server;
     private onlineUsers = new Map<string, string>(); // Map<userId, socketId>
+    private hostedRooms = {} as Record<string, RoomData>;
+
 
     // Private constructor: enforce singleton usage
     private constructor(server: HttpServer) {
         this.io = new Server(server, {
             cors: {
-                origin: "*", 
+                origin: "*",
                 methods: ["GET", "POST"],
             },
         });
-        this.initialize(); 
+        this.initialize();
     }
 
 
@@ -43,15 +53,28 @@ export default class SocketServer {
                 console.log(`User ${userId} connected with socket ID: ${socket.id}`);
             }
 
-            registerGroupRoomHandler(this.io, socket);
+            registerGroupRoomHandler(this.io, socket, this.onlineUsers, this.hostedRooms);
 
             socket.on("disconnect", () => {
+                // remove the users when disconnected from online users
                 if (userId) {
                     this.onlineUsers.delete(userId);
                     console.log(`User ${userId} disconnected`);
                 }
+                // remove the users and leave the room when diconnected
+                for (const [roomId, roomData] of Object.entries(this.hostedRooms)) {
+                    if (roomData.members.has(userId)) {
+                        roomData.members.delete(userId);
+                        socket.leave(roomId);
+                        this.io.to(roomId).emit(SocketChannels.userLeft, userId);
+                    }
+                    // Optionally delete empty rooms
+                    if (roomData.members.size === 0) {
+                        delete this.hostedRooms[roomId];
+                    }
+                }
             });
-            socket.on("close")
+
         });
     }
 
