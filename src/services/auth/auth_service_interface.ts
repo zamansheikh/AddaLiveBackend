@@ -13,6 +13,6 @@ export interface IAuthService {
     retrieveUserDetails(id: string, myId: string): Promise<IUserDocument | null>;
     updateProfile({ id, profileData, file }: { id: string, profileData: Partial<Record<string, any>>, file?: Express.Multer.File }): Promise<IUserDocument | null>;
     giftUser(giftUser: IGiftUser): Promise<IUserDocument | null>;
-    generateToken(info: {channelName: string, uid: string, APP_CERTIFICATE?: string, APP_ID?: string }): Promise<string>;
+    generateToken(info: {channelName: string, uid: string, APP_CERTIFICATE?: string, APP_ID?: string }): Promise<{token: string}>;
 }
 

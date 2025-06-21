@@ -43,8 +43,8 @@ export default class AuthController {
 
     generateToken = catchAsync(async (req: Request, res: Response) => {
         let { channelName, uid, APP_ID, APP_CERTIFICATE } = req.body;
-        APP_ID = APP_ID || process.env.APP_ID;
-        APP_CERTIFICATE = APP_CERTIFICATE || process.env.APP_CERTIFICATE;
+        APP_ID = APP_ID || process.env.AGORA_APP_ID;
+        APP_CERTIFICATE = APP_CERTIFICATE || process.env.PRIMARY_CERTIFICATE;
         const token = await this.authService.generateToken({ channelName, uid, APP_CERTIFICATE, APP_ID });
         sendResponseEnhanced(res, token);
     });

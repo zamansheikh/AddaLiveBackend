@@ -163,7 +163,7 @@ export default class AuthService implements IAuthService {
         return userWithStats;
     }
 
-    async generateToken({channelName, uid, APP_CERTIFICATE, APP_ID}: { channelName: string; uid: string; APP_CERTIFICATE: string; APP_ID: string; }): Promise<string> {
+    async generateToken({channelName, uid, APP_CERTIFICATE, APP_ID}: { channelName: string; uid: string; APP_CERTIFICATE: string; APP_ID: string; }): Promise<{token: string}> {
 
         const expirationTimeInSeconds = 3600; // Token valid for 1 hour
         const currentTimestamp = Math.floor(Date.now() / 1000);
@@ -179,6 +179,6 @@ export default class AuthService implements IAuthService {
             tokenExpire,
             privilegeExpiredTs
         );
-        return "Successfully generated token";
+        return { token: token };
     }
 }
