@@ -11,6 +11,7 @@ import { Types } from "mongoose";
 import { IAuthService, IGiftUser } from "./auth_service_interface";
 import { IUserDocument } from "../../models/user/user_model_interface";
 import mongoose from "mongoose";
+import { RtcRole, RtcTokenBuilder } from "agora-token";
 
 export default class AuthService implements IAuthService {
 
@@ -127,7 +128,7 @@ export default class AuthService implements IAuthService {
 
         // checking if already the item exists in the list of gifts
         let giftSent = false;
-        
+
         if (userStats.gifts && userStats.gifts.length > 0) {
             const length = userStats.gifts.length;
             for (let i = 0; i < length; i++) {
@@ -160,5 +161,24 @@ export default class AuthService implements IAuthService {
         const userWithStats = userToGift.toObject();
         userWithStats.stats = updatedUserStats;
         return userWithStats;
+    }
+
+    async generateToken({channelName, uid, APP_CERTIFICATE, APP_ID}: { channelName: string; uid: string; APP_CERTIFICATE: string; APP_ID: string; }): Promise<{token: string}> {
+
+        const expirationTimeInSeconds = 3600; // Token valid for 1 hour
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+        const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
+        const tokenExpire = privilegeExpiredTs;
+
+        const token = RtcTokenBuilder.buildTokenWithUid(
+            APP_ID,
+            APP_CERTIFICATE,
+            channelName,
+            uid,
+            RtcRole.PUBLISHER, // Role: PUBLISHER or SUBSCRIBER
+            tokenExpire,
+            privilegeExpiredTs
+        );
+        return { token: token };
     }
 }

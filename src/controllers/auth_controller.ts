@@ -36,9 +36,17 @@ export default class AuthController {
 
     giftUser = catchAsync(async (req: Request, res: Response) => {
         const { id } = req.user!;
-        const {giftType, diamonds, userId } = req.body;
-        const giftedUser = await this.authService.giftUser({myId: id, giftType, diamonds, userId});
+        const { giftType, diamonds, userId } = req.body;
+        const giftedUser = await this.authService.giftUser({ myId: id, giftType, diamonds, userId });
         sendResponseEnhanced(res, giftedUser);
+    });
+
+    generateToken = catchAsync(async (req: Request, res: Response) => {
+        let { channelName, uid, APP_ID, APP_CERTIFICATE } = req.body;
+        APP_ID = APP_ID || process.env.AGORA_APP_ID;
+        APP_CERTIFICATE = APP_CERTIFICATE || process.env.PRIMARY_CERTIFICATE;
+        const token = await this.authService.generateToken({ channelName, uid, APP_CERTIFICATE, APP_ID });
+        sendResponseEnhanced(res, token);
     });
 
 }
