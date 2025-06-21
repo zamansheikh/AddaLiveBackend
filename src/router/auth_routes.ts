@@ -11,6 +11,8 @@ import { validateRequest } from "../core/middlewares/validate_request";
 import UserStats from "../models/userstats/userstats_model";
 import UserStatsRepository from "../repository/userstats/userstats_repository";
 import { GiftUserDto } from "../dtos/auth/gift_user_dto";
+import { validate } from "class-validator";
+import { GenerateTokenDto } from "../dtos/auth/generate_token_dto";
 
 
 
@@ -29,6 +31,8 @@ router.post("/register-google", validateRequest(RegisterUserDto), authController
 router.put("/update-profile", authenticate, upload.single('avatar'), validateRequest(ProfileUpdateDto), authController.updateProfile)
 router.get("/user/:id", authenticate, authController.getUserDetails);
 router.put("/user/gift", authenticate, validateRequest(GiftUserDto), authController.giftUser)
+
+router.post("/generate-token", authenticate, validateRequest(GenerateTokenDto), authController.generateToken)
 
 export default router;
 

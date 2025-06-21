@@ -1,6 +1,6 @@
 import mongoose, { mongo } from "mongoose";
 import { IUserEntity } from "../entities/user_entity_interface";
-import { IUserModel } from "../models/user/user_model_interface";
+import { IUserDocument, IUserModel } from "../models/user/user_model_interface";
 import { IUserRepository } from "./user_repository_interface";
 import { DatabaseNames } from "../core/Utils/enums";
 
@@ -19,6 +19,9 @@ export default class UserRepository implements IUserRepository {
         return await this.UserModel.findById(id);
     }
 
+    async getUserDetailsSelectedField(id: string, fields: string[]): Promise<IUserDocument | null> {
+        return await this.UserModel.findById(id, fields);
+    }
     async findByUID(uid: string) {
         return await this.UserModel.findOne({ uid });
     }

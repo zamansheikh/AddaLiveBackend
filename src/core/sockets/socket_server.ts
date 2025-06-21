@@ -4,9 +4,14 @@ import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
 import { registerGroupRoomHandler } from "./handlers/group_room_handler";
 import { SocketChannels } from "../Utils/enums";
+import UserRepository from "../../repository/user_repository";
+import User from "../../models/user/user_model";
+import { IUserDocument } from "../../models/user/user_model_interface";
+
 
 export interface RoomData {
     hostId: string;
+    hostDetails?: IUserDocument | null;
     members: Set<string>;
     bannedUsers: Set<string>;
 }
@@ -17,6 +22,7 @@ export default class SocketServer {
     private io: Server;
     private onlineUsers = new Map<string, string>(); // Map<userId, socketId>
     private hostedRooms = {} as Record<string, RoomData>;
+    private userRepo = new UserRepository(User);
 
 
     // Private constructor: enforce singleton usage
@@ -53,7 +59,7 @@ export default class SocketServer {
                 console.log(`User ${userId} connected with socket ID: ${socket.id}`);
             }
 
-            registerGroupRoomHandler(this.io, socket, this.onlineUsers, this.hostedRooms);
+            registerGroupRoomHandler(this.io, socket, this.onlineUsers, this.hostedRooms, this.userRepo);
 
             socket.on("disconnect", () => {
                 // remove the users when disconnected from online users
