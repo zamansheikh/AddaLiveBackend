@@ -27,11 +27,18 @@ export enum DatabaseNames {
   conversations = "conversations",
   messages = "messages",
 
-  userStats = 'userstats'
+  userStats = 'userstats',
+
+  history = 'histories'
 
 }
 
 export enum ReelStatus {
+  active = "active",
+  inactive = "inactive",
+}
+
+export enum UserStatus {
   active = "active",
   inactive = "inactive",
 }
