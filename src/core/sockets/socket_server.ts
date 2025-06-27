@@ -14,6 +14,7 @@ export interface RoomData {
     hostDetails?: IUserDocument | null;
     members: Set<string>;
     bannedUsers: Set<string>;
+    title: string;
 }
 
 
