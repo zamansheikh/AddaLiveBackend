@@ -16,25 +16,25 @@ const router = express.Router()
 
 const statsRepository = new UserStatsRepository(UserStats);
 const historyRepository = new HistoryRepository(History);
-const userRepository = new  UserRepository(User);
+const userRepository = new UserRepository(User);
 const gameService = new GameService(statsRepository, historyRepository, userRepository);
 const gameController = new GameController(gameService);
 
 // get leaderboard ranking list
-router.route("/leaderboard").get(authenticate, gameController.userLeaderBoardInfo);
+router.route("/leaderboard").get(gameController.userLeaderBoardInfo);
 
 // update user credits
-router.route("/game_data/running_json/:userId").put(authenticate, validateRequest(UpdateUserStatsDto),gameController.updateUserCredits);
+router.route("/game_data/running_json/:userId").put(validateRequest(UpdateUserStatsDto), gameController.updateUserCredits);
 
 // get user stats
-router.route("/user_information/user_id/:userId").get(authenticate, gameController.getUserInfo)
+router.route("/user_information/user_id/:userId").get(gameController.getUserInfo)
 
 // create history document
-router.route("/result-history/add/:userId").post(authenticate, validateRequest(CreateHistoryDto), gameController.createHistory);
+router.route("/result-history/add/:userId").post(validateRequest(CreateHistoryDto), gameController.createHistory);
 
 
 // get result history
-router.route("/result-history/view/:userId/date/:date").get(authenticate, gameController.getHistory);
+router.route("/result-history/view/:userId/date/:date").get(gameController.getHistory);
 
 
 

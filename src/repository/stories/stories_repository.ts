@@ -86,6 +86,14 @@ class StoriesRepository implements IStoryRepository {
                             avatar: 1
                         }
                     }
+                },
+                {
+                    $group: {
+                        _id: "$ownerId",
+                        name: { $first: "$userInfo.name" },
+                        avatar: { $first: "$userInfo.avatar" },
+                        stories: { $push: "$$ROOT" },
+                    }
                 }
             ]
         ).paginate();
