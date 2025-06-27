@@ -11,6 +11,7 @@ export interface ISerializedRoomData {
     hostDetails?: IUserDocument | null;
     members: string[];
     bannedUsers: string[];
+    title: string;
 }
 
 
@@ -22,7 +23,7 @@ export async function registerGroupRoomHandler(io: Server, socket: Socket, onlin
 
 
     // host
-    socket.on(SocketChannels.createRoom, (roomId) => {
+    socket.on(SocketChannels.createRoom, (roomId, title) => {
         const room = hostedRooms[roomId];
         if (room) return io.emit(SocketChannels.error, { status: StatusCodes.CONFLICT, message: "Room Already Exists" });
 
@@ -30,7 +31,8 @@ export async function registerGroupRoomHandler(io: Server, socket: Socket, onlin
             hostId: userId,
             hostDetails: userDetails,
             members: new Set([userId]),
-            bannedUsers: new Set()
+            bannedUsers: new Set(),
+            title: title,
         };
         socket.join(roomId);
 
@@ -66,9 +68,6 @@ export async function registerGroupRoomHandler(io: Server, socket: Socket, onlin
 
     // user only
     socket.on(SocketChannels.joinRoom, (roomId) => {
-
-
-
         const room = hostedRooms[roomId];
         if (!room) return io.emit(SocketChannels.error, { status: StatusCodes.NOT_FOUND, message: "This room does not exists" });
         if (room.bannedUsers.has(userId)) return io.emit(SocketChannels.error, { status: StatusCodes.UNAUTHORIZED, message: "You are banned from this room" });
@@ -76,7 +75,6 @@ export async function registerGroupRoomHandler(io: Server, socket: Socket, onlin
         room.members.add(userId);
         socket.join(roomId);
         console.log(hostedRooms);
-
         io.to(roomId).emit(SocketChannels.userJoined, userId);
     });
 
@@ -84,7 +82,6 @@ export async function registerGroupRoomHandler(io: Server, socket: Socket, onlin
 
     socket.on(SocketChannels.leaveRoom, (roomId) => {
         const room = hostedRooms[roomId];
-
         if (!room) return io.emit(SocketChannels.error, { status: StatusCodes.NOT_FOUND, message: "This room does not exists" });
         room.members.delete(userId);
         socket.leave(roomId);
@@ -103,6 +100,7 @@ export async function registerGroupRoomHandler(io: Server, socket: Socket, onlin
                 hostDetails: roomData.hostDetails,
                 members: Array.from(roomData.members),
                 bannedUsers: Array.from(roomData.bannedUsers),
+                title: roomData.title,
             };
         }
 
