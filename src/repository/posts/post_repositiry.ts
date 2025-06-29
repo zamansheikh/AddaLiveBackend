@@ -82,7 +82,7 @@ export default class PostRepository implements IPostRepository {
                                     avatar: "$userInfo.avatar"
                                 }
                             },
-                        
+
                             {
                                 $project: postReactionStructure,
                             }
@@ -161,6 +161,12 @@ export default class PostRepository implements IPostRepository {
                     },
                 },
                 {
+                    $unwind: {
+                        path: "$myReaction",
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
                     $lookup: {
                         from: DatabaseNames.PostReactions,
                         let: { postId: "$_id" },
@@ -194,6 +200,7 @@ export default class PostRepository implements IPostRepository {
                         as: "latestReactions",
                     },
                 },
+
                 postStructure
             ]
         );
