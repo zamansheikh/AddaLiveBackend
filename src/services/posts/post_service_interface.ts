@@ -6,7 +6,8 @@ import { IPostsReactionDocument } from "../../entities/posts/posts_reaction_inte
 export interface IPostService {
     
     createPost({ ownerId, body, file }: { ownerId: string, body: Partial<Record<string, any>>, file?: Express.Multer.File }): Promise<IPostDocument | null>;
-    getAllPost(query: Record<string, any>): Promise<{pagination: IPagination, data: IPostDocument[]} | null >; 
+    getAllPost(query: Record<string, any>): Promise<{pagination: IPagination, data: IPostDocument[]} | null >;
+    getPostDetails(postId: string, userId: string): Promise<IPostDocument>; 
     editPost({ postID, postCaption, userId }: { postID: string, postCaption: string, userId: string }): Promise<IPostDocument  | null>;
     deletePost({ postID, userId }: { postID: string, userId: string }): Promise<IPostDocument  | null>;
     reactOnPosts({ postId, reaction_type, userID }: { postId: string, reaction_type: string, userID: string }): Promise<IPostDocument | IPostsReactionDocument  | null>;

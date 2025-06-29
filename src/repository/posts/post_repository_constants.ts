@@ -14,11 +14,8 @@ export const postStructure  = {
         myReaction: {
             reaction_type: 1
         },
-        userInfo: {
-            _id: 1,
-            name: 1,
-            avatar: 1
-        }
+       userName: 1,
+       avatar: 1
     }
 };
 
@@ -28,9 +25,6 @@ export const postReactionStructure = {
     reactedTo: 1,
     reaction_type: 1,
     createdAt: 1,
-    userInfo: {
-        _id: 1,
-        name: 1,
-        avatar: 1 // or whatever other fields you want
-    }
+    userName: 1,
+    avatar: 1
 }

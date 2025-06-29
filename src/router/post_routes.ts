@@ -32,6 +32,7 @@ const postController = new PostController(postService);
 
 router.post("/create", authenticate, upload.single('media'), validateRequest(CreatePostDto), postController.createPost);
 router.get("/", authenticate, postController.getAllPosts);
+router.get("/:postId", authenticate, postController.getPostDetails);
 router.post("/edit", authenticate, validateRequest(EditPostDto), postController.editPost);
 router.delete("/delete/:postId", authenticate, postController.deletePost);
 

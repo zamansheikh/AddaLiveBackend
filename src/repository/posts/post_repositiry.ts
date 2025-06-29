@@ -31,6 +31,13 @@ export default class PostRepository implements IPostRepository {
                         as: "userInfo",
                     },
                 },
+                { $unwind: "$userInfo" },
+                {
+                    $addFields: {
+                        userName: "$userInfo.name",
+                        avatar: "$userInfo.avatar"
+                    }
+                },
                 {
                     $lookup: {
                         from: "post_reactions",
@@ -69,7 +76,13 @@ export default class PostRepository implements IPostRepository {
                             {
                                 $unwind: "$userInfo"
                             },
-
+                            {
+                                $addFields: {
+                                    userName: "$userInfo.name",
+                                    avatar: "$userInfo.avatar"
+                                }
+                            },
+                        
                             {
                                 $project: postReactionStructure,
                             }
@@ -96,6 +109,92 @@ export default class PostRepository implements IPostRepository {
             pagination,
             data
         }
+    }
+
+    async getPostDetails(postId: string, userId: string): Promise<IPostDocument | null> {
+        const postObjectId = new mongoose.Types.ObjectId(postId);
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+        const post = await this.PostModel.aggregate(
+            [
+                {
+                    $match: {
+                        _id: postObjectId
+                    },
+                },
+                {
+                    $lookup: {
+                        from: DatabaseNames.User,
+                        localField: "ownerId",
+                        foreignField: "_id",
+                        as: "userInfo",
+                    },
+                },
+                { $unwind: "$userInfo" },
+                {
+                    $addFields: {
+                        userName: "$userInfo.name",
+                        avatar: "$userInfo.avatar"
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "post_reactions",
+                        let: { postId: "$_id", userId: userObjectId },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $and: [
+                                            { $eq: ["$reactedTo", "$$postId"] },
+                                            { $eq: ["$reactedBy", "$$userId"] }
+                                        ]
+                                    }
+                                }
+                            }
+                        ],
+                        as: "myReaction",
+                    },
+                },
+                {
+                    $lookup: {
+                        from: DatabaseNames.PostReactions,
+                        let: { postId: "$_id" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$reactedTo", "$$postId"] } } },
+                            { $sort: { createdAt: -1 } },
+                            { $limit: 10 },
+                            {
+                                $lookup: {
+                                    from: DatabaseNames.User,
+                                    localField: "reactedBy",
+                                    foreignField: "_id",
+                                    as: "userInfo"
+                                }
+                            },
+                            {
+                                $unwind: "$userInfo"
+                            },
+
+                            {
+                                $addFields: {
+                                    userName: "$userInfo.name",
+                                    avatar: "$userInfo.avatar"
+                                }
+                            },
+
+                            {
+                                $project: postReactionStructure,
+                            }
+                        ],
+                        as: "latestReactions",
+                    },
+                },
+                postStructure
+            ]
+        );
+
+
+        return post[0];
     }
 
     async findPostById(id: string) {

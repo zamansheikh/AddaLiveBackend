@@ -59,6 +59,12 @@ export default class PostService implements IPostService {
         return this.PostRepository.getAllPosts(query);
     }
 
+    async getPostDetails(postId: string, userId: string): Promise<IPostDocument> {
+        const post = await this.PostRepository.getPostDetails(postId, userId);
+        if(!post) throw new AppError(StatusCodes.BAD_REQUEST, "Post not found");
+        return post;
+    }
+
     async editPost({ postID, postCaption, userId }: { postID: string; postCaption: string; userId: string; }): Promise<IPostDocument | null> {
         const post = await this.PostRepository.findPostById(postID);
         if (!post) throw new AppError(StatusCodes.BAD_REQUEST, "post was not found with the provided Id");
