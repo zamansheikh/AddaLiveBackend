@@ -31,6 +31,15 @@ export default class PostController {
         }
     );
 
+    getPostDetails = catchAsync(
+        async (req: Request, res: Response) => {
+            const { postId } = req.params;
+            const { id } = req.user!;
+            const postDetails = await this.PostService.getPostDetails(postId, id);
+            sendResponseEnhanced(res, postDetails);
+        }
+    );
+
     editPost = catchAsync(
         async (req: Request, res: Response) => {
             const { postId, postCaption } = req.body;

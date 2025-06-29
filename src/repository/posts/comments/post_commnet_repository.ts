@@ -42,7 +42,38 @@ export default class PostsCommentRepostitory implements IPostCommentRepository {
             .aggregate(
                 [
                     { $match: { commentedTo: new Types.ObjectId(postId), parentComment: null } },
-                    { $lookup: { from: DatabaseNames.PostComments, localField: "_id", foreignField: "parentComment", as: "replies" } }
+                    { $lookup: { from: DatabaseNames.User, localField: "commentedBy", foreignField: "_id", as: "userInfo" } },
+                    { $unwind: "$userInfo" },
+                    {
+                        $lookup: {
+                            from: DatabaseNames.PostComments,
+                            let: { commentId: "$_id" },
+                            pipeline: [
+                                { $match: { $expr: { $eq: ["$parentComment", "$$commentId"] } } },
+                                { $lookup: { from: DatabaseNames.User, localField: "commentedBy", foreignField: "_id", as: "userInfo" } },
+                                { $unwind: "$userInfo" },
+                                {
+                                    $addFields: {
+                                        userName: "$userInfo.name",
+                                        avatar: "$userInfo.avatar"
+                                    }
+                                },
+                                { $project: { userInfo: 0 } }
+                            ],
+                            as: "replies"
+                        }
+                    },
+                    {
+                        $addFields: {
+                            userName: "$userInfo.name",
+                            avatar: "$userInfo.avatar"
+                        }
+                    },
+                    {
+                        $project: {
+                            userInfo: 0
+                        }
+                    }
                 ]
             )
             .paginate()

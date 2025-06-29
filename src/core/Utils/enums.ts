@@ -29,7 +29,9 @@ export enum DatabaseNames {
 
   userStats = 'userstats',
 
-  history = 'histories'
+  history = 'histories',
+
+  followers = 'followers'
 
 }
 
