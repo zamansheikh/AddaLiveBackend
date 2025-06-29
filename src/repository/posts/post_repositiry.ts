@@ -99,6 +99,11 @@ export default class PostRepository implements IPostRepository {
                 {
                     $unwind: "$userInfo"
                 },
+                {
+                    $sort: {
+                        updatedAt: -1
+                    }
+                },
                 postStructure
             ]
         ).sort().paginate();
