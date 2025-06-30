@@ -4,11 +4,11 @@ import { DatabaseNames, ReactionType } from "../../../../core/Utils/enums";
 
 const postCommentReactionSchema = new mongoose.Schema<IPostsReactionDocument>({
     reactedBy: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
         required: true,
     },
     reactedTo: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
         required: true,
     },
     reaction_type: {

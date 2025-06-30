@@ -33,6 +33,6 @@ const reelsCommentSchema = new mongoose.Schema<IReelsCommentDocument>({
 
 );
 
-const Comments = mongoose.model(DatabaseNames.ReelsComments, reelsCommentSchema,DatabaseNames.ReelsComments);
+const Comments = mongoose.model(DatabaseNames.ReelsComments, reelsCommentSchema, DatabaseNames.ReelsComments);
 
 export default Comments;

@@ -8,5 +8,5 @@ export interface IPostCommentRepository {
     deleteCommentByID(commentId: string):Promise<IPostCommentDocument | null>;
     getAllComments(): Promise<IPostCommentDocument[] | null>;
     updateCount(comentId: string, payload: Record<string, number>): Promise<IPostCommentDocument | null>;
-    getCommentsWithReplies({postId, query}: {postId: string, query: Record<string, any>}):Promise<{pagination: IPagination, data: IPostCommentDocument[]} | null>
+    getCommentsWithReplies({postId, userId, query}: {postId: string, userId: string, query: Record<string, any>}):Promise<{pagination: IPagination, data: IPostCommentDocument[]} | null>
 }

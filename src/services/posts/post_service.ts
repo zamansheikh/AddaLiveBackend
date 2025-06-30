@@ -207,7 +207,7 @@ export default class PostService implements IPostService {
     async getAllComments({ userId, postId, query }: { userId: string; postId: string; query: Record<string, any>; }): Promise<{ pagination: IPagination; data: IPostCommentDocument[]; } | null> {
         const reel = await this.PostRepository.findPostById(postId);
         if (!reel) throw new AppError(StatusCodes.BAD_REQUEST, "This reel does not exist");
-        const comments = await this.CommentRepository.getCommentsWithReplies({ postId, query });
+        const comments = await this.CommentRepository.getCommentsWithReplies({ postId, userId, query });
         return comments;
     }
 
