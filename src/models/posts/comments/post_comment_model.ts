@@ -23,6 +23,8 @@ const postCommentSchema = new mongoose.Schema<IPostCommentDocument>({
         type: Number,
         default: 0,
     }
+}, {
+    timestamps: true,
 });
 
 const PostComment = mongoose.model(DatabaseNames.PostComments, postCommentSchema, DatabaseNames.PostComments);

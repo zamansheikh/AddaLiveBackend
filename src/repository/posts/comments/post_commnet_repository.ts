@@ -35,8 +35,9 @@ export default class PostsCommentRepostitory implements IPostCommentRepository {
         return await this.PostCommentModel.findByIdAndUpdate(comentId, { $inc: payload }, { new: true });
     }
 
-    async getCommentsWithReplies({ postId, query }: { postId: string, query: Record<string, any> }) {
+    async getCommentsWithReplies({ postId, userId, query }: { postId: string, userId: string, query: Record<string, any> }) {
         const qb = new QueryBuilder<IPostCommentDocument>(this.PostCommentModel, query);
+        console.log(userId);
 
         const result = qb
             .aggregate(
@@ -46,19 +47,77 @@ export default class PostsCommentRepostitory implements IPostCommentRepository {
                     { $unwind: "$userInfo" },
                     {
                         $lookup: {
+                            from: DatabaseNames.PostCommentReactions,
+                            let: { cmntId: "$_id", userID: new Types.ObjectId(userId) },
+                            pipeline: [
+                                {
+                                    $match: {
+                                        $expr: {
+                                            $and: [
+                                                { $eq: ["$reactedTo", "$$cmntId"] },
+                                                { $eq: ["$reactedBy", "$$userID"] },
+                                            ]
+                                        }
+                                    }
+                                }
+                            ],
+                            as: "my_reaction",
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: "$myReaction",
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $lookup: {
                             from: DatabaseNames.PostComments,
                             let: { commentId: "$_id" },
                             pipeline: [
                                 { $match: { $expr: { $eq: ["$parentComment", "$$commentId"] } } },
                                 { $lookup: { from: DatabaseNames.User, localField: "commentedBy", foreignField: "_id", as: "userInfo" } },
                                 { $unwind: "$userInfo" },
+                                
+                                {
+                                    $lookup: {
+                                        from: DatabaseNames.PostCommentReactions,
+                                        let: { cmntId: "$_id", userID: new Types.ObjectId(userId) },
+                                        pipeline: [
+                                            {
+                                                $match: {
+                                                    $expr: {
+                                                        $and: [
+                                                            { $eq: ["$reactedTo", "$$cmntId"] },
+                                                            { $eq: ["$reactedBy", "$$userID"] },
+                                                        ]
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        as: "my_reaction",
+                                    }
+                                },
                                 {
                                     $addFields: {
                                         userName: "$userInfo.name",
-                                        avatar: "$userInfo.avatar"
+                                        avatar: "$userInfo.avatar",
+                                        myReaction: { reaction_type: "$my_reaction.reaction_type" }
                                     }
                                 },
-                                { $project: { userInfo: 0 } }
+                                {
+                                    $unwind: {
+                                        path: "$my_reaction",
+                                        preserveNullAndEmptyArrays: true
+                                    }
+                                },
+                                {
+                                    $unwind: {
+                                        path: "$myReaction.reaction_type",
+                                        preserveNullAndEmptyArrays: true
+                                    }
+                                },
+                                { $project: { userInfo: 0, my_reaction: 0 } }
                             ],
                             as: "replies"
                         }
@@ -66,12 +125,20 @@ export default class PostsCommentRepostitory implements IPostCommentRepository {
                     {
                         $addFields: {
                             userName: "$userInfo.name",
-                            avatar: "$userInfo.avatar"
+                            avatar: "$userInfo.avatar",
+                            myReaction: { reaction_type: "$my_reaction.reaction_type" }
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: "$myReaction.reaction_type",
+                            preserveNullAndEmptyArrays: true
                         }
                     },
                     {
                         $project: {
-                            userInfo: 0
+                            userInfo: 0,
+                            my_reaction: 0
                         }
                     }
                 ]
