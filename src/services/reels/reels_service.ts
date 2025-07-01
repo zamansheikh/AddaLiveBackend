@@ -204,7 +204,7 @@ export default class ReelsService implements IReelService {
         const reel = await this.ReelRepository.findReelById(reelId);
         if (!reel) throw new AppError(StatusCodes.BAD_REQUEST, "This reel does not exist");
 
-        const comments = await this.CommentRepository.getCommentsWithReplies({ reelId, query });
+        const comments = await this.CommentRepository.getCommentsWithReplies({ reelId, userId, query });
 
         // console.log(comments);
 
