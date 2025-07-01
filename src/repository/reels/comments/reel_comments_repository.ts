@@ -36,7 +36,7 @@ export default class ReelsCommentRepostitory implements IReelCommentRepository {
 
     async getCommentsWithReplies({ reelId, userId, query }: { reelId: string; userId: string; query: Record<string, any> }) {
         const qb = new QueryBuilder<IReelsCommentDocument>(this.ReelCommentModel, query);
-        console.log(userId);
+        
 
         const result = qb
             .aggregate(
