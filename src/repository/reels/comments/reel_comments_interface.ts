@@ -10,5 +10,5 @@ export interface IReelCommentRepository {
     deleteCommentByID(commentId: string):Promise<IReelsCommentDocument | null>;
     getAllComments(): Promise<IReelsCommentDocument[] | null>;
     updateCount(comentId: string, payload: Record<string, number>): Promise<IReelsCommentDocument | null>;
-    getCommentsWithReplies({reelId, query}: {reelId: string, query: Record<string, any>}):Promise<{pagination: IPagination, data: IReelsCommentDocument[]} | null>
+    getCommentsWithReplies({reelId, userId, query}: {reelId: string, userId: string, query: Record<string, any>}):Promise<{pagination: IPagination, data: IReelsCommentDocument[]} | null>
 }

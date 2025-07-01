@@ -38,7 +38,7 @@ export default class PostsCommentRepostitory implements IPostCommentRepository {
     async getCommentsWithReplies({ postId, userId, query }: { postId: string, userId: string, query: Record<string, any> }) {
         const qb = new QueryBuilder<IPostCommentDocument>(this.PostCommentModel, query);
         console.log(userId);
-
+        
         const result = qb
             .aggregate(
                 [
