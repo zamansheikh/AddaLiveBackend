@@ -130,6 +130,7 @@ export default class ChatService implements IChatService {
 
         if (existingEntryIndex !== -1) {
             conversation.deletedFor![existingEntryIndex!].deleteAt = now;
+            conversation.deletedFor![existingEntryIndex!].isActive = true;
         } else {
             conversation.deletedFor!.push({
                 userId: new mongoose.Types.ObjectId(myId),
