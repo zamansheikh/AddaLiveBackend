@@ -20,7 +20,6 @@ const conversationSchema = new mongoose.Schema<IConversationDocument>({
     },
     lastMessage: {
         type: String,
-        required: true,
     },
 
     deletedFor: [
