@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { IUserStats, IUSerStatsDocument, IUSerStatsModel } from "../../entities/userstats/userstats_interface";
 import { ILeaderBoardResponse } from "../../services/game/game_service";
 import IUserStatsRepository from "./userstats_repository_interface";
@@ -18,7 +19,8 @@ export default class UserStatsRepository implements IUserStatsRepository {
         return await this.model.findOneAndDelete({ userId });
     }
 
-    async getUserStats(userId: string): Promise<IUSerStatsDocument | null> {
+    async getUserStats(id: string): Promise<IUSerStatsDocument | null> {
+        const userId =  new mongoose.Types.ObjectId(id)
         return await this.model.findOne({ userId });
     }
 
