@@ -43,6 +43,9 @@ export class QueryBuilder<T> {
     }
 
     populateField(field: string, populateWith: string) {
+        // field takes the field name you want to populate
+        // populate with takes the fields that you want to include in the population
+        // the included fields must be in a single string seperated by spaces.
         this.modelQuery = this.modelQuery.populate(field, populateWith);
         return this;
     }

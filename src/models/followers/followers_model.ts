@@ -18,6 +18,7 @@ const followerSchema = new mongoose.Schema<IFollowerDocument>({
     timestamps: true,
 });
 
+followerSchema.index({ myId: 1, followerId: 1 }, { unique: true }); // prevent duplicates
 
 const Follower = mongoose.model(DatabaseNames.followers, followerSchema, DatabaseNames.followers);
 
