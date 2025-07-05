@@ -3,19 +3,14 @@ import { IFriendshipDocument } from "../../entities/friendship/friendship_model_
 import { DatabaseNames, FriendshipStatus } from "../../core/Utils/enums";
 
 const friendshipSchema = new mongoose.Schema<IFriendshipDocument>({
-    sender: {
+    user1: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
     },
-    reciever: {
+    user2: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
     },
-    status: {
-        type: String,
-        enum: FriendshipStatus,
-        default: FriendshipStatus.pending
-    }
 },
     {
         timestamps: true,
