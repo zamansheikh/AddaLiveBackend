@@ -4,13 +4,15 @@ import { IFollower, IFollowerDocument } from "../../entities/followers/follower_
 import { IFollowerRepository } from "../../repository/follower/follower_repository";
 import { IUserRepository } from "../../repository/user_repository_interface";
 import { IPagination } from "../../core/Utils/query_builder";
+import IFriendshipRepository from "../../repository/friendships/friendship_repository_interface";
+import mongoose from "mongoose";
 
 export interface IFollowerService {
     createFollower(follow: IFollower): Promise<IFollowerDocument | null>;
     deleteFollower(follow: IFollower): Promise<IFollowerDocument | null>;
     followingList(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IFollowerDocument[] } | null>;
     followerList(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IFollowerDocument[] } | null>;
-    getFollowerAndFollowingCount(userId: string): Promise<{ followerCount: number, followingCount: number }>;
+    getFollowerAndFollowingCount(userId: string): Promise<{ followerCount: number, followingCount: number; friendshipCount: number;  }>;
 }
 
 
@@ -18,22 +20,54 @@ export interface IFollowerService {
 export default class FollowerService implements IFollowerService {
     FollowerRepository: IFollowerRepository
     UserRepository: IUserRepository;
-    constructor(followerRepository: IFollowerRepository, userRepository: IUserRepository) {
+    FriendShipRepository: IFriendshipRepository;
+    constructor(followerRepository: IFollowerRepository, userRepository: IUserRepository, friendShipRepository: IFriendshipRepository) {
         this.FollowerRepository = followerRepository;
         this.UserRepository = userRepository;
+        this.FriendShipRepository = friendShipRepository;
     }
 
     async createFollower(follow: IFollower): Promise<IFollowerDocument | null> {
-        if(follow.myId === follow.followerId) throw new AppError(StatusCodes.BAD_REQUEST, "You cannot follow yourself");
+        if (follow.myId === follow.followerId) throw new AppError(StatusCodes.BAD_REQUEST, "You cannot follow yourself");
         const user1 = await this.UserRepository.findUserById(follow.myId.toString());
         const user2 = await this.UserRepository.findUserById(follow.followerId.toString());
         if (!user1 || !user2) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
 
+        // check if i already follow that person
         const prevFollower = await this.FollowerRepository.findFollower(follow);
         if (prevFollower) throw new AppError(StatusCodes.BAD_REQUEST, "You are already following this user");
 
-        const follower = await this.FollowerRepository.createFollower(follow);
+        // transactional safety
+        const session = await mongoose.startSession();
+        session.startTransaction();
+
+        const follower = await this.FollowerRepository.createFollower(follow, session);
         if (!follower) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Something went wrong while following the user");
+
+        // checking if the other person is following me
+        const mutualFollow = await this.FollowerRepository.findFollower({ myId: follow.followerId, followerId: follow.myId }, session);
+        if (mutualFollow) {
+            // check for existing friendship
+            const existingFriendship = await this.FriendShipRepository
+                .existingFriendship({
+                    user1: new mongoose.Types.ObjectId(follow.myId.toString()),
+                    user2: new mongoose.Types.ObjectId(follow.followerId.toString())
+                }, session);
+
+            if (!existingFriendship) {
+                const friendship = await this.FriendShipRepository
+                    .createFriendShip({
+                        user1: new mongoose.Types.ObjectId(follow.myId.toString()),
+                        user2: new mongoose.Types.ObjectId(follow.followerId.toString())
+                    }, session);
+                if (!friendship) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Something went wrong while creating the friendship");
+            }
+        }
+
+        // safely executing all the operations.
+        await session.commitTransaction();
+        await session.endSession();
+
         return follower;
     };
 
@@ -45,8 +79,24 @@ export default class FollowerService implements IFollowerService {
         const prevFollower = await this.FollowerRepository.findFollower(follow);
         if (!prevFollower) throw new AppError(StatusCodes.BAD_REQUEST, "You are not following this user");
 
-        const unfollow = await this.FollowerRepository.deleteFollowerById(prevFollower.id);
+        const session = await mongoose.startSession();
+        session.startTransaction();
+
+        const unfollow = await this.FollowerRepository.deleteFollowerById(prevFollower.id, session);
         if (!unfollow) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Something went wrong while unfollowing the user");
+
+        const existingFriendship = await this.FriendShipRepository
+            .existingFriendship({
+                user1: new mongoose.Types.ObjectId(follow.myId.toString()),
+                user2: new mongoose.Types.ObjectId(follow.followerId.toString())
+            }, session);
+
+        if (existingFriendship) {
+            await this.FriendShipRepository.deleteFriendship(existingFriendship.id, session);
+        }
+
+        await session.commitTransaction();
+        await session.endSession();
         return unfollow;
     }
 
@@ -72,8 +122,12 @@ export default class FollowerService implements IFollowerService {
     }
 
 
-    async getFollowerAndFollowingCount(userId: string): Promise<{ followerCount: number; followingCount: number; }> {
+    async getFollowerAndFollowingCount(userId: string): Promise<{ followerCount: number; followingCount: number; friendshipCount: number; }> {
         const user = await this.UserRepository.findUserById(userId);
         if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+        const followerCount = await this.FollowerRepository.getFollowerCount(userId);
+        const followingCount = await this.FollowerRepository.getFollowingCount(userId);
+        const friendshipCount = await this.FriendShipRepository.getFriendShipCount(userId);
+        return { followerCount, followingCount, friendshipCount };
     }
 }

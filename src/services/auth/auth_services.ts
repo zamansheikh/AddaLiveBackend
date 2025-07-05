@@ -59,7 +59,7 @@ export default class AuthService implements IAuthService {
     }
 
     async retrieveUserDetails(id: string, myId: string) {
-        return await this.UserRepository.getUserDetails({ userId: id, myId });
+        return await this.UserRepository.getUserDetails({ Id: id, myId });
     }
 
     async updateProfile({ id, profileData, file }: { id: string, profileData: Partial<Record<string, any>>, file?: Express.Multer.File }) {

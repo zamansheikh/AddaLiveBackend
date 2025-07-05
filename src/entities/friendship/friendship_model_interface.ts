@@ -2,9 +2,8 @@ import { Document, Model, Types } from "mongoose";
 import { FriendshipStatus } from "../../core/Utils/enums";
 
 export interface IFriendship {
-    sender: Types.ObjectId,
-    reciever: Types.ObjectId,
-    status?: FriendshipStatus,
+    user1: Types.ObjectId,
+    user2: Types.ObjectId,
 }
 
 export interface IFriendshipDocument extends IFriendship, Document {

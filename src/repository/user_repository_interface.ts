@@ -9,5 +9,5 @@ export interface IUserRepository {
     findAllUser(): Promise<IUserDocument[] | null>;
     findUsersConitionally(field: string, value: string | number): Promise<IUserDocument[] | null>
     findUserByIdAndUpdate(id: string, payload: Record<string, any>): Promise<IUserDocument | null>;
-    getUserDetails(details: { userId: string, myId: string }): Promise<IUserDocument | null>;
+    getUserDetails(details: {Id: string, myId: string }): Promise<IUserDocument | null>;
 }

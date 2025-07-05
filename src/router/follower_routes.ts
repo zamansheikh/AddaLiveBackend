@@ -6,12 +6,15 @@ import FollowerController from "../controllers/follower_controller";
 import { authenticate } from "../core/middlewares/auth_middleware";
 import UserRepository from "../repository/user_repository";
 import User from "../models/user/user_model";
+import FriendshipRepository from "../repository/friendships/friendship_repository";
+import Friendship from "../models/friendship/friendship_model";
 
 const router = express.Router();
 
 const followerRepository = new FollowerRepository(Follower);
 const userRepository = new UserRepository(User);
-const followerService = new FollowerService(followerRepository, userRepository);
+const friendShipRepository = new FriendshipRepository(Friendship);
+const followerService = new FollowerService(followerRepository, userRepository, friendShipRepository);
 const followerController = new FollowerController(followerService);
 
 router.route("/follow/:userId")
@@ -29,5 +32,6 @@ router.route("/get-follower-and-following-count/:userId")
 
 
  
+
 
 export default router;
