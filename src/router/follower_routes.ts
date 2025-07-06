@@ -21,17 +21,32 @@ router.route("/follow/:userId")
     .post(authenticate, followerController.followUser)
     .delete(authenticate, followerController.unfollowUser);
 
-router.route("/my-following-list")
+router.route("/following-list")
     .get(authenticate, followerController.myFollowingList);
 
-router.route("/my-follower-list")
+router.route("/follower-list")
     .get(authenticate, followerController.myFollowerList);
 
-router.route("/my-friend-list")
+router.route("/friend-list")
     .get(authenticate, followerController.myFriendList);
 
-router.route("/get-follower-and-following-count/:userId")
+router.route("/follower-and-following-count")
+    .get(authenticate, followerController.getMyFollowerAndFollowingCount);
+
+router.route("/follower-list/:userId")
+    .get(authenticate, followerController.getUserFollowerList);
+
+router.route("/following-list/:userId")
+    .get(authenticate, followerController.getUserFollowingList);
+
+router.route("/friend-list/:userId")
+    .get(authenticate, followerController.getUserFriendList);
+    
+
+router.route("/follower-and-following-count/:userId")
     .get(authenticate, followerController.getFollowerAndFollowingCount);
+
+
 
 
  

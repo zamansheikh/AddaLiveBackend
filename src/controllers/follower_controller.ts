@@ -51,6 +51,16 @@ export default class FollowerController {
             sendResponseEnhanced(res, friendList);
         }
     );
+
+
+    getMyFollowerAndFollowingCount= catchAsync(
+        async (req: Request, res: Response) => {
+            const { id } = req.user!;
+            const counts = await this.Service.getFollowerAndFollowingCount(id);
+            sendResponseEnhanced(res, counts);
+        }
+    );
+
     
 
     getFollowerAndFollowingCount = catchAsync(
@@ -61,6 +71,31 @@ export default class FollowerController {
         }
     );
 
+
+    getUserFollowerList= catchAsync(
+        async (req: Request, res: Response) => {
+            const { userId } = req.params;
+            const followerList = await this.Service.followerList(userId, req.query as Record<string, any>);
+            sendResponseEnhanced(res, followerList);
+        }
+    );
+
+    getUserFollowingList = catchAsync(
+        async (req: Request, res: Response) => {
+            const { userId } = req.params;
+            const followingList = await this.Service.followingList(userId, req.query as Record<string, any>);
+            sendResponseEnhanced(res, followingList);
+        }
+    );
+
+    getUserFriendList = catchAsync(
+        async (req: Request, res: Response) => {
+            const { userId } = req.params;
+            const friendList = await this.Service.friendList(userId, req.query as Record<string, any>);
+            sendResponseEnhanced(res, friendList);
+        }
+    );
+    
 
 
 }
