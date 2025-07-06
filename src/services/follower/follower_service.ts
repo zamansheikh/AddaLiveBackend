@@ -6,12 +6,14 @@ import { IUserRepository } from "../../repository/user_repository_interface";
 import { IPagination } from "../../core/Utils/query_builder";
 import IFriendshipRepository from "../../repository/friendships/friendship_repository_interface";
 import mongoose from "mongoose";
+import { IFriendshipDocument } from "../../entities/friendship/friendship_model_interface";
 
 export interface IFollowerService {
     createFollower(follow: IFollower): Promise<IFollowerDocument | null>;
     deleteFollower(follow: IFollower): Promise<IFollowerDocument | null>;
     followingList(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IFollowerDocument[] } | null>;
     followerList(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IFollowerDocument[] } | null>;
+    friendList(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IFriendshipDocument[] } | null>;
     getFollowerAndFollowingCount(userId: string): Promise<{ followerCount: number, followingCount: number; friendshipCount: number;  }>;
 }
 
@@ -119,6 +121,15 @@ export default class FollowerService implements IFollowerService {
         const following = await this.FollowerRepository.getFollowerLists({ followerId: userId }, query);
         if (!following) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Something went wrong while fetching the following list");
         return following;
+    }
+
+    async friendList(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IFriendshipDocument[]; } | null> {
+        const user = await this.UserRepository.findUserById(userId);
+        if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+
+        const friends = await this.FriendShipRepository.getFriendLists(userId, query);
+        if (!friends) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Something went wrong while fetching the friend list");
+        return friends;
     }
 
 

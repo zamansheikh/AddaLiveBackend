@@ -35,6 +35,89 @@ class FriendshipRepository implements IFriendshipRepository {
         return await this.friendsModel.countDocuments({ $or: [{ user1: userId }, { user2: userId }] });
     }
 
+    async getFriendLists(userId: string, query: Record<string, unknown>): Promise<{ pagination: IPagination; data: IFriendshipDocument[]; }> {
+        const qb = new QueryBuilder(this.friendsModel, query);
+        const result = qb.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { user1: new mongoose.Types.ObjectId(userId) },
+                        { user2: new mongoose.Types.ObjectId(userId) }
+                    ]
+                },
+            },
+            {
+                $lookup: {
+                    from: DatabaseNames.User,
+                    localField: "user1",
+                    foreignField: "_id",
+                    as: "user1Info",
+                }
+            },
+            {
+                $lookup: {
+                    from: DatabaseNames.User,
+                    localField: "user2",
+                    foreignField: "_id",
+                    as: "user2Info",
+                }
+            },
+            {
+                $addFields: {
+                    friendInfo: {
+                        $cond: [
+                            { $eq: ["$user1", new mongoose.Types.ObjectId(userId)] },
+                            "$user2Info",
+                            "$user1Info"
+                        ]
+                    },
+                    myInfo: {
+                        $cond: [
+                            { $eq: ["$user1", new mongoose.Types.ObjectId(userId)] },
+                            "$user1Info",
+                            "$user2Info"
+                        ]
+                    }
+                }
+            },
+            {
+                $unwind: {
+                    path: "$friendInfo",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $unwind: {
+                    path: "$myInfo",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    user1: 1,
+                    user2: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    friendInfo: {
+                        _id: "$friendInfo._id",
+                        name: "$friendInfo.name",
+                        avatar: "$friendInfo.avatar"
+                    },
+                    myInfo: {
+                        _id: "$myInfo._id",
+                        name: "$myInfo.name",
+                        avatar: "$myInfo.avatar"
+                    }
+                }
+            }
+        ]).paginate();
+
+        const data = await result.exec();
+        const pagination = await result.countTotal();
+        return { pagination, data };
+    }
+
 }
 
 export default FriendshipRepository;

@@ -15,4 +15,5 @@ export default interface IFriendshipRepository {
     deleteFriendship(id: string, session?: ClientSession): Promise<IFriendshipDocument | null>;
     existingFriendship(friendship: IFriendship, session?: ClientSession): Promise<IFriendshipDocument | null>;
     getFriendShipCount(userId: string): Promise<number>;
+    getFriendLists(userId: string, query: Record<string, unknown>): Promise<{pagination: IPagination, data: IFriendshipDocument[] }>
 }

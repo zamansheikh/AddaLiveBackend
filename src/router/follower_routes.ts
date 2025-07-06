@@ -19,16 +19,19 @@ const followerController = new FollowerController(followerService);
 
 router.route("/follow/:userId")
     .post(authenticate, followerController.followUser)
-    .delete(authenticate, followerController.unfollowUser)
+    .delete(authenticate, followerController.unfollowUser);
 
 router.route("/my-following-list")
-    .get(authenticate, followerController.myFollowingList)
+    .get(authenticate, followerController.myFollowingList);
 
 router.route("/my-follower-list")
-    .get(authenticate, followerController.myFollowerList)
+    .get(authenticate, followerController.myFollowerList);
+
+router.route("/my-friend-list")
+    .get(authenticate, followerController.myFriendList);
 
 router.route("/get-follower-and-following-count/:userId")
-    .get(authenticate, followerController.getFollowerAndFollowingCount)
+    .get(authenticate, followerController.getFollowerAndFollowingCount);
 
 
  
