@@ -8,6 +8,7 @@ const userStatsSchmea = new mongoose.Schema<IUSerStatsDocument>({
         required: true,
         ref: DatabaseNames.User,
         unique: true,
+        index: true
     },
     stars: {
         type: Number,

@@ -27,6 +27,13 @@ export default class AuthController {
 
     });
 
+    getMyDetails = catchAsync(async (req: Request, res: Response) => {
+        const { id } = req.user!;
+        const user = await this.authService.retrieveMyDetails(id);
+        sendResponseEnhanced(res, user);
+    });
+
+
     getUserDetails = catchAsync(async (req: Request, res: Response) => {
         const { id } = req.user!;
         const userID = req.params.id;

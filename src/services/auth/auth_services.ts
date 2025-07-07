@@ -58,8 +58,22 @@ export default class AuthService implements IAuthService {
         return { user: userWithStats, token };
     }
 
+    async retrieveMyDetails(id: string): Promise<IUserDocument | null> {
+        const user = await this.UserRepository.findUserById(id);
+        if (!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
+        const userStats = await this.UserStatsRepository.getUserStats(id);
+        const userWithStats = user.toObject();
+        userWithStats.stats = userStats;
+        return userWithStats;
+    }
+
+
     async retrieveUserDetails(id: string, myId: string) {
-        return await this.UserRepository.getUserDetails({ Id: id, myId });
+        const profile = await this.UserRepository.findUserById(id);
+        const myProfile = await this.UserRepository.findUserById(id);
+        if (!profile || !myProfile) throw new AppError(StatusCodes.NOT_FOUND, "Invalid user Id");
+        const user = await this.UserRepository.getUserDetails({ Id: id, myId });
+        return user;
     }
 
     async updateProfile({ id, profileData, file }: { id: string, profileData: Partial<Record<string, any>>, file?: Express.Multer.File }) {
@@ -67,10 +81,7 @@ export default class AuthService implements IAuthService {
         let profilePicUrl;
         if (file) {
             profilePicUrl = await uploadFileToCloudinary({ isVideo: false, folder: CloudinaryFolder.UserPRofile, file: file });
-            updatePayload['avatar'] = {
-                name: file.originalname,
-                url: profilePicUrl,
-            };
+            updatePayload['avatar'] = profilePicUrl
         }
         // Filter and add only valid keys from profileData
         for (const [key, value] of Object.entries(profileData)) {
@@ -163,7 +174,7 @@ export default class AuthService implements IAuthService {
         return userWithStats;
     }
 
-    async generateToken({channelName, uid, APP_CERTIFICATE, APP_ID}: { channelName: string; uid: string; APP_CERTIFICATE: string; APP_ID: string; }): Promise<{token: string}> {
+    async generateToken({ channelName, uid, APP_CERTIFICATE, APP_ID }: { channelName: string; uid: string; APP_CERTIFICATE: string; APP_ID: string; }): Promise<{ token: string }> {
 
         const expirationTimeInSeconds = 3600; // Token valid for 1 hour
         const currentTimestamp = Math.floor(Date.now() / 1000);

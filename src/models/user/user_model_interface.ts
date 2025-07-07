@@ -1,5 +1,6 @@
 import mongoose, { Document, Model } from 'mongoose';
 import { IUserStats } from '../../entities/userstats/userstats_interface';
+import { ActivityZone, ActivityZoneState, Gender, UserActiveStatus } from '../../core/Utils/enums';
 
 export interface IAuthData{
     authData: {
@@ -17,19 +18,16 @@ export interface UserData {
     password: string,
     authData: IAuthData,
     lastOnline?: Date;
-    user_state_in_app?: 'Online' | 'Offline';
+    user_state_in_app?: UserActiveStatus;
     isreseller?: boolean;
     reseller_coins?: number;
     reseller_whatsAppnumber?: string;
     reseller_history?: any[];
-    avatar?: {
-        name?: string;
-        url?: string;
-    };
+    avatar?: string;
     name?: string;
     first_name?: string;
     last_name?: string;
-    gender?: 'male' | 'female' | 'other';
+    gender?: Gender;
     birthday?: Date;
     country?: string;
     bio?: string;
@@ -42,7 +40,7 @@ export interface UserData {
     isViewer?: boolean;
     objectId?: string;
     activity_zone?: {
-        zone?: 'safe' | 'temp_block' | 'permanent_block';
+        zone?: ActivityZoneState;
         createdAt?: Date;
         expire?: Date;
     };

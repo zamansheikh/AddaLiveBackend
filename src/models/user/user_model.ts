@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { IUserDocument } from "../user/user_model_interface";
-import { DatabaseNames } from "../../core/Utils/enums";
+import { ActivityZoneState, DatabaseNames, Gender, UserActiveStatus } from "../../core/Utils/enums";
 
 const userSchema = new mongoose.Schema<IUserDocument>(
     {
@@ -17,28 +17,25 @@ const userSchema = new mongoose.Schema<IUserDocument>(
         },
         user_state_in_app: {
             type: String,
-            enum: ["Online", "Offline"],
-            default: "Offline",
+            enum: UserActiveStatus,
+            default: UserActiveStatus.offline,
         },
         isreseller: { type: Boolean, default: false },
         reseller_coins: { type: Number, default: 0 },
         reseller_whatsAppnumber: { type: String, default: "" },
         //   todo: update the date
         reseller_history: { type: [mongoose.Schema.Types.Mixed], default: [] },
-        avatar: {
-            name: String,
-            url: String,
-        },
+        avatar: { type: String },
         name: String,
         first_name: String,
         last_name: String,
-        gender: { type: String, enum: ["male", "female", "other"] },
+        gender: { type: String, enum: Gender },
         birthday: { type: Date },
         country: String,
         bio: String,
         country_code: String,
         country_dial_code: String,
-        uid: {type: String, required: true, unique: true},
+        uid: { type: String, required: true, unique: true, index: true },
         country_languages: [String],
         credit: { type: Number, default: 0 },
         userPoints: { type: Number, default: 0 },
@@ -48,8 +45,8 @@ const userSchema = new mongoose.Schema<IUserDocument>(
         activity_zone: {
             zone: {
                 type: String,
-                enum: ["safe", "temp_block", "permanent_block"],
-                default: "safe",
+                enum: ActivityZoneState,
+                default: ActivityZoneState.safe,
             },
             createdAt: { type: Date },
             expire: { type: Date },

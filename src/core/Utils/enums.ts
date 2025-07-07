@@ -93,3 +93,21 @@ export enum GiftTypes {
   love = 'love',
   car = 'car',
 }
+
+
+export enum Gender {
+  male = 'male',
+  female = 'female',
+  other = 'other',
+}
+
+export enum ActivityZoneState{
+  safe = "safe",
+  temporaryBlock = "temp_block",
+  permanentBlock = "permanent_block"
+}
+
+export enum UserActiveStatus {
+  online = "Online",
+  offline = "Offline"
+}
