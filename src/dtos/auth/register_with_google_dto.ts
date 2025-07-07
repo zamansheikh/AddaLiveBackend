@@ -5,19 +5,9 @@ export class RegisterUserDto {
   email!: string;
 
   @IsString()
-  @MinLength(6)
-  password!: string;
-
-  @IsString()
   name!: string;
 
   @IsString()
-  first_name!: string;
-
-  @IsString()
-  last_name!: string;
-
-  @IsString()
   uid!: string;
-  
+
 }
