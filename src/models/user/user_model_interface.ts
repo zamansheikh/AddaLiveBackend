@@ -7,7 +7,7 @@ import { ActivityZoneState, Gender, UserActiveStatus, UserRoles } from '../../co
 export interface UserData {
     username: string;
     email: string;
-    password: string,
+    password?: string,
     lastOnline?: Date;
     user_state_in_app?: UserActiveStatus;
     avatar?: string;

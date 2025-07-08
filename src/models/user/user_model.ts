@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema<IUserDocument>(
     {
         username: { type: String, required: false },
         email: { type: String, required: true },
-        password: { type: String, required: true },
+        password: { type: String},
         lastOnline: { type: Date },
         user_state_in_app: {
             type: String,

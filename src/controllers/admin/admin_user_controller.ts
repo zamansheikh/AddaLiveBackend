@@ -11,6 +11,20 @@ export default class AdminUserController {
         this.AdminUserService = AdminUserService;
     }
 
+    registerAdmin = catchAsync(
+        async (req: Request, res: Response) => {
+            const { username, password, email } = req.body;
+            if (!username || !password || !email) throw new AppError(StatusCodes.BAD_REQUEST, "All fields are required");
+            const newAdmin = await this.AdminUserService.registerAdmin({ username, password, email });
+            sendResponse(res, {
+                statusCode: StatusCodes.CREATED,
+                success: true,
+                result: newAdmin,
+                message: "Admin registered successfully"
+            });
+        }
+    )
+
     retrieveAllUsers = catchAsync(
         async (req: Request, res: Response) => {
             const users = await this.AdminUserService.retrieveAllUsers();

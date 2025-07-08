@@ -10,13 +10,18 @@ import UserStatsRepository from '../repository/userstats/userstats_repository';
 import UserStats from '../models/userstats/userstats_model';
 import { authenticate } from '../core/middlewares/auth_middleware';
 import { UserRoles } from '../core/Utils/enums';
+import AdminRepository from '../repository/admin/admin_repository';
+import Admin from '../models/admin/admin_model';
 
 const router = express.Router();
 
 const userRepository = new UserRepository(User);
 const userStatsRepository = new UserStatsRepository(UserStats);
-const adminUserService = new AdminUserService(userRepository, userStatsRepository);
+const adminRepository = new AdminRepository(Admin);
+const adminUserService = new AdminUserService(userRepository, userStatsRepository, adminRepository);
 const adminUserController = new AdminUserController(adminUserService);
+
+router.route("/auth").post(adminUserController.registerAdmin);
 
 router.get("/users", authenticate([UserRoles.Admin]), adminUserController.retrieveAllUsers);
 router.put("/users/activity-zone", authenticate([UserRoles.Admin]), validateRequest(ActivityZoneUpdateDto), adminUserController.updateActivityZone);
