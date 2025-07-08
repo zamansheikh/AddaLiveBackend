@@ -7,7 +7,7 @@ export interface IAdminRepository {
     getAdminByEmail(email: string): Promise<IAdminDocument | null>;
     updateAdmin(id: string, admin: Partial<IAdmin>): Promise<IAdminDocument | null>;
     deleteAdmin(id: string): Promise<IAdminDocument | null>;
-    getAdmin(): Promise<IAdminDocument| null>;
+    getAdmin(): Promise<IAdminDocument | null>;
 }
 
 
@@ -20,11 +20,11 @@ export default class AdminRepository implements IAdminRepository {
 
     async createAdmin(admin: IAdmin): Promise<IAdminDocument> {
         const newAdmin = new this.Model(admin);
-        return await newAdmin.save()
+        return await newAdmin.save();
     }
 
     async getAdminById(id: string): Promise<IAdminDocument | null> {
-        return this.Model.findById(id);
+        return this.Model.findById(id).select("-password");
     }
 
     async getAdminByUsername(username: string): Promise<IAdminDocument | null> {
@@ -32,19 +32,19 @@ export default class AdminRepository implements IAdminRepository {
     }
 
     async getAdminByEmail(email: string): Promise<IAdminDocument | null> {
-        return this.Model.findOne({ email });
+        return this.Model.findOne({ email }).select("-password");
     }
 
     async updateAdmin(id: string, admin: Partial<IAdmin>): Promise<IAdminDocument | null> {
-        return this.Model.findByIdAndUpdate(id, admin, { new: true });
+        return this.Model.findByIdAndUpdate(id, admin, { new: true }).select("-password");
     }
 
     async deleteAdmin(id: string): Promise<IAdminDocument | null> {
-        return this.Model.findByIdAndDelete(id);
+        return this.Model.findByIdAndDelete(id).select("-password");
     }
 
-   async getAdmin(): Promise<IAdminDocument | null> {
-        return this.Model.findOne();
+    async getAdmin(): Promise<IAdminDocument | null> {
+        return this.Model.findOne().select("-password");
     }
-    
+
 }

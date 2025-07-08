@@ -5,8 +5,8 @@ import { IHistory, IHistoryDocument } from "../../entities/history/history_inter
 import { IUSerStatsDocument } from "../../entities/userstats/userstats_interface";
 import { IHistoryRepository } from "../../repository/history/history_repository";
 import IUserStatsRepository from "../../repository/userstats/userstats_repository_interface";
-import { IUserRepository } from "../../repository/user_repository_interface";
 import { UserStatus } from "../../core/Utils/enums";
+import { IUserRepository } from "../../repository/user_repository";
 
 export interface ILeaderBoardResponse {
     serial: string | null;
@@ -94,7 +94,7 @@ export default class GameService implements IGameService {
         return {
             serial: userStats == null ? null : userStats._id as string,
             user_name: user == null ? null : user.name as string,
-            profile_image_url: user == null ? null : user.avatar?.url as string,
+            profile_image_url: user == null ? null : user.avatar as string,
             total_gold: userStats == null ? null : userStats.diamonds as number,
             total_diamond: userStats == null ? null : userStats.diamonds as number
         };

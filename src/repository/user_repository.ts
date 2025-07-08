@@ -1,9 +1,26 @@
 import mongoose, { mongo } from "mongoose";
 import { IUserEntity } from "../entities/user_entity_interface";
 import { IUserDocument, IUserModel } from "../models/user/user_model_interface";
-import { IUserRepository } from "./user_repository_interface";
-import { DatabaseNames } from "../core/Utils/enums";
+import { DatabaseNames, UserRoles } from "../core/Utils/enums";
 import Friendship from "../models/friendship/friendship_model";
+import { IPagination, QueryBuilder } from "../core/Utils/query_builder";
+
+
+export interface IUserRepository {
+    create(userEntity: IUserEntity): Promise<IUserDocument>;
+    findUserById(id: string): Promise<IUserDocument | null>;
+    getUserDetailsSelectedField(id: string, fields: string[]): Promise<IUserDocument | null>;
+    findByUID(uid: string): Promise<IUserDocument | null>;
+    findAllUser(): Promise<IUserDocument[] | null>;
+    findUsersConitionally(field: string, value: string | number): Promise<IUserDocument[] | null>
+    findUserByIdAndUpdate(id: string, payload: Record<string, any>): Promise<IUserDocument | null>;
+    getUserDetails(details: { Id: string, myId: string }): Promise<IUserDocument | null>;
+    searchUserByEmail(email: string, query: Record<string, unknown>): Promise<{ pagination: IPagination, users: IUserDocument[] } | null>;
+    addPermission(id: string, permission: string): Promise<IUserDocument | null>;
+    removePermission(id: string, permission: string):Promise<IUserDocument | null>; 
+    getAllModarators(query: Record<string, unknown>): Promise<{ pagination: IPagination, users: IUserDocument[] }>;
+
+}
 
 export default class UserRepository implements IUserRepository {
     UserModel: IUserModel;
@@ -39,10 +56,35 @@ export default class UserRepository implements IUserRepository {
         return await this.UserModel.findByIdAndUpdate(id, payload, { new: true }).select("-password");
     }
 
+    async searchUserByEmail(email: string, query: Record<string, unknown>): Promise<{ pagination: IPagination; users: IUserDocument[]; } | null> {
+        const qb = new QueryBuilder(this.UserModel, query);
+        const res = qb.find({ email: { $regex: email, $options: 'i' } });
+        const users = await res.paginate().sort().exec();
+        const pagination = await res.countTotal();
+        return { users, pagination };
+
+    }
+
+    async addPermission(id: string, permission: string): Promise<IUserDocument | null> {
+        return await this.UserModel.findByIdAndUpdate(id, { $addToSet: { userPermissions: permission } }, { new: true });
+    
+    }
+
+    async removePermission(id: string, permission: string): Promise<IUserDocument | null> {
+        return await this.UserModel.findByIdAndUpdate(id, { $pull: { userPermissions: permission } }, { new: true });
+    }
+
+    async getAllModarators(query: Record<string, unknown>): Promise<{ pagination: IPagination; users: IUserDocument[]; }> {
+        const qb = new QueryBuilder(this.UserModel, query);
+        const res = qb.find({ userRole: UserRoles.Moderator });
+        const users = await res.paginate().sort().exec();
+        const pagination = await res.countTotal();
+        return { users, pagination };
+    }
     async getUserDetails(details: { Id: string; myId: string; }) {
-        const userObjectId =  new mongoose.Types.ObjectId(details.Id)
+        const userObjectId = new mongoose.Types.ObjectId(details.Id)
         const user = await this.UserModel.aggregate([
-            { $match: { _id: userObjectId} },
+            { $match: { _id: userObjectId } },
             {
                 $lookup: {
                     from: DatabaseNames.friendships,

@@ -11,7 +11,7 @@ import IMessageRepository, { IUpdateResult } from "../../repository/chats/messag
 import IChatService from "./chat_service_interface";
 import SocketServer from "../../core/sockets/socket_server";
 import mongoose, { Types } from "mongoose";
-import { IUserRepository } from "../../repository/user_repository_interface";
+import { IUserRepository } from "../../repository/user_repository";
 
 export default class ChatService implements IChatService {
     msgRepo: IMessageRepository;

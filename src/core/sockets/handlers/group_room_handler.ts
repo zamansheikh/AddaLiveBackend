@@ -2,9 +2,9 @@ import { Socket, Server } from 'socket.io';
 import { SocketChannels } from '../../Utils/enums';
 import { StatusCodes } from 'http-status-codes';
 import { RoomData } from '../socket_server';
-import { IUserRepository } from '../../../repository/user_repository_interface';
 import AppError from '../../errors/app_errors';
 import { IUserDocument } from '../../../models/user/user_model_interface';
+import { IUserRepository } from '../../../repository/user_repository';
 
 export interface ISerializedRoomData {
     hostId: string;
