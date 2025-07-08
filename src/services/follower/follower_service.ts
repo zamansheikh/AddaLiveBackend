@@ -2,11 +2,11 @@ import { StatusCodes } from "http-status-codes";
 import AppError from "../../core/errors/app_errors";
 import { IFollower, IFollowerDocument } from "../../entities/followers/follower_model_interface";
 import { IFollowerRepository } from "../../repository/follower/follower_repository";
-import { IUserRepository } from "../../repository/user_repository_interface";
 import { IPagination } from "../../core/Utils/query_builder";
 import IFriendshipRepository from "../../repository/friendships/friendship_repository_interface";
 import mongoose from "mongoose";
 import { IFriendshipDocument } from "../../entities/friendship/friendship_model_interface";
+import { IUserRepository } from "../../repository/user_repository";
 
 export interface IFollowerService {
     createFollower(follow: IFollower): Promise<IFollowerDocument | null>;

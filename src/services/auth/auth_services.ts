@@ -4,7 +4,6 @@ import AppError from "../../core/errors/app_errors";
 import { CloudinaryFolder, GiftTypes } from "../../core/Utils/enums";
 import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
 import { IUserEntity } from "../../entities/user_entity_interface";
-import { IUserRepository } from "../../repository/user_repository_interface";
 import jwt from 'jsonwebtoken';
 import IUserStatsRepository from "../../repository/userstats/userstats_repository_interface";
 import { Types } from "mongoose";
@@ -12,6 +11,7 @@ import { IAuthService, IGiftUser } from "./auth_service_interface";
 import { IUserDocument } from "../../models/user/user_model_interface";
 import mongoose from "mongoose";
 import { RtcRole, RtcTokenBuilder } from "agora-token";
+import { IUserRepository } from "../../repository/user_repository";
 
 export default class AuthService implements IAuthService {
 

@@ -103,7 +103,7 @@ export enum Gender {
   other = 'other',
 }
 
-export enum ActivityZoneState{
+export enum ActivityZoneState {
   safe = "safe",
   temporaryBlock = "temp_block",
   permanentBlock = "permanent_block"
@@ -118,4 +118,10 @@ export enum UserRoles {
   User = "user",
   Admin = "admin",
   Moderator = "moderator"
+}
+
+
+export enum ModeratorPermissions {
+  CoinDistribute = "coin_distributor",
+  UpdateUsers = "update_users"
 }

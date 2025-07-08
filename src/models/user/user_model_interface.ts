@@ -10,6 +10,7 @@ export interface UserData {
     password?: string,
     lastOnline?: Date;
     user_state_in_app?: UserActiveStatus;
+    userPermissions: string[];
     avatar?: string;
     name?: string;
     first_name?: string;

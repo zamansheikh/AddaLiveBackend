@@ -21,7 +21,19 @@ const adminRepository = new AdminRepository(Admin);
 const adminUserService = new AdminUserService(userRepository, userStatsRepository, adminRepository);
 const adminUserController = new AdminUserController(adminUserService);
 
-router.route("/auth").post(adminUserController.registerAdmin);
+router.route("/auth").post(adminUserController.registerAdmin)
+    .put(authenticate([UserRoles.Admin]), adminUserController.updateAdmin)
+    .delete(authenticate([UserRoles.Admin]), adminUserController.deleteAdmin);
+
+router.route("/login").post(adminUserController.loginAdmin);
+
+router.route("/users/search").get(authenticate([UserRoles.Admin]), adminUserController.searchUsersByEmail);
+
+router.route("/users/promote").put(authenticate([UserRoles.Admin]), adminUserController.promoteUser)
+router.route("/users/moderator-permissions").put(authenticate([UserRoles.Admin]), adminUserController.moderatorPermissionEdit)
+router.route("/users/remove-permissions").put(authenticate([UserRoles.Admin]), adminUserController.removePermissions);
+router.route("/users/demote").put(authenticate([UserRoles.Admin]), adminUserController.demoteUser);
+router.route("/users/moderators").get(authenticate([UserRoles.Admin]), adminUserController.getAllModerators);
 
 router.get("/users", authenticate([UserRoles.Admin]), adminUserController.retrieveAllUsers);
 router.put("/users/activity-zone", authenticate([UserRoles.Admin]), validateRequest(ActivityZoneUpdateDto), adminUserController.updateActivityZone);

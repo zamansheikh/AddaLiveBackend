@@ -7,7 +7,7 @@ const adminSchema = new mongoose.Schema<IAdminDocument>({
     password: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     role: { type: String, default: UserRoles.Admin},
- 
+    coins: {type: Number, default: 0},
 }, {
     timestamps: true,
 });
