@@ -30,20 +30,20 @@ const postService = new PostService(postRepository, reactionRepository, commentR
 const postController = new PostController(postService);
 
 
-router.post("/create", authenticate, upload.single('media'), validateRequest(CreatePostDto), postController.createPost);
-router.get("/", authenticate, postController.getAllPosts);
-router.get("/:postId", authenticate, postController.getPostDetails);
-router.post("/edit", authenticate, validateRequest(EditPostDto), postController.editPost);
-router.delete("/delete/:postId", authenticate, postController.deletePost);
+router.post("/create", authenticate(), upload.single('media'), validateRequest(CreatePostDto), postController.createPost);
+router.get("/", authenticate(), postController.getAllPosts);
+router.get("/:postId", authenticate(), postController.getPostDetails);
+router.post("/edit", authenticate(), validateRequest(EditPostDto), postController.editPost);
+router.delete("/delete/:postId", authenticate(), postController.deletePost);
 
-router.get("/:postId/comments", authenticate, postController.getAllComments);
-router.post("/react", authenticate,  validateRequest(PostReactionDto), postController.reactOnPost);
-router.post("/comment", authenticate,  validateRequest(PostCommentDto), postController.commentOnPost);
-router.delete("/:postId/comment/delete/:commentId", authenticate, postController.deleteComment);
-router.put("/comment/edit", authenticate, validateRequest(PostEditCommentDto), postController.editComment);
-router.post("/comment/react", authenticate, validateRequest(PostReactOnCommentDto), postController.reactOnComment);
-router.post("/comment/reply", authenticate, validateRequest(PostReplyCommentDto),  postController.replyToComment);
-router.post("/:postId/comments", authenticate, validateRequest(PostReplyCommentDto),  postController.getAllComments);
+router.get("/:postId/comments", authenticate(), postController.getAllComments);
+router.post("/react", authenticate(),  validateRequest(PostReactionDto), postController.reactOnPost);
+router.post("/comment", authenticate(),  validateRequest(PostCommentDto), postController.commentOnPost);
+router.delete("/:postId/comment/delete/:commentId", authenticate(), postController.deleteComment);
+router.put("/comment/edit", authenticate(), validateRequest(PostEditCommentDto), postController.editComment);
+router.post("/comment/react", authenticate(), validateRequest(PostReactOnCommentDto), postController.reactOnComment);
+router.post("/comment/reply", authenticate(), validateRequest(PostReplyCommentDto),  postController.replyToComment);
+router.post("/:postId/comments", authenticate(), validateRequest(PostReplyCommentDto),  postController.getAllComments);
 
 
 export default router;

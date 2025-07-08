@@ -1,7 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
+import jwt from 'jsonwebtoken';
+import AppError from '../errors/app_errors';
 
-// Extend the Request interface to include the 'user' property
+// Define the shape of the JWT payload
+interface JwtPayload {
+  id: string;
+  role: string;
+  // Add more fields if needed
+}
+
+// Extend the Request interface
 declare global {
   namespace Express {
     interface Request {
@@ -9,31 +18,36 @@ declare global {
     }
   }
 }
-import jwt from 'jsonwebtoken';
-import AppError from '../errors/app_errors';
 
-interface JwtPayload {
-  id: string;
-  // add more fields as needed
-}
+const secret = process.env.JWT_SECRET || 'your-default-secret';
 
-const secret = process.env.JWT_SECRET || 'your-default-secret'; // ensure you load from .env
+// Higher-order middleware to accept roles
+export const authenticate =
+  (allowedRoles: string[] = []) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    const authHeader = req.headers.authorization;
 
-export const authenticate = (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return next(
+        new AppError(StatusCodes.UNAUTHORIZED, 'Authorization header missing or malformed')
+      );
+    }
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw new AppError(StatusCodes.UNAUTHORIZED, "Authorization header missing or malformed");
-  }
+    const token = authHeader.split(' ')[1];
 
-  const token = authHeader.split(' ')[1];
-  
-  try {
-    const decoded = jwt.verify(token, secret) as JwtPayload;
-    req.user = decoded; // Extend Request type to fix TS error
-    // console.log(req.user);
-    next();
-  } catch (err) {
-    next(err);
-  }
-};
+    try {
+      const decoded = jwt.verify(token, secret) as JwtPayload;
+      req.user = decoded;
+
+      // If specific roles are required, check them
+      if (allowedRoles.length > 0) {
+        if (!decoded.role || !allowedRoles.includes(decoded.role)) {
+          return next(new AppError(StatusCodes.FORBIDDEN, 'Access denied: insufficient role'));
+        }
+      }
+
+      next();
+    } catch (err) {
+      next(new AppError(StatusCodes.UNAUTHORIZED, 'Invalid or expired token'));
+    }
+  };

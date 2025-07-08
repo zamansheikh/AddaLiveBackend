@@ -31,7 +31,9 @@ export enum DatabaseNames {
 
   history = 'histories',
 
-  followers = 'followers'
+  followers = 'followers',
+
+  Admin = "admins"
 
 }
 
@@ -110,4 +112,10 @@ export enum ActivityZoneState{
 export enum UserActiveStatus {
   online = "Online",
   offline = "Offline"
+}
+
+export enum UserRoles {
+  User = "user",
+  Admin = "admin",
+  Moderator = "moderator"
 }

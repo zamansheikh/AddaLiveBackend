@@ -42,7 +42,7 @@ export default class AuthService implements IAuthService {
             userWithStats.stats = newStats;
             // console.log("new userstats", newStats);
             // console.log("new user modified", newUser);
-            const token = jwt.sign({ id: newUser._id }, SECRET);
+            const token = jwt.sign({ id: newUser._id, role: newUser.userRole }, SECRET);
             return { user: userWithStats, token };
         }
 
@@ -54,7 +54,7 @@ export default class AuthService implements IAuthService {
         }
         const userWithStats = existingUser.toObject();
         userWithStats.stats = userStats;
-        const token = jwt.sign({ id: existingUser._id }, SECRET);
+        const token = jwt.sign({ id: existingUser._id, role: existingUser.userRole }, SECRET);
         return { user: userWithStats, token };
     }
 

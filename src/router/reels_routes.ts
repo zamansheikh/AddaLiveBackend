@@ -29,18 +29,18 @@ const commentReactionRepository = new ReelsReactionRepostitory(ReelsCommentsReac
 const reelService = new ReelsService(reelRepository, reactionRepository, commentRepository, commentReactionRepository);
 const reelsController = new ReelController(reelService);
 
-router.post("/create", authenticate, upload.single('video'), validateRequest(UploadReelDto), customValidateFileResponse({ isvideo: true }), reelsController.createReel);
-router.get("/", authenticate, reelsController.getAllReels);
-router.get("/:reelId/comments", authenticate, reelsController.getAllComments);
-router.put("/edit", authenticate,  validateRequest(EditReelDto), reelsController.editReel);
-router.delete("/delete/:reelId", authenticate, reelsController.deleteReel);
+router.post("/create", authenticate(), upload.single('video'), validateRequest(UploadReelDto), customValidateFileResponse({ isvideo: true }), reelsController.createReel);
+router.get("/", authenticate(), reelsController.getAllReels);
+router.get("/:reelId/comments", authenticate(), reelsController.getAllComments);
+router.put("/edit", authenticate(),  validateRequest(EditReelDto), reelsController.editReel);
+router.delete("/delete/:reelId", authenticate(), reelsController.deleteReel);
 
-router.post("/react", authenticate,  validateRequest(ReelReactionDto), reelsController.reactOnReel);
-router.post("/comment", authenticate,  validateRequest(ReelCommentDto), reelsController.commentOnReel);
-router.delete("/:reelId/comment/delete/:commentId", authenticate, reelsController.deleteComment);
-router.put("/comment/edit", authenticate, validateRequest(EditCommentDto), reelsController.editComment);
-router.post("/comment/react", authenticate, validateRequest(ReactOnCommentDto), reelsController.reactOnComment);
-router.post("/comment/reply", authenticate, validateRequest(ReplyCommentDto),  reelsController.replyToComment);
+router.post("/react", authenticate(),  validateRequest(ReelReactionDto), reelsController.reactOnReel);
+router.post("/comment", authenticate(),  validateRequest(ReelCommentDto), reelsController.commentOnReel);
+router.delete("/:reelId/comment/delete/:commentId", authenticate(), reelsController.deleteComment);
+router.put("/comment/edit", authenticate(), validateRequest(EditCommentDto), reelsController.editComment);
+router.post("/comment/react", authenticate(), validateRequest(ReactOnCommentDto), reelsController.reactOnComment);
+router.post("/comment/reply", authenticate(), validateRequest(ReplyCommentDto),  reelsController.replyToComment);
 
 
 export default router;

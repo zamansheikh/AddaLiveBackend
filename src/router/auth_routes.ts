@@ -28,12 +28,12 @@ const authController = new AuthController(authService);
 
 
 router.post("/register-google", validateRequest(RegisterUserDto), authController.registerWithGoogle)
-router.put("/update-profile", authenticate, upload.single('avatar'), validateRequest(ProfileUpdateDto), authController.updateProfile)
-router.get("/user/:id", authenticate, authController.getUserDetails);
-router.get("/my-profile", authenticate, authController.getMyDetails);
-router.put("/user/gift", authenticate, validateRequest(GiftUserDto), authController.giftUser)
+router.put("/update-profile", authenticate(), upload.single('avatar'), validateRequest(ProfileUpdateDto), authController.updateProfile)
+router.get("/user/:id", authenticate(), authController.getUserDetails);
+router.get("/my-profile", authenticate(), authController.getMyDetails);
+router.put("/user/gift", authenticate(), validateRequest(GiftUserDto), authController.giftUser)
 
-router.post("/generate-token", authenticate, validateRequest(GenerateTokenDto), authController.generateToken)
+router.post("/generate-token", authenticate(), validateRequest(GenerateTokenDto), authController.generateToken)
 
 export default router;
 

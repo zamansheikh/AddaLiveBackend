@@ -1,30 +1,18 @@
 import mongoose from "mongoose";
 import { IUserDocument } from "../user/user_model_interface";
-import { ActivityZoneState, DatabaseNames, Gender, UserActiveStatus } from "../../core/Utils/enums";
+import { ActivityZoneState, DatabaseNames, Gender, UserActiveStatus, UserRoles } from "../../core/Utils/enums";
 
 const userSchema = new mongoose.Schema<IUserDocument>(
     {
         username: { type: String, required: false },
         email: { type: String, required: true },
-        password: { type: String, required: true },
+        password: { type: String},
         lastOnline: { type: Date },
-        authData: {
-            gooogle: {
-                access_token: String,
-                id: String,
-                id_token: String,
-            },
-        },
         user_state_in_app: {
             type: String,
             enum: UserActiveStatus,
             default: UserActiveStatus.offline,
         },
-        isreseller: { type: Boolean, default: false },
-        reseller_coins: { type: Number, default: 0 },
-        reseller_whatsAppnumber: { type: String, default: "" },
-        //   todo: update the date
-        reseller_history: { type: [mongoose.Schema.Types.Mixed], default: [] },
         avatar: { type: String },
         name: String,
         first_name: String,
@@ -36,12 +24,14 @@ const userSchema = new mongoose.Schema<IUserDocument>(
         country_code: String,
         country_dial_code: String,
         uid: { type: String, required: true, unique: true, index: true },
+        userRole: {
+            type: String,
+            enum: UserRoles,
+            default: UserRoles.User,
+        },
         country_languages: [String],
-        credit: { type: Number, default: 0 },
-        userPoints: { type: Number, default: 0 },
         isViewer: { type: Boolean, default: false },
         objectId: String,
-
         activity_zone: {
             zone: {
                 type: String,

@@ -19,10 +19,10 @@ const storyService = new StoryService(storyRepo, storyReactionRepo);
 const storyController = new StoryController(storyService);
 
 
-router.post("/create", authenticate, upload.single("media"), customValidateFileResponse({isvideo: false}), storyController.createStory);
-router.delete("/delete/:storyId", authenticate, storyController.deleteStory);
-router.post("/react/", authenticate, validateRequest(StoryReactionDto), storyController.reactOnStory);
-router.get("/",authenticate ,storyController.getAllStories);
+router.post("/create", authenticate(), upload.single("media"), customValidateFileResponse({ isvideo: false }), storyController.createStory);
+router.delete("/delete/:storyId", authenticate(), storyController.deleteStory);
+router.post("/react/", authenticate(), validateRequest(StoryReactionDto), storyController.reactOnStory);
+router.get("/", authenticate(), storyController.getAllStories);
 
 
 
