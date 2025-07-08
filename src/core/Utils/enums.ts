@@ -111,3 +111,9 @@ export enum UserActiveStatus {
   online = "Online",
   offline = "Offline"
 }
+
+export enum UserRoles {
+  User = "user",
+  Admin = "admin",
+  Moderator = "moderator"
+}

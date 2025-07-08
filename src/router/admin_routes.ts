@@ -1,4 +1,4 @@
- import express from 'express';
+import express from 'express';
 import UserRepository from '../repository/user_repository';
 import User from '../models/user/user_model';
 import AdminUserService from '../services/admin/admin_user_service';
@@ -8,6 +8,8 @@ import { validateRequest } from '../core/middlewares/validate_request';
 import { UpdateStatDto } from '../dtos/admin/update_state_dto';
 import UserStatsRepository from '../repository/userstats/userstats_repository';
 import UserStats from '../models/userstats/userstats_model';
+import { authenticate } from '../core/middlewares/auth_middleware';
+import { UserRoles } from '../core/Utils/enums';
 
 const router = express.Router();
 
@@ -16,10 +18,10 @@ const userStatsRepository = new UserStatsRepository(UserStats);
 const adminUserService = new AdminUserService(userRepository, userStatsRepository);
 const adminUserController = new AdminUserController(adminUserService);
 
-router.get("/users", adminUserController.retrieveAllUsers);
-router.put("/users/activity-zone", validateRequest(ActivityZoneUpdateDto),adminUserController.updateActivityZone);
+router.get("/users", authenticate([UserRoles.Admin]), adminUserController.retrieveAllUsers);
+router.put("/users/activity-zone", authenticate([UserRoles.Admin]), validateRequest(ActivityZoneUpdateDto), adminUserController.updateActivityZone);
 
-router.route("/users/stats/update/:userId").post(validateRequest(UpdateStatDto), adminUserController.updateUserStat)
+router.route("/users/stats/update/:userId").post(authenticate([UserRoles.Admin]), validateRequest(UpdateStatDto), adminUserController.updateUserStat)
 
 export default router;
 
