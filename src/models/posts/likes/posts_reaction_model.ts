@@ -11,7 +11,7 @@ const postReactionSchema = new mongoose.Schema<IPostsReactionDocument>({
         type: mongoose.Schema.Types.ObjectId,
         required: true,
     },
-    reaction_type: {
+    reactionType: {
         type: String,
         default: ReactionType.Like,
         enum: ReactionType,

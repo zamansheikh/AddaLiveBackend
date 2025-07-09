@@ -61,7 +61,7 @@ export default class PostsCommentRepostitory implements IPostCommentRepository {
                                     }
                                 }
                             ],
-                            as: "my_reaction",
+                            as: "myReaction",
                         }
                     },
                     {
@@ -95,29 +95,29 @@ export default class PostsCommentRepostitory implements IPostCommentRepository {
                                                 }
                                             }
                                         ],
-                                        as: "my_reaction",
+                                        as: "myReaction",
                                     }
                                 },
                                 {
                                     $addFields: {
                                         userName: "$userInfo.name",
                                         avatar: "$userInfo.avatar",
-                                        myReaction: { reaction_type: "$my_reaction.reaction_type" }
+                                        myReaction: { reactionType: "$myReaction.reactionType" }
                                     }
                                 },
                                 {
                                     $unwind: {
-                                        path: "$my_reaction",
+                                        path: "$myReaction",
                                         preserveNullAndEmptyArrays: true
                                     }
                                 },
                                 {
                                     $unwind: {
-                                        path: "$myReaction.reaction_type",
+                                        path: "$myReaction.reactionType",
                                         preserveNullAndEmptyArrays: true
                                     }
                                 },
-                                { $project: { userInfo: 0, my_reaction: 0 } }
+                                { $project: { userInfo: 0, myReaction: 0 } }
                             ],
                             as: "replies"
                         }
@@ -126,19 +126,19 @@ export default class PostsCommentRepostitory implements IPostCommentRepository {
                         $addFields: {
                             userName: "$userInfo.name",
                             avatar: "$userInfo.avatar",
-                            myReaction: { reaction_type: "$my_reaction.reaction_type" }
+                            myReaction: { reactionType: "$myReaction.reactionType" }
                         }
                     },
                     {
                         $unwind: {
-                            path: "$myReaction.reaction_type",
+                            path: "$myReaction.reactionType",
                             preserveNullAndEmptyArrays: true
                         }
                     },
                     {
                         $project: {
                             userInfo: 0,
-                            my_reaction: 0
+                            myReaction: 0
                         }
                     }
                 ]

@@ -75,7 +75,7 @@ export default class ReelsService implements IReelService {
             const id = existingReaction._id;
 
             // Toggle off if same reaction type
-            if (existingReaction.reaction_type === reaction_type) {
+            if (existingReaction.reactionType === reaction_type) {
                 const delReaction = await this.ReactionRepository.deleteReactionByID(id as string);
                 if (delReaction) return await this.ReelRepository.updateCount({
                     reelId,
@@ -94,7 +94,7 @@ export default class ReelsService implements IReelService {
         const newReaction = await this.ReactionRepository.create({
             reactedBy: userID,
             reactedTo: reelId,
-            reaction_type: reaction_type as ReactionType,
+            reactionType: reaction_type as ReactionType,
         });
 
         if (!newReaction) {
@@ -164,7 +164,7 @@ export default class ReelsService implements IReelService {
 
         if (reaction && reaction.length > 0) {
             const reactionID = reaction[0]._id as string;
-            if (reaction[0].reaction_type == reaction_type) {
+            if (reaction[0].reactionType == reaction_type) {
                 const deletedReaction = this.CommentReaction.deleteReactionByID(reactionID);
                 if (!deletedReaction) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "deleting the reaction failed");
                 const comment = await this.CommentRepository.updateCount(commentId, { reactionsCount: -1 });
@@ -176,7 +176,7 @@ export default class ReelsService implements IReelService {
             return updatedReaction;
         }
 
-        const reactionOnComment = await this.CommentReaction.create({ reactedBy: userId, reactedTo: commentId, reaction_type: reaction_type as ReactionType });
+        const reactionOnComment = await this.CommentReaction.create({ reactedBy: userId, reactedTo: commentId, reactionType: reaction_type as ReactionType });
         if (!reactionOnComment) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "creation of nreaction on comment failed");
         const comment = await this.CommentRepository.updateCount(commentId, { reactionsCount: 1 });
         if (!comment) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Incrementing comment reaction count failed");

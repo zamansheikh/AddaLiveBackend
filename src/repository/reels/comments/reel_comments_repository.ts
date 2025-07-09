@@ -59,7 +59,7 @@ export default class ReelsCommentRepostitory implements IReelCommentRepository {
                                     }
                                 }
                             ],
-                            as: "my_reaction",
+                            as: "myReaction",
                         }
                     },
                     {
@@ -85,12 +85,12 @@ export default class ReelsCommentRepostitory implements IReelCommentRepository {
                                                 }
                                             }
                                         ],
-                                        as: "my_reaction",
+                                        as: "myReaction",
                                     }
                                 },
                                 {
                                     $unwind: {
-                                        path: "$my_reaction",
+                                        path: "$myReaction",
                                         preserveNullAndEmptyArrays: true,
                                     }
                                 },
@@ -112,7 +112,7 @@ export default class ReelsCommentRepostitory implements IReelCommentRepository {
                     },
                     {
                         $unwind: {
-                            path: "$my_reaction",
+                            path: "$myReaction",
                             preserveNullAndEmptyArrays: true,
                         }
                     },
@@ -126,8 +126,8 @@ export default class ReelsCommentRepostitory implements IReelCommentRepository {
                             parentComment: 1,
                             createdAt: 1,
                             updatedAt: 1,
-                            my_reaction: {
-                                reaction_type: 1,
+                            myReaction: {
+                                reactionType: 1,
                             },
                             commentedByInfo: {
                                 _id: 1,
@@ -143,8 +143,8 @@ export default class ReelsCommentRepostitory implements IReelCommentRepository {
                                 parentComment: 1,
                                 createdAt: 1,
                                 updatedAt: 1,
-                                my_reaction: {
-                                    reaction_type: 1,
+                                myReaction: {
+                                    reactionType: 1,
                                 },
                                 commentedByInfo: {
                                     _id: 1,

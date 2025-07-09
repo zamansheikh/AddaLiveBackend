@@ -14,7 +14,7 @@ const reelsCoomentReactionSchema = new mongoose.Schema<IReelsReactionDocument>({
         required: true,
     },
 
-    reaction_type: {
+    reactionType: {
         type: String,
         enum: Object.values(ReactionType),
         default: ReactionType.Like,

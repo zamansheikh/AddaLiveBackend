@@ -14,7 +14,7 @@ const historySchema = new mongoose.Schema<IHistoryDocument>({
         type: Number,
         required: true
     },
-    total_amount: {
+    totalAmount: {
         type: Number,
         required: true
     },

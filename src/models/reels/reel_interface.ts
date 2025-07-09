@@ -7,8 +7,8 @@ export interface IReel {
     pageId?: number;
     reelCaption?: string,
     status?: string;
-    video_length: number;
-    video_maximum_length?: number;
+    videoLength: number;
+    videoMaximumLength?: number;
     reelUrl: string;
     reactions?: (IReelsReaction | Types.ObjectId)[];
     comments?: (IReelsComment | Types.ObjectId)[];

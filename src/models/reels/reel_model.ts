@@ -21,12 +21,12 @@ const reelSchema = new mongoose.Schema<IReelDocument>(
             default: ReelStatus.active,
         },
 
-        video_length: {
+        videoLength: {
             type: Number,
             required: true,
         },
 
-        video_maximum_length: {
+        videoMaximumLength: {
             type: Number,
             default: 60
         },

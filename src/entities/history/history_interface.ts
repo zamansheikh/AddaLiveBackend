@@ -4,7 +4,7 @@ export interface IHistory {
     userId: mongoose.Schema.Types.ObjectId | string,
     gold: number,
     diamond: number,
-    total_amount: number,
+    totalAmount: number,
 }
 
 export interface IHistoryDocument extends Document, IHistory {

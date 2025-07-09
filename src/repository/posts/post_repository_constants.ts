@@ -12,7 +12,7 @@ export const postStructure  = {
         latestReactions: 1,
         mediaUrl: 1,
         myReaction: {
-            reaction_type: 1
+            reactionType: 1
         },
        userName: 1,
        avatar: 1
@@ -23,7 +23,7 @@ export const postStructure  = {
 export const postReactionStructure = {
     reactedBy: 1,
     reactedTo: 1,
-    reaction_type: 1,
+    reactionType: 1,
     createdAt: 1,
     userName: 1,
     avatar: 1
