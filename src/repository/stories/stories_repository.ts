@@ -45,7 +45,7 @@ class StoriesRepository implements IStoryRepository {
                 },
                 {
                     $lookup: {
-                        from: "story_reactions",
+                        from: DatabaseNames.story_reactions,
                         let: { userId: userId, storyId: "$_id" },
                         pipeline: [
                             {
@@ -78,7 +78,7 @@ class StoriesRepository implements IStoryRepository {
                         reactionCount: 1,
                         createdAt: 1,
                         myReaction: {
-                            reaction_type: 1
+                            reactionType: 1
                         },
                         userInfo: {
                             _id: 1,

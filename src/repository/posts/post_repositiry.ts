@@ -40,7 +40,7 @@ export default class PostRepository implements IPostRepository {
                 },
                 {
                     $lookup: {
-                        from: "post_reactions",
+                        from: DatabaseNames.PostReactions,
                         let: { postId: "$_id", userId: userId },
                         pipeline: [
                             {
@@ -143,7 +143,7 @@ export default class PostRepository implements IPostRepository {
                 },
                 {
                     $lookup: {
-                        from: "post_reactions",
+                        from: DatabaseNames.PostReactions,
                         let: { postId: "$_id", userId: userObjectId },
                         pipeline: [
                             {

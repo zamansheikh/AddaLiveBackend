@@ -10,8 +10,8 @@ import { IReelEntity } from "./reel_entity_interface";
 export class ReelEntity implements IReelEntity {
     owenerId: string;
     status?: ReelStatus.active | ReelStatus.inactive;
-    video_length: number;
-    video_maximum_length?: number;
+    videoLength: number;
+    videoMaximumLength?: number;
     reelUrl: string;
     reactions?: IReelsReaction[];
     comments?: IReelsComment[];
@@ -20,8 +20,8 @@ export class ReelEntity implements IReelEntity {
     constructor(data: IReelEntity) {
         this.owenerId = data.owenerId;
         this.status = data.status;
-        this.video_length = data.video_length;
-        this.video_maximum_length = data.video_maximum_length;
+        this.videoLength = data.videoLength;
+        this.videoMaximumLength = data.videoMaximumLength;
         this.reelUrl = data.reelUrl;
         this.reactions = data.reactions;
         this.comments = data.comments;

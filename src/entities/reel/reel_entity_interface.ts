@@ -7,8 +7,8 @@ export interface  IReelEntity {
     
     owenerId: string;
     status?: ReelStatus.active | ReelStatus.inactive; 
-    video_length: number;
-    video_maximum_length?: number;
+    videoLength: number;
+    videoMaximumLength?: number;
     reelUrl: string;
     reactions?: IReelsReaction[];
     comments?: IReelsComment[];
