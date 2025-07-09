@@ -35,7 +35,7 @@ export default class GameController {
         async (req, res) => {
             const { userId } = req.params;
             const { gold, diamond, total_amount } = req.body
-            const newHistory = await this.Service.createHistory({ userId, gold, diamond, total_amount });
+            const newHistory = await this.Service.createHistory({ userId, gold, diamond, totalAmount: total_amount });
             sendResponseEnhanced(res, newHistory);
         }
     );

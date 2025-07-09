@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema<IUserDocument>(
         email: { type: String, required: true },
         password: { type: String },
         lastOnline: { type: Date },
-        user_state_in_app: {
+        userStateInApp: {
             type: String,
             enum: UserActiveStatus,
             default: UserActiveStatus.offline,
@@ -18,24 +18,24 @@ const userSchema = new mongoose.Schema<IUserDocument>(
         ],
         avatar: { type: String },
         name: String,
-        first_name: String,
-        last_name: String,
+        firstName: String,
+        lastName: String,
         gender: { type: String, enum: Gender },
         birthday: { type: Date },
         country: String,
         bio: String,
-        country_code: String,
-        country_dial_code: String,
+        countryCode: String,
+        countryDialCode: String,
         uid: { type: String, required: true, unique: true, index: true },
         userRole: {
             type: String,
             enum: UserRoles,
             default: UserRoles.User,
         },
-        country_languages: [String],
+        countryLanguages: [String],
         isViewer: { type: Boolean, default: false },
         objectId: String,
-        activity_zone: {
+        activityZone: {
             zone: {
                 type: String,
                 enum: ActivityZoneState,

@@ -59,7 +59,7 @@ export default class StoryService implements IStoryService {
             const id = existingReaction._id;
 
             // Toggle off if same reaction type
-            if (existingReaction.reaction_type === reaction_type) {
+            if (existingReaction.reactionType === reaction_type) {
                 const delReaction = await this.ReactionRepository.delete(id as string);
                 if (delReaction) return await this.StoryRepository.updateCount(storyId, {reactionCount: -1});
 
@@ -74,7 +74,7 @@ export default class StoryService implements IStoryService {
         const newReaction = await this.ReactionRepository.create({
             reactedBy: new Types.ObjectId(userId),
             reactedTo: new Types.ObjectId(storyId),
-            reaction_type: reaction_type as ReactionType,
+            reactionType: reaction_type as ReactionType,
         });
 
         if (!newReaction) {

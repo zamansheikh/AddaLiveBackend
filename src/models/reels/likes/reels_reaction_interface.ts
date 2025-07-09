@@ -2,7 +2,7 @@ import { Document, Model } from "mongoose";
 
 
 export interface IReelsReaction {
-    reaction_type: String,
+    reactionType: String,
     reactedTo: String,
     reactedBy: String,
 }

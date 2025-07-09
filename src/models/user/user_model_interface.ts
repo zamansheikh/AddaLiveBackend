@@ -9,24 +9,24 @@ export interface UserData {
     email: string;
     password?: string,
     lastOnline?: Date;
-    user_state_in_app?: UserActiveStatus;
+    userStateInApp?: UserActiveStatus;
     userPermissions: string[];
     avatar?: string;
     name?: string;
-    first_name?: string;
-    last_name?: string;
+    firstName?: string;
+    lastName?: string;
     gender?: Gender;
     birthday?: Date;
     country?: string;
     bio?: string;
-    country_code?: string;
-    country_dial_code?: string;
+    countryCode?: string;
+    countryDialCode?: string;
     uid: string;
     userRole?: UserRoles;
-    country_languages?: string[];
+    countryLanguages?: string[];
     isViewer?: boolean;
     objectId?: string;
-    activity_zone?: {
+    activityZone?: {
         zone?: ActivityZoneState;
         createdAt?: Date;
         expire?: Date;
