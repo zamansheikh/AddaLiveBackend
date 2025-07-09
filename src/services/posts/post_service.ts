@@ -28,6 +28,8 @@ export default class PostService implements IPostService {
     }
 
     async createPost({ ownerId, body, file }: { ownerId: string; body: Partial<Record<string, any>>; file?: Express.Multer.File; }): Promise<IPostDocument | null> {
+        const user = await this.PostRepository.findPostById(ownerId);
+        if (!user) throw new AppError(StatusCodes.BAD_REQUEST, "User does not exist");
         const { postCaption } = body;
         if (postCaption && postCaption.length == 0 && !file) {
             throw new AppError(StatusCodes.BAD_REQUEST, "No caption or media has been provided, at least one must be provided");
@@ -61,7 +63,7 @@ export default class PostService implements IPostService {
 
     async getPostDetails(postId: string, userId: string): Promise<IPostDocument> {
         const post = await this.PostRepository.getPostDetails(postId, userId);
-        if(!post) throw new AppError(StatusCodes.BAD_REQUEST, "Post not found");
+        if (!post) throw new AppError(StatusCodes.BAD_REQUEST, "Post not found");
         return post;
     }
 

@@ -19,6 +19,8 @@ import { UploadReelDto } from "../dtos/reels/upload_reel_dto";
 import { customValidateFileResponse } from "../core/middlewares/custom_validate_file_response";
 import { validateRequest } from "../core/middlewares/validate_request";
 import { ReelReactionDto } from "../dtos/reels/reel_reaction_dto";
+import UserRepository from "../repository/user_repository";
+import User from "../models/user/user_model";
 
 const router = express.Router();
 
@@ -26,7 +28,8 @@ const reelRepository = new ReelsRepository(Reels);
 const reactionRepository = new ReelsReactionRepostitory(ReelsReactions);
 const commentRepository = new ReelsCommentRepostitory(Comments);
 const commentReactionRepository = new ReelsReactionRepostitory(ReelsCommentsReactions)
-const reelService = new ReelsService(reelRepository, reactionRepository, commentRepository, commentReactionRepository);
+const userRepository = new UserRepository(User);
+const reelService = new ReelsService(reelRepository, reactionRepository, commentRepository, commentReactionRepository, userRepository);
 const reelsController = new ReelController(reelService);
 
 router.post("/create", authenticate(), upload.single('video'), validateRequest(UploadReelDto), customValidateFileResponse({ isvideo: true }), reelsController.createReel);
