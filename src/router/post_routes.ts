@@ -18,6 +18,8 @@ import { PostCommentDto } from "../dtos/posts/post_comment_dto";
 import {  PostEditCommentDto } from "../dtos/posts/post_edit_comment_dto";
 import { PostReactOnCommentDto } from "../dtos/posts/post_react_on_comment_dto";
 import { PostReplyCommentDto } from "../dtos/posts/post_reply_comment_dto";
+import User from "../models/user/user_model";
+import UserRepository from "../repository/user_repository";
 
 const router = express.Router();
 
@@ -25,8 +27,9 @@ const postRepository = new PostRepository(Posts);
 const reactionRepository = new PostsReactionRepostitory(PostReactions);
 const commentRepository = new PostsCommentRepostitory(PostComment);
 const commentReactionRepository = new PostsReactionRepostitory(PostCommentReaction);
+const userRepository = new UserRepository(User); 
 
-const postService = new PostService(postRepository, reactionRepository, commentRepository, commentReactionRepository);
+const postService = new PostService(postRepository, reactionRepository, commentRepository, commentReactionRepository, userRepository);
 const postController = new PostController(postService);
 
 

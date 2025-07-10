@@ -77,6 +77,8 @@ export default class AuthService implements IAuthService {
     }
 
     async updateProfile({ id, profileData, file }: { id: string, profileData: Partial<Record<string, any>>, file?: Express.Multer.File }) {
+        const user = await this.UserRepository.findUserById(id);
+        if(!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
         const updatePayload: Record<string, any> = {};
         let profilePicUrl;
         if (file) {

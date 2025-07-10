@@ -91,13 +91,15 @@ export default class AdminUserService implements IAdminUserService {
     async updateActivityZone({ id, zone, dateTill }: { id: string, zone: "safe" | "temp_block" | "permanent_block", dateTill?: string }) {
         const user = await this.UserRepository.findUserById(id);
         if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+        
         let payload: Record<string, any> = {};
         payload["zone"] = zone;
         payload["createdAt"] = new Date().toISOString();
+        if (zone === "temp_block" && dateTill == null) throw new AppError(StatusCodes.BAD_REQUEST, "date_till is required for temporary block");
         if (zone === "temp_block" && dateTill != null) {
             payload["expire"] = dateTill;
         }
-        const finalPayload = { activity_zone: payload }
+        const finalPayload = { activityZone: payload }
         return await this.UserRepository.findUserByIdAndUpdate(id, finalPayload);
     }
 

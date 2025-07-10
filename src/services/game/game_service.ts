@@ -74,6 +74,7 @@ export default class GameService implements IGameService {
 
     async getHistory(userId: string, date: string): Promise<IGetHistory> {
         const user = await this.userRepo.findUserById(userId);
+        if(!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
         const history = await this.HistoryRepo.getHistory(userId, date);
         // if (!history) throw new AppError(StatusCodes.NOT_FOUND, "History not found");
 
