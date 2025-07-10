@@ -134,7 +134,7 @@ export default class PostRepository implements IPostRepository {
                         as: "userInfo",
                     },
                 },
-                { $unwind: "$userInfo" },
+                { $unwind: { path: "$userInfo", preserveNullAndEmptyArrays: true } },
                 {
                     $addFields: {
                         userName: "$userInfo.name",

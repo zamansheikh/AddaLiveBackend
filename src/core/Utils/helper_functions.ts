@@ -2,7 +2,9 @@
 import crypto from 'crypto';
 import AppError from '../errors/app_errors';
 import { StatusCodes } from 'http-status-codes';
-import { ModeratorPermissions } from './enums';
+import { ModeratorPermissions, UserRoles } from './enums';
+import { IUserDocument } from '../../models/user/user_model_interface';
+import { IAdminDocument } from '../../entities/admin/admin_interface';
 
 export const generateFileHash = (buffer: Buffer): string => {
   return crypto.createHash('sha256').update(buffer).digest('hex');
@@ -20,4 +22,18 @@ export function validatePromoteUserPermission(permissions: string[]): void {
   if (permissions.length === 0) throw new AppError(StatusCodes.BAD_REQUEST, "permissions array must contain at least one permission");
   const invalidatePermissions = permissions.filter( p => !Object.values(ModeratorPermissions).includes(p as ModeratorPermissions));
   if (invalidatePermissions.length > 0) throw new AppError(StatusCodes.BAD_REQUEST, `Invalid permissions: ${invalidatePermissions.join(", ")}`);
+}
+
+
+export function canUserUpdate(myProfile: IUserDocument | IAdminDocument, requiredPermissions: ModeratorPermissions[]): boolean {
+  if(myProfile.userRole == UserRoles.Admin) {
+    return true;
+  }
+  if(myProfile.userRole == UserRoles.Moderator) {
+    const hasPermission = (myProfile as IUserDocument).userPermissions.filter(p => requiredPermissions.includes(p as ModeratorPermissions));
+    if(hasPermission.length == requiredPermissions.length) return true;
+  }
+
+  if(myProfile.userRole == UserRoles.User) return false;
+  return false;
 }

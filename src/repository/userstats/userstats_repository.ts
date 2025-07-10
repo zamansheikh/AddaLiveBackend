@@ -28,7 +28,7 @@ export default class UserStatsRepository implements IUserStatsRepository {
         return await this.model.findOneAndUpdate({ userId }, { $inc: { stars } }, { new: true });
     }
 
-    async updateDiamonds(userId: string, diamonds: number): Promise<IUSerStatsDocument | null> {
+    async updateDiamonds(userId: string, diamonds: number, session: mongoose.ClientSession): Promise<IUSerStatsDocument | null> {
         return await this.model.findOneAndUpdate({ userId }, { $inc: { diamonds } }, { new: true });
     }
 

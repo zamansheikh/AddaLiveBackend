@@ -10,12 +10,15 @@ import { upload } from "../core/middlewares/multer";
 import { customValidateFileResponse } from "../core/middlewares/custom_validate_file_response";
 import { validateRequest } from "../core/middlewares/validate_request";
 import { StoryReactionDto } from "../dtos/stories/story_react_dto";
+import User from "../models/user/user_model";
+import UserRepository from "../repository/user_repository";
 
 const router = express.Router();
 
 const storyRepo = new StoriesRepository(Story);
 const storyReactionRepo = new StoryReactionRepository(StoryReaction);
-const storyService = new StoryService(storyRepo, storyReactionRepo);
+const userRepository = new UserRepository(User);
+const storyService = new StoryService(storyRepo, storyReactionRepo, userRepository);
 const storyController = new StoryController(storyService);
 
 

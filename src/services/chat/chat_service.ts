@@ -26,7 +26,6 @@ export default class ChatService implements IChatService {
 
     async sendMessage(message: IMessage, file?: Express.Multer.File): Promise<IMessageDocument | null> {
         let messageBody: Record<string, any> = message;
-        console.log(message.recieverId.toString());
         
         const sender = await this.userRepo.findUserById(message.senderId.toString());
         const reciever = await this.userRepo.findUserById(message.recieverId.toString());

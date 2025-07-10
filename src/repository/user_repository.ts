@@ -20,6 +20,7 @@ export interface IUserRepository {
     removePermission(id: string, permission: string):Promise<IUserDocument | null>; 
     getAllModarators(query: Record<string, unknown>): Promise<{ pagination: IPagination, users: IUserDocument[] }>;
 
+    
 }
 
 export default class UserRepository implements IUserRepository {

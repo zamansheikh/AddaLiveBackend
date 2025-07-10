@@ -10,6 +10,7 @@ import { CloudinaryFolder, ReactionType } from "../../core/Utils/enums";
 import AppError from "../../core/errors/app_errors";
 import { StatusCodes } from "http-status-codes";
 import { IReelEntity } from "../../entities/reel/reel_entity_interface";
+import { IUserRepository } from "../../repository/user_repository";
 
 
 
@@ -19,19 +20,25 @@ export default class ReelsService implements IReelService {
     ReactionRepository: IReelReactionRepository;
     CommentRepository: IReelCommentRepository;
     CommentReaction: IReelReactionRepository
-    constructor(ReelRepository: IReelRepository, ReactionRepository: IReelReactionRepository, CommentRepository: IReelCommentRepository, CommentReactionRepository: IReelReactionRepository) {
+    UserRepository: IUserRepository;
+    constructor(ReelRepository: IReelRepository, ReactionRepository: IReelReactionRepository, CommentRepository: IReelCommentRepository, CommentReactionRepository: IReelReactionRepository, UserRepository: IUserRepository) {
         this.ReelRepository = ReelRepository;
         this.ReactionRepository = ReactionRepository;
         this.CommentRepository = CommentRepository;
         this.CommentReaction = CommentReactionRepository;
+        this.UserRepository = UserRepository;
     }
 
     async createReel({ ownerId, body, file }: { ownerId: string, body: Partial<Record<string, any>>, file: Express.Multer.File }) {
+        const user = await this.UserRepository.findUserById(ownerId);
+        if (!user) throw new AppError(StatusCodes.BAD_REQUEST, "User does not exist");
         body["ownerId"] = ownerId;
         const length = Number(body.video_length);
         if (length > 60) throw new AppError(StatusCodes.BAD_REQUEST, "Video length exceeded the limit");
         try {
             const reelUrl = await uploadFileToCloudinary({ isVideo: true, folder: CloudinaryFolder.Reels, file });
+            console.log(reelUrl);
+            
             body["reelUrl"] = reelUrl;
             return await this.ReelRepository.create(body as IReelEntity)
         } catch (error) {

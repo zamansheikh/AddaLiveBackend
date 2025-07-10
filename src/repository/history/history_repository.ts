@@ -38,7 +38,7 @@ export default class HistoryRepository implements IHistoryRepository {
                         _id: 0,
                         gold: 1,
                         diamond: 1,
-                        total_amount: 1,
+                        totalAmount: 1,
                     }
                 }
             ]

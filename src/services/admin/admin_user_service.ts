@@ -1,15 +1,18 @@
 import { StatusCodes } from "http-status-codes";
 import AppError from "../../core/errors/app_errors";
 import { IUserDocument } from "../../models/user/user_model_interface";
-import { IUSerStatsDocument } from "../../entities/userstats/userstats_interface";
+import { IUserStats, IUSerStatsDocument } from "../../entities/userstats/userstats_interface";
 import IUserStatsRepository from "../../repository/userstats/userstats_repository_interface";
 import { IAdminRepository } from "../../repository/admin/admin_repository";
 import { IAdmin, IAdminDocument } from "../../entities/admin/admin_interface";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { UserRoles } from "../../core/Utils/enums";
+import { ModeratorPermissions, UserRoles } from "../../core/Utils/enums";
 import { IPagination } from "../../core/Utils/query_builder";
 import { IUserRepository } from "../../repository/user_repository";
+import { canUserUpdate } from "../../core/Utils/helper_functions";
+import mongoose from "mongoose";
+import { appendFile } from "fs";
 
 
 export interface IAdminUserService {
@@ -26,6 +29,7 @@ export interface IAdminUserService {
     updatePermissions(id: string, permissions: string[]): Promise<IUserDocument | null>;
     removePermissions(id: string, permissions: string[]): Promise<IUserDocument | null>;
     demoteUser(userId: string): Promise<IUserDocument | null>;
+    assignCoinToUser(userId: string, coins: number, myId: string, role: UserRoles): Promise<IUSerStatsDocument | null>;
 }
 
 
@@ -91,13 +95,15 @@ export default class AdminUserService implements IAdminUserService {
     async updateActivityZone({ id, zone, dateTill }: { id: string, zone: "safe" | "temp_block" | "permanent_block", dateTill?: string }) {
         const user = await this.UserRepository.findUserById(id);
         if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+
         let payload: Record<string, any> = {};
         payload["zone"] = zone;
         payload["createdAt"] = new Date().toISOString();
+        if (zone === "temp_block" && dateTill == null) throw new AppError(StatusCodes.BAD_REQUEST, "date_till is required for temporary block");
         if (zone === "temp_block" && dateTill != null) {
             payload["expire"] = dateTill;
         }
-        const finalPayload = { activity_zone: payload }
+        const finalPayload = { activityZone: payload }
         return await this.UserRepository.findUserByIdAndUpdate(id, finalPayload);
     }
 
@@ -216,6 +222,38 @@ export default class AdminUserService implements IAdminUserService {
         return updatedUser;
     }
 
+    async assignCoinToUser(userId: string, coins: number, myId: string, role: UserRoles): Promise<IUSerStatsDocument | null> {
+        const user = await this.UserRepository.findUserById(userId);
+        let myProfile;
+        if (role == UserRoles.Admin) {
+            myProfile = await this.AdminRepository.getAdminById(myId);
+        } else {
+            myProfile = await this.UserRepository.findUserById(myId);
+        }
+        if (!myProfile) throw new AppError(StatusCodes.NOT_FOUND, "Not valid token");
+
+        const canUpdateCoins = canUserUpdate(myProfile, [ModeratorPermissions.CoinDistribute]);
+
+        if (!canUpdateCoins) throw new AppError(StatusCodes.UNAUTHORIZED, "You are not authorized to perform this action");
+
+        if (!user) {
+            throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+        }
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        const myStats = await this.UserStatsRepository.getUserStats(myId);
+        if (!myStats) throw new AppError(StatusCodes.NOT_FOUND, "My stats not found");
+        if (myStats.diamonds! < coins) throw new AppError(StatusCodes.BAD_REQUEST, "You do not have enough diamonds to assign ");
+        const myUpdatedStats = await this.UserStatsRepository.updateDiamonds(myId, -coins, session);
+        if (!myUpdatedStats) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update my stats");
+        const updatedUser = await this.UserStatsRepository.updateDiamonds(userId, coins, session);
+        if (!updatedUser) {
+            throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to assign coins to user");
+        }
+        await session.commitTransaction();
+        session.endSession();
+        return updatedUser;
+    }
 
 }
 

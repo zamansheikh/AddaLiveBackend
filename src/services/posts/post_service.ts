@@ -12,6 +12,7 @@ import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary"
 import { CloudinaryFolder, ReactionType } from "../../core/Utils/enums";
 import { isVideoFile } from "../../core/Utils/helper_functions";
 import { Types } from "mongoose";
+import { IUserRepository } from "../../repository/user_repository";
 
 export default class PostService implements IPostService {
 
@@ -19,15 +20,19 @@ export default class PostService implements IPostService {
     ReactionRepository: IPostReactionRepository;
     CommentRepository: IPostCommentRepository;
     CommentReactionRepository: IPostReactionRepository;
+    UserRepository: IUserRepository;
 
-    constructor(PostRepository: IPostRepository, ReactionRepository: IPostReactionRepository, CommentRepository: IPostCommentRepository, CommnetReactionRepository: IPostReactionRepository) {
+    constructor(PostRepository: IPostRepository, ReactionRepository: IPostReactionRepository, CommentRepository: IPostCommentRepository, CommnetReactionRepository: IPostReactionRepository, UserRepository: IUserRepository) {
         this.PostRepository = PostRepository;
         this.ReactionRepository = ReactionRepository;
         this.CommentRepository = CommentRepository;
         this.CommentReactionRepository = CommnetReactionRepository;
+        this.UserRepository = UserRepository;
     }
 
     async createPost({ ownerId, body, file }: { ownerId: string; body: Partial<Record<string, any>>; file?: Express.Multer.File; }): Promise<IPostDocument | null> {
+        const user = await this.UserRepository.findUserById(ownerId);
+        if (!user) throw new AppError(StatusCodes.BAD_REQUEST, "User does not exist");
         const { postCaption } = body;
         if (postCaption && postCaption.length == 0 && !file) {
             throw new AppError(StatusCodes.BAD_REQUEST, "No caption or media has been provided, at least one must be provided");
@@ -60,8 +65,13 @@ export default class PostService implements IPostService {
     }
 
     async getPostDetails(postId: string, userId: string): Promise<IPostDocument> {
+        const existingPost = await this.PostRepository.findPostById(postId);
+        if(!existingPost) throw new AppError(StatusCodes.BAD_REQUEST, "Post does not exist");
+        const existingUser = await this.UserRepository.findUserById(userId);
+        if(!existingUser) throw new AppError(StatusCodes.BAD_REQUEST, "User does not exist");
+        
         const post = await this.PostRepository.getPostDetails(postId, userId);
-        if(!post) throw new AppError(StatusCodes.BAD_REQUEST, "Post not found");
+        if (!post) throw new AppError(StatusCodes.BAD_REQUEST, "Post not found");
         return post;
     }
 
@@ -206,7 +216,7 @@ export default class PostService implements IPostService {
 
     async getAllComments({ userId, postId, query }: { userId: string; postId: string; query: Record<string, any>; }): Promise<{ pagination: IPagination; data: IPostCommentDocument[]; } | null> {
         const reel = await this.PostRepository.findPostById(postId);
-        if (!reel) throw new AppError(StatusCodes.BAD_REQUEST, "This reel does not exist");
+        if (!reel) throw new AppError(StatusCodes.BAD_REQUEST, "This post does not exist");
         const comments = await this.CommentRepository.getCommentsWithReplies({ postId, userId, query });
         return comments;
     }

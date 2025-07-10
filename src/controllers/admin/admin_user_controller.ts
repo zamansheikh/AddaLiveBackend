@@ -5,7 +5,7 @@ import catchAsync from "../../core/Utils/catch_async";
 import sendResponse, { sendResponseEnhanced } from "../../core/Utils/send_response";
 import AppError from "../../core/errors/app_errors";
 import { log } from "console";
-import { ModeratorPermissions } from "../../core/Utils/enums";
+import { ModeratorPermissions, UserRoles } from "../../core/Utils/enums";
 import { validatePromoteUserPermission } from "../../core/Utils/helper_functions";
 
 export default class AdminUserController {
@@ -173,6 +173,23 @@ export default class AdminUserController {
 
         }
     )
+
+    assignCoinToUser = catchAsync(
+        async (req: Request, res: Response) => {
+            const { userId, coins } = req.body;
+            const {id, role } = req.user!;
+            if (!userId || !coins) throw new AppError(StatusCodes.BAD_REQUEST, "User ID and coins are required");
+            if (coins <= 0) throw new AppError(StatusCodes.BAD_REQUEST, "Coins must be greater than 0");     
+            if(!Object.values(UserRoles).includes(role as UserRoles)) throw new AppError(StatusCodes.UNAUTHORIZED, "Role is not of correct type");
+            const updatedUser = await this.AdminUserService.assignCoinToUser(userId, coins, id, role as UserRoles);
+            sendResponse(res, {
+                statusCode: StatusCodes.OK,
+                success: true,
+                result: updatedUser,
+                message: "Coins assigned to user successfully"
+            });
+        }
+    );
 
     updateActivityZone = catchAsync(async (req: Request, res: Response) => {
         const { id, zone, date_till } = req.body;
