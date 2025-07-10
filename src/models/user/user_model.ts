@@ -40,6 +40,7 @@ const userSchema = new mongoose.Schema<IUserDocument>(
                 type: String,
                 enum: ActivityZoneState,
                 default: ActivityZoneState.safe,
+                
             },
             createdAt: { type: Date },
             expire: { type: Date },

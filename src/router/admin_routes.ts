@@ -35,6 +35,9 @@ router.route("/users/remove-permissions").put(authenticate([UserRoles.Admin]), a
 router.route("/users/demote").put(authenticate([UserRoles.Admin]), adminUserController.demoteUser);
 router.route("/users/moderators").get(authenticate([UserRoles.Admin]), adminUserController.getAllModerators);
 
+router.route("/users/assign-coin").put(authenticate([UserRoles.Admin, UserRoles.Moderator]), adminUserController.assignCoinToUser);
+
+
 router.get("/users", authenticate([UserRoles.Admin]), adminUserController.retrieveAllUsers);
 router.put("/users/activity-zone", authenticate([UserRoles.Admin]), validateRequest(ActivityZoneUpdateDto), adminUserController.updateActivityZone);
 

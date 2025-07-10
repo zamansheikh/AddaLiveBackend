@@ -6,7 +6,7 @@ export interface IAdmin {
     password: string;
     email: string;
     coins?: number;
-    role?: string;
+    userRole?: string;
 }
 
 export interface IAdminDocument extends IAdmin, Document {
