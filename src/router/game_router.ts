@@ -37,5 +37,12 @@ router.route("/result-history/add/:userId").post(validateRequest(CreateHistoryDt
 router.route("/result-history/view/:userId/date/:date").get(gameController.getHistory);
 
 
+// increase coins by
+router.route("/increase-coins/:userId").put(gameController.increaseCoins);
+// decrease coins by
+router.route("/decrease-coins/:userId").put(gameController.decreaseCoins);
+
+
+
 
 export default router;

@@ -241,6 +241,9 @@ export default class AdminUserService implements IAdminUserService {
         }
         const session = await mongoose.startSession();
         session.startTransaction();
+
+        // todo: handle for admin as he does not have user stats
+
         const myStats = await this.UserStatsRepository.getUserStats(myId);
         if (!myStats) throw new AppError(StatusCodes.NOT_FOUND, "My stats not found");
         if (myStats.diamonds! < coins) throw new AppError(StatusCodes.BAD_REQUEST, "You do not have enough diamonds to assign ");

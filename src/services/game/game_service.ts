@@ -17,6 +17,17 @@ export interface ILeaderBoardResponse {
 }
 
 
+export interface IGameResponse {
+    status: string,
+    userDetails: {
+        serial: string,
+        user_name: string,
+        profile_image_url: string,
+        total_gold: number,
+        total_diamond: number
+    }[]
+}
+
 export interface IGetHistory {
     serial: string,
     status: UserStatus,
@@ -26,6 +37,7 @@ export interface IGetHistory {
 export interface IGameService {
     getUserLeaderBoardInfo(query: Record<string, string>): Promise<ILeaderBoardResponse[]>;
     updateUserCredits(userId: string, gold: number, diamond: number): Promise<IUSerStatsDocument>;
+    incrementUserCredits(userId: string, gold: number, diamond: number): Promise<IGameResponse>;
     createHistory(history: IHistory): Promise<IHistoryDocument>;
     getHistory(userId: string, date: string): Promise<IGetHistory>;
     getUserInfo(userId: string): Promise<ILeaderBoardResponse>;
@@ -51,18 +63,34 @@ export default class GameService implements IGameService {
     async updateUserCredits(userId: string, gold: number, diamonds: number): Promise<IUSerStatsDocument> {
         const user = await this.userRepo.findUserById(userId);
         if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
-
         let userStats = await this.StatsRepo.getUserStats(userId);
-
-
         if (!userStats) throw new AppError(StatusCodes.NOT_FOUND, "user stats were not found");
-
         const updatedStats = await this.StatsRepo.updateProperty(userId, { diamonds });
-
         if (!updatedStats) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update stats");
-
         return updatedStats!;
     }
+
+    async incrementUserCredits(userId: string, gold: number, diamond: number): Promise<IGameResponse> {
+        const user = await this.userRepo.findUserById(userId);
+        if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+        let userStats = await this.StatsRepo.getUserStats(userId);
+        if (!userStats) throw new AppError(StatusCodes.NOT_FOUND, "user stats were not found");
+        const updatedStats = await this.StatsRepo.updateCoins(userId, diamond)
+        if (!updatedStats) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update stats");
+        return {
+            status: "success",
+            userDetails: [
+                {
+                    serial: userId,
+                    user_name: user.name as string,
+                    profile_image_url: user.avatar as string,
+                    total_gold: updatedStats.coins as number,
+                    total_diamond: updatedStats.coins as number
+                }
+            ]
+        };
+    }
+
 
     async createHistory(history: IHistory): Promise<IHistoryDocument> {
         const user = await this.userRepo.findUserById(history.userId.toString());
@@ -74,7 +102,7 @@ export default class GameService implements IGameService {
 
     async getHistory(userId: string, date: string): Promise<IGetHistory> {
         const user = await this.userRepo.findUserById(userId);
-        if(!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+        if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
         const history = await this.HistoryRepo.getHistory(userId, date);
         // if (!history) throw new AppError(StatusCodes.NOT_FOUND, "History not found");
 
