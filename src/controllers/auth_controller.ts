@@ -4,6 +4,7 @@ import { IAuthService } from "../services/auth/auth_service_interface";
 import { StatusCodes } from "http-status-codes";
 import catchAsync from "../core/Utils/catch_async";
 import sendResponse, { sendResponseEnhanced } from "../core/Utils/send_response";
+import AppError from "../core/errors/app_errors";
 
 export default class AuthController {
     authService: IAuthService;
@@ -43,8 +44,9 @@ export default class AuthController {
 
     giftUser = catchAsync(async (req: Request, res: Response) => {
         const { id } = req.user!;
-        const { giftType, diamonds, userId } = req.body;
-        const giftedUser = await this.authService.giftUser({ myId: id, giftType, diamonds, userId });
+        const { coins, diamonds, userId } = req.body;
+        if(coins < 1 || diamonds < 1) throw new AppError(StatusCodes.BAD_REQUEST, "coins and diamonds must be greater than 0");
+        const giftedUser = await this.authService.giftUser({ myId: id, coins, diamonds, userId });
         sendResponseEnhanced(res, giftedUser);
     });
 

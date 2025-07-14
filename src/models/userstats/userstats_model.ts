@@ -26,15 +26,6 @@ const userStatsSchmea = new mongoose.Schema<IUSerStatsDocument>({
         type: Number,
         default: 0,
     },
-    gifts: [
-        {
-            gift: { type: String, enum: GiftTypes, required: true },
-            count: {
-                type: Number,
-                default: 1,
-            },
-        },
-    ],
 },
 
     {

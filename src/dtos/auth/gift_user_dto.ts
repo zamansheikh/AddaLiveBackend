@@ -4,8 +4,8 @@ export class GiftUserDto {
     @IsString()
     userId!: string;
 
-    @IsString()
-    giftType!: string;
+    @IsNumber()
+    coins!: number;
 
     @IsOptional()
     @IsNumber()
