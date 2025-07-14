@@ -62,8 +62,8 @@ export default class UserStatsRepository implements IUserStatsRepository {
                     serial: { $toString: "$_id" },
                     user_name: "$user.name",
                     profile_image_url: "$user.avatar",
-                    total_gold: "$diamonds",
-                    total_diamond: "$diamonds"
+                    total_gold: "$coins",
+                    total_diamond: "$coins"
                 }
             },
             {
