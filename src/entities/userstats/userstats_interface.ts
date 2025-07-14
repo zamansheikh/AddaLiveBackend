@@ -9,6 +9,7 @@ export interface IGifts {
 export interface IUserStats {
     userId: Types.ObjectId | string,
     stars?: number;
+    coins?: number;
     diamonds?: number;
     levels?: number;
     gifts?: IGifts[],    

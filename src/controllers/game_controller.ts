@@ -1,3 +1,5 @@
+import { StatusCodes } from "http-status-codes";
+import AppError from "../core/errors/app_errors";
 import catchAsync from "../core/Utils/catch_async"
 import { sendResponseEnhanced } from "../core/Utils/send_response";
 import { IGameService } from "../services/game/game_service";
@@ -60,5 +62,28 @@ export default class GameController {
             });
         }
     );
+
+    increaseCoins = catchAsync(
+        async (req, res) => {
+            const { userId } = req.params;
+            const { gold, diamond } = req.body;
+            if (!diamond) throw new AppError(StatusCodes.BAD_REQUEST, "diamond is required");
+            if (diamond < 0) throw new AppError(StatusCodes.BAD_REQUEST, "diamond cannot be negative")
+            const updatedStats = await this.Service.incrementUserCredits(userId, gold, diamond); // adding coins
+            res.send(updatedStats);
+        }
+    );
+
+    decreaseCoins = catchAsync(
+        async (req, res) => {
+            const { userId } = req.params;
+            const { gold, diamond } = req.body;
+            if (!diamond) throw new AppError(StatusCodes.BAD_REQUEST, "diamond is required");
+            if (diamond < 0) throw new AppError(StatusCodes.BAD_REQUEST, "diamond cannot be negative")
+            const updatedStats = await this.Service.incrementUserCredits(userId, -gold, -diamond); // Subtracting coins
+            res.send(updatedStats);
+        }
+    );
+
 
 }

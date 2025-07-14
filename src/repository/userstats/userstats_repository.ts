@@ -24,6 +24,11 @@ export default class UserStatsRepository implements IUserStatsRepository {
         return await this.model.findOne({ userId });
     }
 
+    async updateCoins(userId: string, coins: number): Promise<IUSerStatsDocument | null> {
+        return await this.model.findOneAndUpdate({ userId }, { $inc: { coins } }, { new: true });
+    }
+    
+
     async updateStars(userId: string, stars: number): Promise<IUSerStatsDocument | null> {
         return await this.model.findOneAndUpdate({ userId }, { $inc: { stars } }, { new: true });
     }

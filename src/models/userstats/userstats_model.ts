@@ -14,6 +14,10 @@ const userStatsSchmea = new mongoose.Schema<IUSerStatsDocument>({
         type: Number,
         default: 0,
     },
+    coins: {
+        type: Number,
+        default: 0,
+    },
     diamonds: {
         type: Number,
         default: 0,
