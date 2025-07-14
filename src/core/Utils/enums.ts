@@ -33,7 +33,9 @@ export enum DatabaseNames {
 
   followers = 'followers',
 
-  Admin = "admins"
+  Admin = "admins",
+
+  Gifts = "gifts",
 
 }
 
@@ -55,6 +57,7 @@ export enum CloudinaryFolder {
   userStories = 'user_stories',
   messageImages = 'message_photos',
   messageVideos = 'message_videos',
+  giftAssets = 'gift_assets',
 }
 
 export enum FriendshipStatus {

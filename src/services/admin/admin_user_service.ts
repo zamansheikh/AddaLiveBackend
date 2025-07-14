@@ -7,12 +7,15 @@ import { IAdminRepository } from "../../repository/admin/admin_repository";
 import { IAdmin, IAdminDocument } from "../../entities/admin/admin_interface";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { ModeratorPermissions, UserRoles } from "../../core/Utils/enums";
+import { CloudinaryFolder, ModeratorPermissions, UserRoles } from "../../core/Utils/enums";
 import { IPagination } from "../../core/Utils/query_builder";
 import { IUserRepository } from "../../repository/user_repository";
-import { canUserUpdate } from "../../core/Utils/helper_functions";
+import { canUserUpdate, isVideoFile } from "../../core/Utils/helper_functions";
 import mongoose from "mongoose";
 import { appendFile } from "fs";
+import { IGift, IGiftDocument } from "../../entities/admin/gift_interface";
+import { IGiftRepository } from "../../repository/gifts/gifts_repositories";
+import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
 
 
 export interface IAdminUserService {
@@ -30,7 +33,14 @@ export interface IAdminUserService {
     removePermissions(id: string, permissions: string[]): Promise<IUserDocument | null>;
     demoteUser(userId: string): Promise<IUserDocument | null>;
     assignCoinToUser(userId: string, coins: number, myId: string, role: UserRoles): Promise<IUSerStatsDocument | null>;
+    createGift(gift: IGift): Promise<IGiftDocument>;
+    getGifts(): Promise<IGiftDocument[]>;
+    updateGift(id: string, gift: Partial<IGift>): Promise<IGiftDocument>;
+    deleteGift(id: string): Promise<IGiftDocument>;
+
 }
+
+
 
 
 
@@ -40,10 +50,12 @@ export default class AdminUserService implements IAdminUserService {
     UserRepository: IUserRepository;
     UserStatsRepository: IUserStatsRepository;
     AdminRepository: IAdminRepository;
-    constructor(UserRepository: IUserRepository, UserStatsRepository: IUserStatsRepository, AdminRepository: IAdminRepository) {
+    GiftRepository: IGiftRepository
+    constructor(UserRepository: IUserRepository, UserStatsRepository: IUserStatsRepository, AdminRepository: IAdminRepository, giftRepository: IGiftRepository) {
         this.UserRepository = UserRepository;
         this.UserStatsRepository = UserStatsRepository;
         this.AdminRepository = AdminRepository;
+        this.GiftRepository = giftRepository;
     }
 
     async loginAdmin(credentials: { username: string, password: string }): Promise<{ user: IAdminDocument, token: string }> {
@@ -258,6 +270,38 @@ export default class AdminUserService implements IAdminUserService {
         return updatedUser;
     }
 
+    async createGift(gift: IGift): Promise<IGiftDocument> {
+        console.log(gift.image);
+        
+        const url = await uploadFileToCloudinary({ isVideo: false, folder: CloudinaryFolder.giftAssets, file: gift.image as Express.Multer.File });
+        if (!url) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to upload image");
+        gift.image = url;
+        console.log(gift);
+        const newGift = await this.GiftRepository.createGift(gift);
+        return newGift;
+    }
+
+    async getGifts(): Promise<IGiftDocument[]> {
+        const gifts = await this.GiftRepository.getGifts();
+        return gifts;
+    }
+
+    async updateGift(id: string, gift: Partial<IGift>): Promise<IGiftDocument> {
+        if(gift.image) {
+            const url = await uploadFileToCloudinary({ isVideo: false, folder: CloudinaryFolder.giftAssets, file: gift.image as Express.Multer.File });
+            if (!url) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to upload image");
+            gift.image = url;
+        }
+        const updatedGift = await this.GiftRepository.updateGift(id, gift);
+        if (!updatedGift) throw new AppError(StatusCodes.NOT_FOUND, "Gift not found");
+        return updatedGift;
+    }
+
+    async deleteGift(id: string): Promise<IGiftDocument> {
+        const deletedGift = await this.GiftRepository.deleteGift(id);
+        if (!deletedGift) throw new AppError(StatusCodes.NOT_FOUND, "Gift not found");
+        return deletedGift;
+    }
 }
 
 
