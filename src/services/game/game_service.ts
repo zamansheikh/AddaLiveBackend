@@ -19,7 +19,7 @@ export interface ILeaderBoardResponse {
 
 export interface IGameResponse {
     status: string,
-    userDetails: {
+    user_details: {
         serial: string,
         user_name: string,
         profile_image_url: string,
@@ -65,7 +65,7 @@ export default class GameService implements IGameService {
         if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
         let userStats = await this.StatsRepo.getUserStats(userId);
         if (!userStats) throw new AppError(StatusCodes.NOT_FOUND, "user stats were not found");
-        const updatedStats = await this.StatsRepo.updateProperty(userId, { diamonds });
+        const updatedStats = await this.StatsRepo.updateProperty(userId, { coins: diamonds });
         if (!updatedStats) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update stats");
         return updatedStats!;
     }
@@ -79,7 +79,7 @@ export default class GameService implements IGameService {
         if (!updatedStats) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update stats");
         return {
             status: "success",
-            userDetails: [
+            user_details: [
                 {
                     serial: userId,
                     user_name: user.name as string,
@@ -117,15 +117,15 @@ export default class GameService implements IGameService {
 
     async getUserInfo(userId: string): Promise<ILeaderBoardResponse> {
         const user = await this.userRepo.findUserById(userId);
-        // if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+        if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
         const userStats = await this.StatsRepo.getUserStats(userId);
         // if (!userStats) throw new AppError(StatusCodes.NOT_FOUND, "User stats not found");
         return {
             serial: userStats == null ? null : userStats._id as string,
             user_name: user == null ? null : user.name as string,
             profile_image_url: user == null ? null : user.avatar as string,
-            total_gold: userStats == null ? null : userStats.diamonds as number,
-            total_diamond: userStats == null ? null : userStats.diamonds as number
+            total_gold: userStats == null ? null : userStats.coins as number,
+            total_diamond: userStats == null ? null : userStats.coins as number
         };
     }
 }
