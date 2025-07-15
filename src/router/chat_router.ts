@@ -12,6 +12,8 @@ import { upload } from '../core/middlewares/multer';
 import EditMessageDto from '../dtos/chat/edit_message_dto';
 import UserRepository from '../repository/user_repository';
 import User from '../models/user/user_model';
+import FollowerRepository from '../repository/follower/follower_repository';
+import Follower from '../models/followers/followers_model';
 
 
 const router = express.Router();
@@ -19,8 +21,9 @@ const router = express.Router();
 const messageRepo = new MessageRepository(Messages);
 const conversationRepo = new ConversationRepository(conversation);
 const userRepository = new UserRepository(User);
+const followerRepository = new FollowerRepository(Follower);
 
-const chatSerive = new ChatService(messageRepo, conversationRepo, userRepository);
+const chatSerive = new ChatService(messageRepo, conversationRepo, userRepository, followerRepository);
 const chatController = new ChatController(chatSerive);
 
 

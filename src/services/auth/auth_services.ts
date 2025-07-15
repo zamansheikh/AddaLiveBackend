@@ -1,7 +1,7 @@
 
 import { StatusCodes } from "http-status-codes";
 import AppError from "../../core/errors/app_errors";
-import { CloudinaryFolder, GiftTypes } from "../../core/Utils/enums";
+import { CloudinaryFolder, GiftTypes, WhoCanTextMe } from "../../core/Utils/enums";
 import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
 import { IUserEntity } from "../../entities/user_entity_interface";
 import jwt from 'jsonwebtoken';
@@ -127,6 +127,18 @@ export default class AuthService implements IAuthService {
         userWithStats.stats = updatedUserStats;
         return userWithStats;
     }
+
+    async setChatPrivacy(payload: { id: string; whoCanTextMe: WhoCanTextMe; highLevelRequirements: { levelType: string; level: number; }[]; }): Promise<IUserDocument | null> {
+        let { id, whoCanTextMe, highLevelRequirements } = payload;
+        if(!highLevelRequirements) {
+            highLevelRequirements = [];
+        }
+        const user = await this.UserRepository.findUserById(id);
+        if (!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
+        const updatedUser = await this.UserRepository.setWhoCanTextMe(id, {  whoCanTextMe, highLevelRequirements });
+        return updatedUser;
+    }
+    
 
     async generateToken({ channelName, uid, APP_CERTIFICATE, APP_ID }: { channelName: string; uid: string; APP_CERTIFICATE: string; APP_ID: string; }): Promise<{ token: string }> {
 

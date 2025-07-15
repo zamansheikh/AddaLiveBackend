@@ -5,6 +5,10 @@ import { DatabaseNames, UserRoles } from "../core/Utils/enums";
 import Friendship from "../models/friendship/friendship_model";
 import { IPagination, QueryBuilder } from "../core/Utils/query_builder";
 
+export interface ITextPrivacy{
+    whoCanTextMe: string,
+    highLevelRequirements: {levelType: string, level: number}[];
+}
 
 export interface IUserRepository {
     create(userEntity: IUserEntity): Promise<IUserDocument>;
@@ -19,8 +23,7 @@ export interface IUserRepository {
     addPermission(id: string, permission: string): Promise<IUserDocument | null>;
     removePermission(id: string, permission: string):Promise<IUserDocument | null>; 
     getAllModarators(query: Record<string, unknown>): Promise<{ pagination: IPagination, users: IUserDocument[] }>;
-
-    
+    setWhoCanTextMe(id: string, payload:ITextPrivacy ): Promise<IUserDocument | null>;
 }
 
 export default class UserRepository implements IUserRepository {
@@ -65,6 +68,11 @@ export default class UserRepository implements IUserRepository {
         return { users, pagination };
 
     }
+
+    async setWhoCanTextMe(id: string, payload: ITextPrivacy): Promise<IUserDocument | null> {
+        return await this.UserModel.findByIdAndUpdate(id, { ...payload }, { new: true });
+    }
+    
 
     async addPermission(id: string, permission: string): Promise<IUserDocument | null> {
         return await this.UserModel.findByIdAndUpdate(id, { $addToSet: { userPermissions: permission } }, { new: true });
