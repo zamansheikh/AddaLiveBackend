@@ -1,6 +1,6 @@
 import { StatusCodes } from "http-status-codes";
 import AppError from "../../core/errors/app_errors";
-import { CloudinaryFolder, SocketChannels } from "../../core/Utils/enums";
+import { CloudinaryFolder, SocketChannels, WhoCanTextMe, WhoCanTextMeLevelTypes } from "../../core/Utils/enums";
 import { isVideoFile } from "../../core/Utils/helper_functions";
 import { IPagination } from "../../core/Utils/query_builder";
 import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
@@ -12,26 +12,41 @@ import IChatService from "./chat_service_interface";
 import SocketServer from "../../core/sockets/socket_server";
 import mongoose, { Types } from "mongoose";
 import { IUserRepository } from "../../repository/user_repository";
+import { IFollowerRepository } from "../../repository/follower/follower_repository";
 
 export default class ChatService implements IChatService {
     msgRepo: IMessageRepository;
     converseRepo: IConversationRepostiry;
     userRepo: IUserRepository
+    followerRepo: IFollowerRepository;
 
-    constructor(msgRepo: IMessageRepository, converseRepo: IConversationRepostiry, userRepo: IUserRepository) {
+    constructor(msgRepo: IMessageRepository, converseRepo: IConversationRepostiry, userRepo: IUserRepository, followerRepo: IFollowerRepository) {
         this.msgRepo = msgRepo;
         this.converseRepo = converseRepo;
         this.userRepo = userRepo;
+        this.followerRepo = followerRepo;
     }
 
     async sendMessage(message: IMessage, file?: Express.Multer.File): Promise<IMessageDocument | null> {
         let messageBody: Record<string, any> = message;
-        
+        if(message.senderId.toString() == message.recieverId.toString()) 
+            throw new AppError(StatusCodes.BAD_REQUEST, "You cannot send message to yourself");
         const sender = await this.userRepo.findUserById(message.senderId.toString());
         const reciever = await this.userRepo.findUserById(message.recieverId.toString());
         if (!reciever) throw new AppError(StatusCodes.NOT_FOUND, "Reciever not found");
         if (!sender) throw new AppError(StatusCodes.NOT_FOUND, "Sender not found");
-
+        if(reciever.whoCanTextMe == WhoCanTextMe.MyFollowers){
+            const hisFollower  = await this.followerRepo.findFollower({myId: message.recieverId.toString(), followerId: message.senderId.toString()});
+            if(!hisFollower) throw new AppError(StatusCodes.BAD_REQUEST, "You are not following this user, user privacy requires following the user");
+        }
+        if(reciever.whoCanTextMe == WhoCanTextMe.HighLevel) {
+            for(let requirement of reciever.highLevelRequirements) {
+                if(requirement.levelType == WhoCanTextMeLevelTypes.UserLevel) {
+                    if(requirement.level > sender.level!) 
+                        throw new AppError(StatusCodes.BAD_REQUEST, `User level must be at least ${requirement.level} to text this user`);
+                }
+            }
+        }
         if (file) {
             const isVideo = isVideoFile(file.originalname);
             const mediaUrl = await uploadFileToCloudinary({ isVideo, file, folder: isVideo ? CloudinaryFolder.messageVideos : CloudinaryFolder.messageImages });
