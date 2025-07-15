@@ -128,3 +128,9 @@ export enum ModeratorPermissions {
   CoinDistribute = "coin_distributor",
   UpdateUsers = "update_users"
 }
+
+export enum WhoCanTextMe {
+  AllUsers = 'all_users',
+  MyFollowers = 'my_followers',
+  HighLevel = 'high_level'
+}

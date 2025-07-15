@@ -38,7 +38,15 @@ const server = http.createServer(app);
 SocketServer.initialize(server);
 
 // Middleware
-app.use(cors()); // Enable CORS
+app.use(
+  cors({
+    origin: [
+      "http://dlstarlive.com:8000",
+      "http://localhost:8000",
+    ],
+    credentials: true,
+  })
+);  // Enable CORS
 app.use(morgan('dev')); // Logging middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); // Parse JSON request bodies

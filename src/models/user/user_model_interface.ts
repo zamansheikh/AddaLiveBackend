@@ -1,6 +1,6 @@
 import mongoose, { Document, Model } from 'mongoose';
 import { IUserStats } from '../../entities/userstats/userstats_interface';
-import { ActivityZoneState, Gender, UserActiveStatus, UserRoles } from '../../core/Utils/enums';
+import { ActivityZoneState, Gender, UserActiveStatus, UserRoles, WhoCanTextMe } from '../../core/Utils/enums';
 
 
 
@@ -18,6 +18,8 @@ export interface UserData {
     gender?: Gender;
     birthday?: Date;
     country?: string;
+    whoCanTextMe?: WhoCanTextMe;
+    highLevelRequirements: {levelType: string, level: number}[];
     bio?: string;
     countryCode?: string;
     countryDialCode?: string;
