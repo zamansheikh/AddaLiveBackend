@@ -33,7 +33,9 @@ export enum DatabaseNames {
 
   followers = 'followers',
 
-  Admin = "admins"
+  Admin = "admins",
+
+  Gifts = "gifts",
 
 }
 
@@ -55,6 +57,7 @@ export enum CloudinaryFolder {
   userStories = 'user_stories',
   messageImages = 'message_photos',
   messageVideos = 'message_videos',
+  giftAssets = 'gift_assets',
 }
 
 export enum FriendshipStatus {
@@ -124,4 +127,10 @@ export enum UserRoles {
 export enum ModeratorPermissions {
   CoinDistribute = "coin_distributor",
   UpdateUsers = "update_users"
+}
+
+export enum WhoCanTextMe {
+  AllUsers = 'all_users',
+  MyFollowers = 'my_followers',
+  HighLevel = 'high_level'
 }

@@ -98,9 +98,7 @@ export default class AuthService implements IAuthService {
     }
 
     async giftUser(giftUser: IGiftUser): Promise<IUserDocument | null> {
-        const { myId, giftType, diamonds, userId } = giftUser;
-
-        if (!Object.values(GiftTypes).includes(giftType as GiftTypes)) throw new AppError(StatusCodes.BAD_REQUEST, "invalid gift type");
+        const { myId, coins, diamonds, userId } = giftUser;
         const myUser = await this.UserRepository.findUserById(myId);
         const userToGift = await this.UserRepository.findUserById(userId);
         if (!myUser || !userToGift) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
@@ -113,56 +111,10 @@ export default class AuthService implements IAuthService {
         // starting a new session for safe rollback
         const session = await mongoose.startSession();
         session.startTransaction();
-
-        if (diamonds) {
-            if (mystats.diamonds! < diamonds) throw new AppError(StatusCodes.BAD_REQUEST, "insufficient diamonds");
-            // TODO: later the diamond amount will be extracted from db
-            mystats.diamonds! -= diamonds;
-            const updatedMyStats = await mystats.save({ session });
-            if (!updatedMyStats) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "updating my stats failed");
-        } else {
-            let giftFound = false;
-            if (mystats.gifts && mystats.gifts.length > 0) {
-                const length = mystats.gifts.length;
-                for (let i = 0; i < length; i++) {
-                    if (mystats.gifts[i].gift === giftType) {
-                        if (mystats.gifts[i].count! < 1) throw new AppError(StatusCodes.BAD_REQUEST, "insufficient gifts");
-                        mystats.gifts[i].count! -= 1;
-                        giftFound = true;
-                        break;
-                    }
-                }
-            }
-            if (!giftFound) throw new AppError(StatusCodes.BAD_REQUEST, "insufficient gifts");
-
-            const updatedMyStats = await mystats.save({ session });
-            if (!updatedMyStats) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "updating my stats failed");
-        }
-
-        // checking if already the item exists in the list of gifts
-        let giftSent = false;
-
-        if (userStats.gifts && userStats.gifts.length > 0) {
-            const length = userStats.gifts.length;
-            for (let i = 0; i < length; i++) {
-                if (userStats.gifts[i].gift === giftType) {
-                    userStats.gifts[i].count! += 1;
-                    giftSent = true;
-                    break;
-                }
-            }
-        }
-
-        if (!giftSent) {
-            userStats.gifts = userStats.gifts || [];
-            userStats.gifts?.push({
-                gift: giftType as GiftTypes,
-                count: 1,
-            });
-        }
-
-        // todo: later create transaction documents
-
+        if(mystats.coins! < coins) throw new AppError(StatusCodes.BAD_REQUEST, "insufficient coins");
+        mystats.coins! -= coins;
+        await mystats.save({ session });
+        userStats.diamonds! += diamonds;
         const updatedUserStats = await userStats.save({ session });
 
         await session.commitTransaction();

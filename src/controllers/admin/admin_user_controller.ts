@@ -177,10 +177,10 @@ export default class AdminUserController {
     assignCoinToUser = catchAsync(
         async (req: Request, res: Response) => {
             const { userId, coins } = req.body;
-            const {id, role } = req.user!;
+            const { id, role } = req.user!;
             if (!userId || !coins) throw new AppError(StatusCodes.BAD_REQUEST, "User ID and coins are required");
-            if (coins <= 0) throw new AppError(StatusCodes.BAD_REQUEST, "Coins must be greater than 0");     
-            if(!Object.values(UserRoles).includes(role as UserRoles)) throw new AppError(StatusCodes.UNAUTHORIZED, "Role is not of correct type");
+            if (coins <= 0) throw new AppError(StatusCodes.BAD_REQUEST, "Coins must be greater than 0");
+            if (!Object.values(UserRoles).includes(role as UserRoles)) throw new AppError(StatusCodes.UNAUTHORIZED, "Role is not of correct type");
             const updatedUser = await this.AdminUserService.assignCoinToUser(userId, coins, id, role as UserRoles);
             sendResponse(res, {
                 statusCode: StatusCodes.OK,
@@ -205,5 +205,63 @@ export default class AdminUserController {
         const result = await this.AdminUserService.updateUserStat({ diamonds, stars, userId });
         sendResponseEnhanced(res, result);
     });
+
+    createGift= catchAsync(async (req: Request, res: Response) => {
+        const { name, coinPrice, diamonds } = req.body;
+        if(!req.file) throw new AppError(StatusCodes.BAD_REQUEST, "Image is required");
+        if(req.file.mimetype != "image/png") throw new AppError(StatusCodes.BAD_REQUEST, "Image must be a PNG file");
+        if(isNaN(coinPrice) || isNaN(diamonds)) throw new AppError(StatusCodes.BAD_REQUEST, "Coin price and diamonds must be numbers");
+        if(coinPrice < 1) throw new AppError(StatusCodes.BAD_REQUEST, "Coin price must be greater than 0");
+        if(diamonds < 1) throw new AppError(StatusCodes.BAD_REQUEST, "Diamonds must be greater than 0");
+        
+        const newGift = await this.AdminUserService.createGift({ name, coinPrice, diamonds, image: req.file });
+        sendResponse(res, {
+            statusCode: StatusCodes.CREATED,
+            success: true,
+            result: newGift,
+            message: "Gift created successfully"
+        });
+    });
+
+    getGifts = catchAsync(async (req: Request, res: Response) => {
+        const gifts = await this.AdminUserService.getGifts();
+        sendResponse(res, {
+            statusCode: StatusCodes.OK,
+            success: true,
+            result: gifts,
+            message: "Gifts retrieved successfully"
+        });
+    });
+
+    updateGift = catchAsync(async (req: Request, res: Response) => {
+        const { id } = req.params;
+        const { name, coinPrice, diamonds } = req.body;
+        const image = req.file;
+        if (!name && !coinPrice && !diamonds && !image) throw new AppError(StatusCodes.BAD_REQUEST, "At least one field (name, coinPrice, or diamonds) is required for update");
+        if (coinPrice && (isNaN(coinPrice) || coinPrice < 1)) throw new AppError(StatusCodes.BAD_REQUEST, "Coin price must be a number greater than 0");
+        if (diamonds && (isNaN(diamonds) || diamonds < 1)) throw new AppError(StatusCodes.BAD_REQUEST, "Diamonds must be a number greater than 0");
+
+        const updatedGift = await this.AdminUserService.updateGift(id, { name, coinPrice, diamonds, image });
+        sendResponse(res, {
+            statusCode: StatusCodes.OK,
+            success: true,
+            result: updatedGift,
+            message: "Gift updated successfully"
+        });
+    });
+
+    deleteGift = catchAsync(async (req: Request, res: Response) => {
+        const { id } = req.params;
+        const deletedGift = await this.AdminUserService.deleteGift(id);
+        sendResponse(res, {
+            statusCode: StatusCodes.OK,
+            success: true,
+            result: deletedGift,
+            message: "Gift deleted successfully"
+        });
+    });
+    
+
+
 
 }

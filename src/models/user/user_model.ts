@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { IUserDocument } from "../user/user_model_interface";
-import { ActivityZoneState, DatabaseNames, Gender, UserActiveStatus, UserRoles } from "../../core/Utils/enums";
+import { ActivityZoneState, DatabaseNames, Gender, UserActiveStatus, UserRoles, WhoCanTextMe } from "../../core/Utils/enums";
 
 const userSchema = new mongoose.Schema<IUserDocument>(
     {
@@ -22,6 +22,13 @@ const userSchema = new mongoose.Schema<IUserDocument>(
         lastName: String,
         gender: { type: String, enum: Gender },
         birthday: { type: Date },
+        whoCanTextMe: { type: String, enum: WhoCanTextMe, default: WhoCanTextMe.AllUsers },
+        highLevelRequirements: [
+            {
+                levelType: String,
+                level: Number
+            }
+        ],
         country: String,
         bio: String,
         countryCode: String,

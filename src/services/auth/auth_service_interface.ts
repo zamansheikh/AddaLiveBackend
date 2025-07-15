@@ -3,7 +3,7 @@ import { IUserDocument } from "../../models/user/user_model_interface";
 
 export interface IGiftUser {
     myId: string;
-    giftType: string;
+    coins: number;
     diamonds: number;
     userId: string;
 }
