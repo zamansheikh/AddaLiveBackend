@@ -17,6 +17,7 @@ export interface UserData {
     lastName?: string;
     gender?: Gender;
     birthday?: Date;
+    level?: number;
     country?: string;
     whoCanTextMe?: WhoCanTextMe;
     highLevelRequirements: {levelType: string, level: number}[];

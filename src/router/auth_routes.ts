@@ -33,6 +33,8 @@ router.get("/user/:id", authenticate(), authController.getUserDetails);
 router.get("/my-profile", authenticate(), authController.getMyDetails);
 router.put("/user/gift", authenticate(), validateRequest(GiftUserDto), authController.giftUser)
 
+router.route("/user/set-privacy/chats").put(authenticate(), authController.setChatPrivacy);
+
 router.post("/generate-token", authenticate(), validateRequest(GenerateTokenDto), authController.generateToken)
 
 export default router;

@@ -134,3 +134,8 @@ export enum WhoCanTextMe {
   MyFollowers = 'my_followers',
   HighLevel = 'high_level'
 }
+
+export enum WhoCanTextMeLevelTypes {
+  UserLevel  = 'user_level',
+  talentLevel = 'talent_level',
+}
