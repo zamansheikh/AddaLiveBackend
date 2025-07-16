@@ -11,6 +11,7 @@ import AppError from "../../core/errors/app_errors";
 import { StatusCodes } from "http-status-codes";
 import { IReelEntity } from "../../entities/reel/reel_entity_interface";
 import { IUserRepository } from "../../repository/user_repository";
+import { IPagination } from "../../core/Utils/query_builder";
 
 
 
@@ -64,6 +65,13 @@ export default class ReelsService implements IReelService {
 
         const deletedReel = await this.ReelRepository.deleteReelById(reelID);
         return deletedReel;
+    }
+
+    async getUserReels(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IReelDocument[]; }> {
+        const user = await this.UserRepository.findUserById(userId);
+        if(!user) throw new AppError(StatusCodes.BAD_REQUEST, "User does not exist");
+        const reels = await this.ReelRepository.getUserReels(userId, query);
+        return reels;
     }
 
     async reactOnReels({ reelId, reaction_type, userID }: { reelId: string, reaction_type: string, userID: string }) {

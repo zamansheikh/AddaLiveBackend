@@ -8,6 +8,7 @@ export interface IReelRepository {
     getAllReels(query: Record<string, any>): Promise<{pagination: IPagination, data: IReelDocument[]} | null>;
     findReelById(id: string): Promise<IReelDocument | null>;
     findAllReels(): Promise<IReelDocument[] | null>;
+    getUserReels(userId: string, query: Record<string, any>): Promise<{pagination: IPagination, data: IReelDocument[]}>;
     findReelsConditionally(condition: Record<string, string | number>): Promise<IReelDocument[] | null>;
     updateCount({ reelId, count, isReaction }: { reelId: string, count: number, isReaction: boolean }): Promise<IReelDocument | string | null>;
     findReelByIdAndUpdate(id: string, payload: Record<string, any>): Promise<IReelDocument | null>;

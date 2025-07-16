@@ -58,6 +58,14 @@ export default class PostController {
         }
     );
 
+    getUserPosts = catchAsync(
+        async (req: Request, res: Response) => {
+            const { userId } = req.params;
+            const allPosts = await this.PostService.getUserPosts(userId, req.query);
+            sendResponseEnhanced(res, allPosts);
+        }
+    );
+
     reactOnPost = catchAsync(
         async (req: Request, res: Response) => {
             const { reaction_type, postId } = req.body;

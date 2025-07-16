@@ -38,6 +38,8 @@ router.get("/:reelId/comments", authenticate(), reelsController.getAllComments);
 router.put("/edit", authenticate(),  validateRequest(EditReelDto), reelsController.editReel);
 router.delete("/delete/:reelId", authenticate(), reelsController.deleteReel);
 
+router.route("/user/:userId").get(authenticate(), reelsController.getUserReels);
+
 router.post("/react", authenticate(),  validateRequest(ReelReactionDto), reelsController.reactOnReel);
 router.post("/comment", authenticate(),  validateRequest(ReelCommentDto), reelsController.commentOnReel);
 router.delete("/:reelId/comment/delete/:commentId", authenticate(), reelsController.deleteComment);

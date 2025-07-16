@@ -11,6 +11,7 @@ export interface IReelService {
     getAllReel(query: Record<string, any>): Promise<{pagination: IPagination, data: IReelDocument[]} | null | string>; 
     editReel({ reelID, reelCaption, userId }: { reelID: string, reelCaption: string, userId: string }): Promise<IReelDocument | string | null>;
     deleteReel({ reelID, userId }: { reelID: string, userId: string }): Promise<IReelDocument | string | null>;
+    getUserReels(userId: string, query: Record<string, any>): Promise<{pagination: IPagination, data: IReelDocument[]}>;
     reactOnReels({ reelId, reaction_type, userID }: { reelId: string, reaction_type: string, userID: string }): Promise<IReelDocument | IReelsReactionDocument | string | null>;
     commnetOnReels({ reelId, commentText, userID }: { reelId: string, commentText: string, userID: string }): Promise<IReelDocument | IReelsCommentDocument | string | null>;
     deleteComment({ userId, commentId, reelId }: { userId: string, commentId: string, reelId: string }): Promise<IReelDocument | IReelsCommentDocument | string | null>;
