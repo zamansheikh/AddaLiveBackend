@@ -41,6 +41,7 @@ SocketServer.initialize(server);
 app.use(
   cors({
     origin: [
+      "http://localhost",
       "http://dlstarlive.com:8000",
       "http://localhost:8000",
     ],
