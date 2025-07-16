@@ -17,4 +17,5 @@ export interface IPostService {
     reactOnComment({ userId, commentId, reaction_type }: { userId: string, commentId: string, reaction_type: string }): Promise<IPostCommentDocument | IPostsReactionDocument  | null>;
     replyToComment({ userId, commentId, commentText, postId }: { userId: string, commentId: string, commentText: string, postId: string }): Promise<IPostCommentDocument  | null>;
     getAllComments({userId, postId, query}: {userId: string, postId: string, query: Record<string, any>}) : Promise<{pagination: IPagination, data: IPostCommentDocument[]}  | null >;
+    getUserPosts(userId: string, query: Record<string, any>): Promise<{pagination: IPagination, data: IPostDocument[]}>;
 }

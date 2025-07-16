@@ -1,7 +1,7 @@
 
 import { IReelDocument, IReelModel } from "../../models/reels/reel_interface";
 import { IReelRepository } from "./reels_interface";
-import { QueryBuilder } from "../../core/Utils/query_builder";
+import { IPagination, QueryBuilder } from "../../core/Utils/query_builder";
 import { IReelEntity } from "../../entities/reel/reel_entity_interface";
 import { DatabaseNames } from "../../core/Utils/enums";
 import mongoose from "mongoose";
@@ -99,6 +99,17 @@ export default class ReelsRepository implements IReelRepository {
 
     async findReelById(id: string) {
         return await this.ReelModel.findById(id);
+    }
+
+    async getUserReels(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IReelDocument[]; }> {
+        const qb = new QueryBuilder(this.ReelModel, query);
+        const reels = qb.find({ ownerId: userId }).sort().paginate().populateField("ownerId", "name avatar");
+        const pagination = await reels.countTotal();
+        const data = await reels.exec();
+        return {
+            pagination,
+            data
+        }
     }
 
     async findAllReels() {

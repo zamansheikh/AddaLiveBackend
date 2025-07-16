@@ -43,6 +43,15 @@ export default class ReelController {
         }
     );
 
+    getUserReels = catchAsync(
+        async (req: Request, res: Response) => {
+            const { userId } = req.params;
+            const allReels = await this.ReelService.getUserReels(userId, req.query);
+            sendResponseEnhanced(res, allReels);
+        }
+    );
+    
+
     reactOnReel = catchAsync(
         async (req: Request, res: Response) => {
             const { reaction_type, reelId } = req.body;

@@ -10,4 +10,5 @@ export interface IPostRepository {
     updateCount(postID: string, payload: Record<string, number>): Promise<IPostDocument | null>;
     findPostByIdAndUpdate(id: string, payload: Record<string, any>): Promise<IPostDocument | null>;
     deletePostById(reelId: string): Promise<IPostDocument | null>;
+    getUserPost(userId: string, query: Record<string, any>): Promise<{pagination: IPagination, data: IPostDocument[]}>;
 }

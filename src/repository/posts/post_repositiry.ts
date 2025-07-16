@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { DatabaseNames } from "../../core/Utils/enums";
-import { QueryBuilder } from "../../core/Utils/query_builder";
+import { IPagination, QueryBuilder } from "../../core/Utils/query_builder";
 import { IPost, IPostDocument, IPostModel } from "../../entities/posts/post_interface";
 import { postReactionStructure, postStructure } from "./post_repository_constants";
 import { IPostRepository } from "./post_repository_interface";
@@ -232,6 +232,14 @@ export default class PostRepository implements IPostRepository {
 
     async findPostByIdAndUpdate(id: string, payload: Record<string, any>) {
         return await this.PostModel.findByIdAndUpdate(id, payload, { new: true });
+    }
+
+    async getUserPost(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IPostDocument[]; }> {
+        const qb = new QueryBuilder(this.PostModel, query);
+        const res = qb.find({ ownerId: userId }).sort().paginate().populateField("ownerId", "name avatar");
+        const data = await res.exec();
+        const pagination = await res.countTotal();
+        return {data, pagination};
     }
 
 }

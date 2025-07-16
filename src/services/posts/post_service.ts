@@ -221,5 +221,11 @@ export default class PostService implements IPostService {
         return comments;
     }
 
+    async getUserPosts(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IPostDocument[]; }> {
+        const user = await this.UserRepository.findUserById(userId);
+        if (!user) throw new AppError(StatusCodes.BAD_REQUEST, "User does not exist");
+        return this.PostRepository.getUserPost(userId, query);
+    }
+
 
 }

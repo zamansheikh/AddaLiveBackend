@@ -39,6 +39,8 @@ router.get("/:postId", authenticate(), postController.getPostDetails);
 router.post("/edit", authenticate(), validateRequest(EditPostDto), postController.editPost);
 router.delete("/delete/:postId", authenticate(), postController.deletePost);
 
+router.route("/users/:userId").get(authenticate(), postController.getUserPosts);
+
 router.get("/:postId/comments", authenticate(), postController.getAllComments);
 router.post("/react", authenticate(),  validateRequest(PostReactionDto), postController.reactOnPost);
 router.post("/comment", authenticate(),  validateRequest(PostCommentDto), postController.commentOnPost);
