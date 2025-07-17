@@ -161,7 +161,7 @@ export default class AdminUserController {
 
     retrieveAllUsers = catchAsync(
         async (req: Request, res: Response) => {
-            const users = await this.AdminUserService.retrieveAllUsers();
+            const users = await this.AdminUserService.retrieveAllUsers(req.query);
 
             sendResponse(res, {
                 statusCode: StatusCodes.ACCEPTED,

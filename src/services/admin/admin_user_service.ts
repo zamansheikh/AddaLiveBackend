@@ -23,7 +23,7 @@ export interface IAdminUserService {
     registerAdmin(admin: IAdmin): Promise<IAdminDocument | null>;
     updateAdmin(id: string, admin: Partial<IAdmin>): Promise<IAdminDocument | null>;
     deleteAdmin(id: string): Promise<IAdminDocument | null>;
-    retrieveAllUsers(): Promise<IUserDocument[] | null>;
+    retrieveAllUsers(query: Record<string, any>): Promise<{pagination: IPagination, users: IUserDocument[]}>;
     updateActivityZone({ id, zone, dateTill }: { id: string, zone: "safe" | "temp_block" | "permanent_block", dateTill?: string }): Promise<IUserDocument | null>
     updateUserStat(body: { diamonds?: number, stars?: number, userId: string }): Promise<IUSerStatsDocument>
     searchUserEmail(email: string, query: Record<string, unknown>): Promise<{ pagination: IPagination, users: IUserDocument[] } | null>;
@@ -99,8 +99,8 @@ export default class AdminUserService implements IAdminUserService {
     }
 
 
-    async retrieveAllUsers() {
-        const users = await this.UserRepository.findAllUser();
+    async retrieveAllUsers(query: Record<string, any>):  Promise<{pagination: IPagination, users: IUserDocument[]}> {
+        const users = await this.UserRepository.findAllUser(query);
         return users;
     }
 
