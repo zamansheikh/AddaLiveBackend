@@ -271,12 +271,14 @@ export default class AdminUserService implements IAdminUserService {
     }
 
     async createGift(gift: IGift): Promise<IGiftDocument> {
-        console.log(gift.image);
         
-        const url = await uploadFileToCloudinary({ isVideo: false, folder: CloudinaryFolder.giftAssets, file: gift.image as Express.Multer.File });
-        if (!url) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to upload image");
-        gift.image = url;
-        console.log(gift);
+        const previewImageUrl = await uploadFileToCloudinary({ isVideo: false, folder: CloudinaryFolder.giftAssets, file: gift.previewImage as Express.Multer.File });
+        if (!previewImageUrl) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to upload prviewImage");
+        gift.previewImage = previewImageUrl;
+        const svgaImageUrl = await uploadFileToCloudinary({ isVideo: false, folder: CloudinaryFolder.giftAssets, file: gift.svgaImage as Express.Multer.File });
+        if (!svgaImageUrl) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to upload svgaImage");
+        gift.svgaImage = svgaImageUrl;
+        
         const newGift = await this.GiftRepository.createGift(gift);
         return newGift;
     }
@@ -287,10 +289,15 @@ export default class AdminUserService implements IAdminUserService {
     }
 
     async updateGift(id: string, gift: Partial<IGift>): Promise<IGiftDocument> {
-        if(gift.image) {
-            const url = await uploadFileToCloudinary({ isVideo: false, folder: CloudinaryFolder.giftAssets, file: gift.image as Express.Multer.File });
-            if (!url) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to upload image");
-            gift.image = url;
+        if(gift.previewImage) {
+            const previewUrl = await uploadFileToCloudinary({ isVideo: false, folder: CloudinaryFolder.giftAssets, file: gift.previewImage as Express.Multer.File });
+            if (!previewUrl) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to upload image");
+            gift.previewImage = previewUrl;
+        }
+        if(gift.svgaImage) {
+            const svgaUrl = await uploadFileToCloudinary({ isVideo: false, folder: CloudinaryFolder.giftAssets, file: gift.svgaImage as Express.Multer.File });
+            if (!svgaUrl) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to upload image");
+            gift.svgaImage = svgaUrl;
         }
         const updatedGift = await this.GiftRepository.updateGift(id, gift);
         if (!updatedGift) throw new AppError(StatusCodes.NOT_FOUND, "Gift not found");

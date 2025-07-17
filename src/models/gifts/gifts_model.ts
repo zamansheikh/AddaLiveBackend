@@ -1,9 +1,14 @@
 import mongoose from "mongoose";
 import { DatabaseNames } from "../../core/Utils/enums";
+import { IGiftDocument } from "../../entities/admin/gift_interface";
 
 
-const GiftSchema = new mongoose.Schema({
+const GiftSchema = new mongoose.Schema<IGiftDocument>({
     name: {
+        type: String,
+        required: true
+    },
+    category: {
         type: String,
         required: true
     },
@@ -15,10 +20,15 @@ const GiftSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    image: {
+    previewImage: {
         type: String,
         required: true
     },
+    svgaImage: {
+        type: String,
+        required: false
+    }
+    
 }, {
     timestamps: true
 });

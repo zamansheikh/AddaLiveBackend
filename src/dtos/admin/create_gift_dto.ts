@@ -2,7 +2,10 @@ import { IsNumber, IsString } from "class-validator";
 
 export class CreateGiftDto {
     @IsString()
-    name!: string;
+    giftName!: string;
+
+    @IsString()
+    category!: string;
 
     @IsString()
     diamonds!: number;
