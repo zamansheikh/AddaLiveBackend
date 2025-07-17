@@ -206,15 +206,24 @@ export default class AdminUserController {
         sendResponseEnhanced(res, result);
     });
 
-    createGift= catchAsync(async (req: Request, res: Response) => {
-        const { name, coinPrice, diamonds } = req.body;
-        if(!req.file) throw new AppError(StatusCodes.BAD_REQUEST, "Image is required");
-        if(req.file.mimetype != "image/png") throw new AppError(StatusCodes.BAD_REQUEST, "Image must be a PNG file");
-        if(isNaN(coinPrice) || isNaN(diamonds)) throw new AppError(StatusCodes.BAD_REQUEST, "Coin price and diamonds must be numbers");
-        if(coinPrice < 1) throw new AppError(StatusCodes.BAD_REQUEST, "Coin price must be greater than 0");
-        if(diamonds < 1) throw new AppError(StatusCodes.BAD_REQUEST, "Diamonds must be greater than 0");
-        
-        const newGift = await this.AdminUserService.createGift({ name, coinPrice, diamonds, image: req.file });
+    createGift = catchAsync(async (req: Request, res: Response) => {
+        const { giftName, category, coinPrice, diamonds } = req.body;
+        const files = req.files as unknown as IGiftFile;
+
+        if (!files)
+            throw new AppError(StatusCodes.BAD_REQUEST, "Images are required");
+        if (!files.previewImage || !files.svgaImage)
+            throw new AppError(StatusCodes.BAD_REQUEST, "Either previewImage or svgaImage fields cannot be missing");
+        if (files.previewImage[0].mimetype !== "image/png")
+            throw new AppError(StatusCodes.BAD_REQUEST, "Preview image must be a png file");
+        if (isNaN(coinPrice) || isNaN(diamonds))
+            throw new AppError(StatusCodes.BAD_REQUEST, "Coin price and diamonds must be numbers");
+        if (coinPrice < 1)
+            throw new AppError(StatusCodes.BAD_REQUEST, "Coin price must be greater than 0");
+        if (diamonds < 1)
+            throw new AppError(StatusCodes.BAD_REQUEST, "Diamonds must be greater than 0");
+
+        const newGift = await this.AdminUserService.createGift({ name: giftName, category, coinPrice: parseInt(coinPrice, 10), diamonds: parseInt(diamonds, 10), previewImage: files.previewImage[0], svgaImage: files.svgaImage[0] });
         sendResponse(res, {
             statusCode: StatusCodes.CREATED,
             success: true,
@@ -235,13 +244,16 @@ export default class AdminUserController {
 
     updateGift = catchAsync(async (req: Request, res: Response) => {
         const { id } = req.params;
-        const { name, coinPrice, diamonds } = req.body;
-        const image = req.file;
-        if (!name && !coinPrice && !diamonds && !image) throw new AppError(StatusCodes.BAD_REQUEST, "At least one field (name, coinPrice, or diamonds) is required for update");
+        const { giftName, category, coinPrice, diamonds } = req.body;
+        const files = req.files as unknown as IGiftFile;
+        const previewImage = files.previewImage?.[0];
+        const svgaImage = files.svgaImage?.[0];
+        const image = previewImage || svgaImage;
+        if (!giftName && !coinPrice && !diamonds && !image) throw new AppError(StatusCodes.BAD_REQUEST, "At least one field (giftName, category, coinPrice, or diamonds) is required for update");
         if (coinPrice && (isNaN(coinPrice) || coinPrice < 1)) throw new AppError(StatusCodes.BAD_REQUEST, "Coin price must be a number greater than 0");
         if (diamonds && (isNaN(diamonds) || diamonds < 1)) throw new AppError(StatusCodes.BAD_REQUEST, "Diamonds must be a number greater than 0");
 
-        const updatedGift = await this.AdminUserService.updateGift(id, { name, coinPrice, diamonds, image });
+        const updatedGift = await this.AdminUserService.updateGift(id, { name: giftName, category, coinPrice, diamonds, svgaImage, previewImage });
         sendResponse(res, {
             statusCode: StatusCodes.OK,
             success: true,
@@ -260,8 +272,13 @@ export default class AdminUserController {
             message: "Gift deleted successfully"
         });
     });
-    
 
 
 
+
+}
+
+export interface IGiftFile {
+    previewImage?: Express.Multer.File[];
+    svgaImage?: Express.Multer.File[];
 }

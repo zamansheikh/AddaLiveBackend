@@ -6,6 +6,8 @@ export const uploadFileToCloudinary = ({ isVideo, folder, file }: { isVideo: boo
 
     const fileHash = generateFileHash(file.buffer);
     const publicId = `user_profiles/${fileHash}`;
+    console.log("file", file );
+    
 
     return new Promise<string>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(

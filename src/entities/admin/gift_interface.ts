@@ -2,9 +2,11 @@ import { Model } from "mongoose";
 
 export interface IGift {
     name: string;
+    category: string;
     diamonds: number;
     coinPrice: number;
-    image: string | Express.Multer.File;
+    previewImage: string | Express.Multer.File;
+    svgaImage: string | Express.Multer.File;
 }
 
 export interface IGiftDocument extends IGift, Document {

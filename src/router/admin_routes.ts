@@ -95,12 +95,25 @@ router
   .route("/gift")
   .post(
     authenticate([UserRoles.Admin]),
-    upload.single("image"),
+    upload.fields([
+      { name: "previewImage", maxCount: 1 },
+      { name: "svgaImage", maxCount: 1 },
+    ]),
     validateRequest(CreateGiftDto),
     adminUserController.createGift
   )
   .get(authenticate(), adminUserController.getGifts);
 
-router.route("/gift/:id").put(authenticate([UserRoles.Admin]), upload.single("image"), adminUserController.updateGift).delete(authenticate(), adminUserController.deleteGift);
+router
+  .route("/gift/:id")
+  .put(
+    authenticate([UserRoles.Admin]),
+    upload.fields([
+      { name: "previewImage", maxCount: 1 },
+      { name: "svgaImage", maxCount: 1 },
+    ]),
+    adminUserController.updateGift
+  )
+  .delete(authenticate(), adminUserController.deleteGift);
 
 export default router;
