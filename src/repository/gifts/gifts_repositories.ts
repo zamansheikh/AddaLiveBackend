@@ -1,12 +1,14 @@
 import { StatusCodes } from "http-status-codes";
 import AppError from "../../core/errors/app_errors";
 import { IGift, IGiftDocument, IGiftModel } from "../../entities/admin/gift_interface";
+import { QueryBuilder } from "../../core/Utils/query_builder";
 
 export interface IGiftRepository {
     createGift(gift: IGift): Promise<IGiftDocument>;
     getGifts(): Promise<IGiftDocument[]>;
     updateGift(id: string, gift: Partial<IGift>): Promise<IGiftDocument>;
     deleteGift(id: string): Promise<IGiftDocument>;
+    getGiftCategories(query: Record<string, string>): Promise<{category: string}[]>;
 }
 
 export class GiftRepository implements IGiftRepository {
@@ -36,4 +38,10 @@ export class GiftRepository implements IGiftRepository {
         return deletedGift;
     }
 
+    async getGiftCategories(query: Record<string, string>): Promise<{category: string}[]> {
+        const qb = new QueryBuilder(this.Model, query);
+        const res = qb.search(["category"]).selectField("category -_id");
+        const data = await res.exec();
+        return data;
+    }
 }

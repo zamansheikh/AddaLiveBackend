@@ -273,6 +273,15 @@ export default class AdminUserController {
         });
     });
 
+    getGiftCategory = catchAsync(async (req: Request, res: Response) => {
+        const giftCategories = await this.AdminUserService.getGiftCategories(req.query as Record<string, string>);
+        sendResponse(res, {
+            statusCode: StatusCodes.OK,
+            success: true,
+            result: giftCategories,
+            message: "Gift categories retrieved successfully"
+        });
+    });
 
 
 

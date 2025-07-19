@@ -16,6 +16,7 @@ import { appendFile } from "fs";
 import { IGift, IGiftDocument } from "../../entities/admin/gift_interface";
 import { IGiftRepository } from "../../repository/gifts/gifts_repositories";
 import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
+import { Transaction } from "mongodb";
 
 
 export interface IAdminUserService {
@@ -23,7 +24,7 @@ export interface IAdminUserService {
     registerAdmin(admin: IAdmin): Promise<IAdminDocument | null>;
     updateAdmin(id: string, admin: Partial<IAdmin>): Promise<IAdminDocument | null>;
     deleteAdmin(id: string): Promise<IAdminDocument | null>;
-    retrieveAllUsers(query: Record<string, any>): Promise<{pagination: IPagination, users: IUserDocument[]}>;
+    retrieveAllUsers(query: Record<string, any>): Promise<{ pagination: IPagination, users: IUserDocument[] }>;
     updateActivityZone({ id, zone, dateTill }: { id: string, zone: "safe" | "temp_block" | "permanent_block", dateTill?: string }): Promise<IUserDocument | null>
     updateUserStat(body: { diamonds?: number, stars?: number, userId: string }): Promise<IUSerStatsDocument>
     searchUserEmail(email: string, query: Record<string, unknown>): Promise<{ pagination: IPagination, users: IUserDocument[] } | null>;
@@ -37,7 +38,7 @@ export interface IAdminUserService {
     getGifts(): Promise<IGiftDocument[]>;
     updateGift(id: string, gift: Partial<IGift>): Promise<IGiftDocument>;
     deleteGift(id: string): Promise<IGiftDocument>;
-
+    getGiftCategories(query: Record<string, string>): Promise<string[]>;
 }
 
 
@@ -99,7 +100,7 @@ export default class AdminUserService implements IAdminUserService {
     }
 
 
-    async retrieveAllUsers(query: Record<string, any>):  Promise<{pagination: IPagination, users: IUserDocument[]}> {
+    async retrieveAllUsers(query: Record<string, any>): Promise<{ pagination: IPagination, users: IUserDocument[] }> {
         const users = await this.UserRepository.findAllUser(query);
         return users;
     }
@@ -256,12 +257,25 @@ export default class AdminUserService implements IAdminUserService {
 
         // todo: handle for admin as he does not have user stats
 
-        const myStats = await this.UserStatsRepository.getUserStats(myId);
+        let myStats;
+        if (role == UserRoles.Admin) {
+            myStats = await this.AdminRepository.getAdminById(myId);
+        }
+        else if (role == UserRoles.Moderator) {
+            myStats = await this.UserStatsRepository.getUserStats(myId);
+        }
+
+
         if (!myStats) throw new AppError(StatusCodes.NOT_FOUND, "My stats not found");
-        if (myStats.diamonds! < coins) throw new AppError(StatusCodes.BAD_REQUEST, "You do not have enough diamonds to assign ");
-        const myUpdatedStats = await this.UserStatsRepository.updateDiamonds(myId, -coins, session);
+        if (myStats.coins! < coins) throw new AppError(StatusCodes.BAD_REQUEST, "You do not have enough coins to assign");
+        let myUpdatedStats;
+        if (role == UserRoles.Admin) {
+            myUpdatedStats = await this.AdminRepository.updateCoin(myId, -coins, session);
+        } else {
+            myUpdatedStats = await this.UserStatsRepository.updateDiamonds(myId, -coins, session);
+        }
         if (!myUpdatedStats) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update my stats");
-        const updatedUser = await this.UserStatsRepository.updateDiamonds(userId, coins, session);
+        const updatedUser = await this.UserStatsRepository.updateCoins(userId, coins, session);
         if (!updatedUser) {
             throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to assign coins to user");
         }
@@ -271,14 +285,14 @@ export default class AdminUserService implements IAdminUserService {
     }
 
     async createGift(gift: IGift): Promise<IGiftDocument> {
-        
+
         const previewImageUrl = await uploadFileToCloudinary({ isVideo: false, folder: CloudinaryFolder.giftAssets, file: gift.previewImage as Express.Multer.File });
         if (!previewImageUrl) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to upload prviewImage");
         gift.previewImage = previewImageUrl;
         const svgaImageUrl = await uploadFileToCloudinary({ isVideo: false, folder: CloudinaryFolder.giftAssets, file: gift.svgaImage as Express.Multer.File });
         if (!svgaImageUrl) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to upload svgaImage");
         gift.svgaImage = svgaImageUrl;
-        
+
         const newGift = await this.GiftRepository.createGift(gift);
         return newGift;
     }
@@ -289,12 +303,12 @@ export default class AdminUserService implements IAdminUserService {
     }
 
     async updateGift(id: string, gift: Partial<IGift>): Promise<IGiftDocument> {
-        if(gift.previewImage) {
+        if (gift.previewImage) {
             const previewUrl = await uploadFileToCloudinary({ isVideo: false, folder: CloudinaryFolder.giftAssets, file: gift.previewImage as Express.Multer.File });
             if (!previewUrl) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to upload image");
             gift.previewImage = previewUrl;
         }
-        if(gift.svgaImage) {
+        if (gift.svgaImage) {
             const svgaUrl = await uploadFileToCloudinary({ isVideo: false, folder: CloudinaryFolder.giftAssets, file: gift.svgaImage as Express.Multer.File });
             if (!svgaUrl) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to upload image");
             gift.svgaImage = svgaUrl;
@@ -308,6 +322,12 @@ export default class AdminUserService implements IAdminUserService {
         const deletedGift = await this.GiftRepository.deleteGift(id);
         if (!deletedGift) throw new AppError(StatusCodes.NOT_FOUND, "Gift not found");
         return deletedGift;
+    }
+
+    async getGiftCategories(query: Record<string, string>): Promise<string[]> {
+        const categories = await this.GiftRepository.getGiftCategories(query);
+        const values = categories.map((category) => category.category);
+        return values;
     }
 }
 

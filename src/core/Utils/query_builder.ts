@@ -42,6 +42,19 @@ export class QueryBuilder<T> {
         return this;
     }
 
+    selectField(fields: string) {
+        if (this.useAggregate) {
+            const projectStage: { [key: string]: number } = {};
+            fields.split(" ").forEach((field) => {
+                projectStage[field] = 1;
+            });
+            this.aggregatePipeline.push({ $project: projectStage });
+        } else {
+            this.modelQuery = this.modelQuery.select(fields);
+        }
+        return this;
+    }
+
     populateField(field: string, populateWith: string) {
         // field takes the field name you want to populate
         // populate with takes the fields that you want to include in the population

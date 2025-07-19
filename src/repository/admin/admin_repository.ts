@@ -1,3 +1,4 @@
+import { ClientSession } from "mongoose";
 import { IAdmin, IAdminDocument, IAdminModel } from "../../entities/admin/admin_interface";
 
 export interface IAdminRepository {
@@ -8,6 +9,7 @@ export interface IAdminRepository {
     updateAdmin(id: string, admin: Partial<IAdmin>): Promise<IAdminDocument | null>;
     deleteAdmin(id: string): Promise<IAdminDocument | null>;
     getAdmin(): Promise<IAdminDocument | null>;
+    updateCoin(id: string, coins: number, session?: ClientSession): Promise<IAdminDocument | null>;
 }
 
 
@@ -45,6 +47,10 @@ export default class AdminRepository implements IAdminRepository {
 
     async getAdmin(): Promise<IAdminDocument | null> {
         return this.Model.findOne().select("-password");
+    }
+
+    async updateCoin(id: string, coins: number, session?: ClientSession): Promise<IAdminDocument | null> {
+        return this.Model.findByIdAndUpdate(id, { $inc: { coins: coins } }, { new: true }).session(session || null);
     }
 
 }
