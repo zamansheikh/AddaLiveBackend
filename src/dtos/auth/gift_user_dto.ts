@@ -11,4 +11,6 @@ export class GiftUserDto {
     @IsNumber()
     diamonds!: number;
 
+    @IsString()
+    roomId!: string;
 }

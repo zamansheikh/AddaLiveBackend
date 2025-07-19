@@ -1,7 +1,7 @@
 
 import { StatusCodes } from "http-status-codes";
 import AppError from "../../core/errors/app_errors";
-import { CloudinaryFolder, GiftTypes, WhoCanTextMe } from "../../core/Utils/enums";
+import { CloudinaryFolder, GiftTypes, SocketChannels, WhoCanTextMe } from "../../core/Utils/enums";
 import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
 import { IUserEntity } from "../../entities/user_entity_interface";
 import jwt from 'jsonwebtoken';
@@ -12,6 +12,7 @@ import { IUserDocument } from "../../models/user/user_model_interface";
 import mongoose from "mongoose";
 import { RtcRole, RtcTokenBuilder } from "agora-token";
 import { IUserRepository } from "../../repository/user_repository";
+import SocketServer from "../../core/sockets/socket_server";
 
 export default class AuthService implements IAuthService {
 
@@ -97,7 +98,7 @@ export default class AuthService implements IAuthService {
         return this.UserRepository.findUserByIdAndUpdate(id, updatePayload);
     }
 
-    async giftUser(giftUser: IGiftUser): Promise<IUserDocument | null> {
+    async giftUser(giftUser: IGiftUser, roomId: string): Promise<IUserDocument | null> {
         const { myId, coins, diamonds, userId } = giftUser;
         const myUser = await this.UserRepository.findUserById(myId);
         const userToGift = await this.UserRepository.findUserById(userId);
@@ -111,6 +112,7 @@ export default class AuthService implements IAuthService {
         // starting a new session for safe rollback
         const session = await mongoose.startSession();
         session.startTransaction();
+
         if(mystats.coins! < coins) throw new AppError(StatusCodes.BAD_REQUEST, "insufficient coins");
         mystats.coins! -= coins;
         await mystats.save({ session });
@@ -119,6 +121,16 @@ export default class AuthService implements IAuthService {
 
         await session.commitTransaction();
         session.endSession();
+
+        // sending the information to the frontend via socket
+        const ioInstance = SocketServer.getInstance().getIO();
+
+        ioInstance.to(roomId).emit(SocketChannels.sendGift, {
+            avatar: myUser.avatar,
+            name: myUser.name,
+            diamonds: diamonds,
+        });
+        
 
         if (!updatedUserStats) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "updating user stats failed");
 
