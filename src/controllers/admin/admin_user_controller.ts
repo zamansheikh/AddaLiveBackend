@@ -161,7 +161,7 @@ export default class AdminUserController {
 
     retrieveAllUsers = catchAsync(
         async (req: Request, res: Response) => {
-            const users = await this.AdminUserService.retrieveAllUsers();
+            const users = await this.AdminUserService.retrieveAllUsers(req.query);
 
             sendResponse(res, {
                 statusCode: StatusCodes.ACCEPTED,
@@ -273,6 +273,15 @@ export default class AdminUserController {
         });
     });
 
+    getGiftCategory = catchAsync(async (req: Request, res: Response) => {
+        const giftCategories = await this.AdminUserService.getGiftCategories(req.query as Record<string, string>);
+        sendResponse(res, {
+            statusCode: StatusCodes.OK,
+            success: true,
+            result: giftCategories,
+            message: "Gift categories retrieved successfully"
+        });
+    });
 
 
 

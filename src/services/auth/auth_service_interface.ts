@@ -14,7 +14,7 @@ export interface IAuthService {
     retrieveMyDetails(id: string): Promise<IUserDocument | null>;
     retrieveUserDetails(id: string, myId: string): Promise<IUserDocument | null>;
     updateProfile({ id, profileData, file }: { id: string, profileData: Partial<Record<string, any>>, file?: Express.Multer.File }): Promise<IUserDocument | null>;
-    giftUser(giftUser: IGiftUser): Promise<IUserDocument | null>;
+    giftUser(giftUser: IGiftUser, roomId: string): Promise<IUserDocument | null>;
     generateToken(info: {channelName: string, uid: string, APP_CERTIFICATE?: string, APP_ID?: string }): Promise<{token: string}>;
     setChatPrivacy(payload: { id: string, whoCanTextMe: WhoCanTextMe, highLevelRequirements: { levelType: string, level: number }[] }): Promise<IUserDocument | null>;
 }

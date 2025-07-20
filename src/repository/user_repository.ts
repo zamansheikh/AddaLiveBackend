@@ -5,9 +5,9 @@ import { DatabaseNames, UserRoles } from "../core/Utils/enums";
 import Friendship from "../models/friendship/friendship_model";
 import { IPagination, QueryBuilder } from "../core/Utils/query_builder";
 
-export interface ITextPrivacy{
+export interface ITextPrivacy {
     whoCanTextMe: string,
-    highLevelRequirements: {levelType: string, level: number}[];
+    highLevelRequirements: { levelType: string, level: number }[];
 }
 
 export interface IUserRepository {
@@ -15,15 +15,15 @@ export interface IUserRepository {
     findUserById(id: string): Promise<IUserDocument | null>;
     getUserDetailsSelectedField(id: string, fields: string[]): Promise<IUserDocument | null>;
     findByUID(uid: string): Promise<IUserDocument | null>;
-    findAllUser(): Promise<IUserDocument[] | null>;
+    findAllUser(query: Record<string, any>): Promise<{ pagination: IPagination, users: IUserDocument[] }>
     findUsersConitionally(field: string, value: string | number): Promise<IUserDocument[] | null>
     findUserByIdAndUpdate(id: string, payload: Record<string, any>): Promise<IUserDocument | null>;
     getUserDetails(details: { Id: string, myId: string }): Promise<IUserDocument | null>;
     searchUserByEmail(email: string, query: Record<string, unknown>): Promise<{ pagination: IPagination, users: IUserDocument[] } | null>;
     addPermission(id: string, permission: string): Promise<IUserDocument | null>;
-    removePermission(id: string, permission: string):Promise<IUserDocument | null>; 
+    removePermission(id: string, permission: string): Promise<IUserDocument | null>;
     getAllModarators(query: Record<string, unknown>): Promise<{ pagination: IPagination, users: IUserDocument[] }>;
-    setWhoCanTextMe(id: string, payload:ITextPrivacy ): Promise<IUserDocument | null>;
+    setWhoCanTextMe(id: string, payload: ITextPrivacy): Promise<IUserDocument | null>;
 }
 
 export default class UserRepository implements IUserRepository {
@@ -48,8 +48,38 @@ export default class UserRepository implements IUserRepository {
         return await this.UserModel.findOne({ uid }).select("-password");
     }
 
-    async findAllUser() {
-        return await this.UserModel.find().select("-password");
+    async findAllUser(query: Record<string, any>): Promise<{ pagination: IPagination, users: IUserDocument[] }> {
+        const qb = new QueryBuilder(this.UserModel, query);
+        const res = qb.aggregate([
+            {
+                $lookup: {
+                    from: DatabaseNames.userStats,
+                    localField: "_id",
+                    foreignField: "userId",
+                    as: "stats"
+                }
+            },
+
+
+            {
+                $unwind: {
+                    path: "$stats",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+
+            {
+                $project: {
+                    password: 0,
+                   "stats._id": 0
+                }
+            }
+
+        ]);
+        const users = res.paginate().sort();
+        const pagination = await res.countTotal();
+        const data = await res.exec();
+        return { users: data, pagination };
     }
 
     async findUsersConitionally(field: string, value: string | number) {
@@ -66,17 +96,16 @@ export default class UserRepository implements IUserRepository {
         const users = await res.paginate().sort().exec();
         const pagination = await res.countTotal();
         return { users, pagination };
-
     }
 
     async setWhoCanTextMe(id: string, payload: ITextPrivacy): Promise<IUserDocument | null> {
         return await this.UserModel.findByIdAndUpdate(id, { ...payload }, { new: true });
     }
-    
+
 
     async addPermission(id: string, permission: string): Promise<IUserDocument | null> {
         return await this.UserModel.findByIdAndUpdate(id, { $addToSet: { userPermissions: permission } }, { new: true });
-    
+
     }
 
     async removePermission(id: string, permission: string): Promise<IUserDocument | null> {

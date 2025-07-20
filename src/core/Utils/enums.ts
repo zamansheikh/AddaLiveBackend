@@ -90,6 +90,8 @@ export enum SocketChannels {
   invited = "invited",
   getRooms = "get-rooms",
   error = "error-message",
+
+  sendGift = "sent-gift",
 }
 
 

@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { ClientSession } from "mongoose";
 import { IUserStats, IUSerStatsDocument, IUSerStatsModel } from "../../entities/userstats/userstats_interface";
 import { ILeaderBoardResponse } from "../../services/game/game_service";
 import IUserStatsRepository from "./userstats_repository_interface";
@@ -20,14 +20,14 @@ export default class UserStatsRepository implements IUserStatsRepository {
     }
 
     async getUserStats(id: string): Promise<IUSerStatsDocument | null> {
-        const userId =  new mongoose.Types.ObjectId(id)
+        const userId = new mongoose.Types.ObjectId(id)
         return await this.model.findOne({ userId });
     }
 
-    async updateCoins(userId: string, coins: number): Promise<IUSerStatsDocument | null> {
+    async updateCoins(userId: string, coins: number, session?: ClientSession): Promise<IUSerStatsDocument | null> {
         return await this.model.findOneAndUpdate({ userId }, { $inc: { coins } }, { new: true });
     }
-    
+
 
     async updateStars(userId: string, stars: number): Promise<IUSerStatsDocument | null> {
         return await this.model.findOneAndUpdate({ userId }, { $inc: { stars } }, { new: true });
@@ -35,7 +35,7 @@ export default class UserStatsRepository implements IUserStatsRepository {
 
     async updateDiamonds(userId: string, diamonds: number, session?: mongoose.ClientSession): Promise<IUSerStatsDocument | null> {
         return await this.model.findOneAndUpdate({ userId }, { $inc: { diamonds } }, { new: true }).session(session || null);
-    } 
+    }
 
     async updateLevels(userId: string, levels: number): Promise<IUSerStatsDocument | null> {
         return await this.model.findOneAndUpdate({ userId }, { $inc: { levels } }, { new: true });
@@ -45,7 +45,7 @@ export default class UserStatsRepository implements IUserStatsRepository {
         return await this.model.findOneAndUpdate({ userId: id }, property, { new: true });
     }
 
-    async getUserLeaderBoardInfo(query: Record<string, string>): Promise< ILeaderBoardResponse[] | null> {
+    async getUserLeaderBoardInfo(query: Record<string, string>): Promise<ILeaderBoardResponse[] | null> {
         const leaderboard = await this.model.aggregate([
 
             {

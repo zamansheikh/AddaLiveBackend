@@ -44,10 +44,15 @@ app.use(
       "http://localhost",
       "http://dlstarlive.com:8000",
       "http://localhost:8000",
-    ],
+      "http://127.0.0.1:8080",
+      "http://147.93.103.135:8000",
+      "http://147.93.103.135",
+    ], 
     credentials: true,
   })
 );  // Enable CORS
+
+
 app.use(morgan('dev')); // Logging middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); // Parse JSON request bodies
@@ -56,7 +61,7 @@ app.use(express.json()); // Parse JSON request bodies
 // Session middleware
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'default_secret',
+    secret: process.env.SESSION_SECRET || 'default_secret', 
     resave: false, // Don’t save the session to the store if it wasn’t modified during the request.
     saveUninitialized: true, // Save a new session even if it hasn't been modified.
   })
