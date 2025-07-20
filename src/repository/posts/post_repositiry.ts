@@ -236,7 +236,97 @@ export default class PostRepository implements IPostRepository {
 
     async getUserPost(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IPostDocument[]; }> {
         const qb = new QueryBuilder(this.PostModel, query);
-        const res = qb.find({ ownerId: userId }).sort().paginate().populateField("ownerId", "name avatar");
+        const res = qb.aggregate(
+            [
+                {
+                    $match: {
+                        ownerId: new mongoose.Types.ObjectId(userId)
+                    }
+                },
+                {
+                    $lookup: {
+                        from: DatabaseNames.User,
+                        localField: "ownerId",
+                        foreignField: "_id",
+                        as: "userInfo",
+                    },
+                },
+                { $unwind: "$userInfo" },
+                {
+                    $addFields: {
+                        userName: "$userInfo.name",
+                        avatar: "$userInfo.avatar"
+                    }
+                },
+                {
+                    $lookup: {
+                        from: DatabaseNames.PostReactions,
+                        let: { postId: "$_id", userId: new mongoose.Types.ObjectId(userId) },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $and: [
+                                            { $eq: ["$reactedTo", "$$postId"] },
+                                            { $eq: ["$reactedBy", "$$userId"] }
+                                        ]
+                                    }
+                                }
+                            }
+                        ],
+                        as: "myReaction",
+                    },
+                },
+                {
+                    $lookup: {
+                        from: DatabaseNames.PostReactions,
+                        let: { postId: "$_id" },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$reactedTo", "$$postId"] } } },
+                            { $sort: { createdAt: -1 } },
+                            { $limit: 10 },
+                            {
+                                $lookup: {
+                                    from: DatabaseNames.User,
+                                    localField: "reactedBy",
+                                    foreignField: "_id",
+                                    as: "userInfo"
+                                }
+                            },
+                            {
+                                $unwind: "$userInfo"
+                            },
+                            {
+                                $addFields: {
+                                    userName: "$userInfo.name",
+                                    avatar: "$userInfo.avatar"
+                                }
+                            },
+
+                            {
+                                $project: postReactionStructure,
+                            }
+                        ],
+                        as: "latestReactions",
+                    },
+                },
+                {
+                    $unwind: {
+                        path: "$myReaction",
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $unwind: "$userInfo"
+                },
+                {
+                    $sort: {
+                        updatedAt: -1
+                    }
+                },
+                postStructure
+            ]
+        ).sort().paginate();
         const data = await res.exec();
         const pagination = await res.countTotal();
         return {data, pagination};
