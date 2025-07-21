@@ -44,6 +44,8 @@ export async function registerGroupRoomHandler(
       hostDetails: userDetails,
       members: new Set([userId]),
       bannedUsers: new Set(),
+      brodcasters: new Set([userId]),
+      callRequests: new Set(),
       title: title,
     };
     socket.join(roomId);
@@ -83,6 +85,173 @@ export async function registerGroupRoomHandler(
     io.emit(SocketChannels.roomList, Object.keys(hostedRooms));
   });
 
+  socket.on(SocketChannels.joinCallReq, (roomId) => {
+    const room = hostedRooms[roomId];
+    // if the room exists
+    if (!room)
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "This room does not exists",
+      });
+    // if the user is the host
+    if (room.hostId == userId)
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Host cannot request to join the call",
+      });
+    // if the user is not in the room
+    if (!room.members.has(userId))
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.CONTINUE,
+        message: "You are not in the room",
+      });
+    // if the user is banned from the room
+    if (room.bannedUsers.has(userId))
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.UNAUTHORIZED,
+        message: "You are banned from this room",
+      });
+    // if the user is already a broadcaster
+    if (room.brodcasters.has(userId))
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.CONTINUE,
+        message: "You are already a broadcaster",
+      });
+    if (room.callRequests.has(userId))
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.CONTINUE,
+        message: "You have already sent request to join the call",
+      });
+
+    room.callRequests.add(userId);
+    const hostSocketId = onlineUsers.get(room.hostId);
+    if (hostSocketId) {
+      io.to(hostSocketId).emit(SocketChannels.joinCallReq, {
+        userId,
+        userDetails,
+        roomId,
+      });
+    }
+    io.to(roomId).emit(SocketChannels.joinCallReqList, room.callRequests);
+  });
+
+  socket.on(SocketChannels.joinCallReqList, (roomId) => {
+    const room = hostedRooms[roomId];
+    if (!room)
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "This room does not exists",
+      });
+    // check if the request came from the host
+    if (room.hostId != userId)
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.UNAUTHORIZED,
+        message: "You are not host of this room",
+      });
+
+    io.to(socket.id).emit(SocketChannels.joinCallReqList, room.callRequests);
+  });
+
+  socket.on(SocketChannels.acceptCallReq, ({ roomId, targetId }) => {
+    const room = hostedRooms[roomId];
+    // check if the room exists
+    if (!room)
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "This room does not exists",
+      });
+    // check if the request came from the host
+    if (room.hostId != userId)
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.UNAUTHORIZED,
+        message: "You are not host of this room",
+      });
+    // check if the target user has sent a call request
+    if (!room.callRequests.has(targetId))
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "User has not requested to join the call",
+      });
+
+    if (room.brodcasters.has(targetId))
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.CONTINUE,
+        message: "User is already a broadcaster",
+      });
+    if (room.bannedUsers.has(targetId))
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.UNAUTHORIZED,
+        message: "User is banned from this room",
+      });
+    if (room.brodcasters.size >= 3)
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Maximum 3 broadcasters are allowed",
+      });
+    room.callRequests.delete(targetId);
+    room.brodcasters.add(targetId);
+
+    const targetSocketId = onlineUsers.get(targetId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit(SocketChannels.acceptCallReq, {
+        roomId,
+        message: "Your call request has been accepted",
+      });
+    }
+    io.to(roomId).emit(
+      SocketChannels.broadcasterList,
+      Array.from(room.brodcasters)
+    );
+    io.to(roomId).emit(
+      SocketChannels.joinCallReqList,
+      Array.from(room.callRequests)
+    );
+  });
+
+  socket.on(SocketChannels.broadcasterList, (roomId) => {
+    const room = hostedRooms[roomId];
+    if (!room)
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "This room does not exists",
+      });
+    io.to(socket.id).emit(
+      SocketChannels.broadcasterList,
+      Array.from(room.brodcasters)
+    );
+  });
+
+  socket.on(SocketChannels.removeBroadCaster, ({roomId, targetId}) => {
+    const room = hostedRooms[roomId];
+    if (!room)
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "This room does not exists",
+      });
+    if (room.hostId != userId)
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.UNAUTHORIZED,
+        message: "You are not host of this room",
+      });
+    if (!room.brodcasters.has(targetId))
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "User is not a broadcaster",
+      });
+    room.brodcasters.delete(targetId);
+    const targetSocketId = onlineUsers.get(targetId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit(SocketChannels.removeBroadCaster, {
+        roomId,
+        message: "You have been removed from broadcasters",
+      });
+    }
+    io.to(roomId).emit(
+      SocketChannels.broadcasterList,
+      Array.from(room.brodcasters)
+    );
+  });
+
   // user only
   socket.on(SocketChannels.joinRoom, (roomId) => {
     const room = hostedRooms[roomId];
@@ -104,7 +273,7 @@ export async function registerGroupRoomHandler(
     room.members.add(userId);
     socket.join(roomId);
     console.log(hostedRooms);
-    io.to(roomId).emit(SocketChannels.userJoined, userId);
+    io.to(roomId).emit(SocketChannels.userJoined, userDetails);
   });
 
   socket.on(SocketChannels.leaveRoom, (roomId) => {
@@ -114,6 +283,12 @@ export async function registerGroupRoomHandler(
         status: StatusCodes.NOT_FOUND,
         message: "This room does not exists",
       });
+    if (!room.members.has(userId))
+      return io.emit(SocketChannels.error, {
+        status: StatusCodes.CONTINUE,
+        message: "You are not in this room",
+      });
+
     room.members.delete(userId);
     socket.leave(roomId);
 
