@@ -79,6 +79,12 @@ export enum SocketChannels {
   deleteRoom = "delete-room",
   roomList = "room-list",
   joinRoom = "join-room",
+  joinCallReq = "join-call-request",
+  
+  joinCallReqList = "join-call-request-list",
+  acceptCallReq = "accept-call-request",
+  broadcasterList = "broadcaster-list",
+  removeBroadCaster = "remove-broadcaster",
   leaveRoom = "leave-room",
   userJoined = 'user-joined',
   userLeft = 'user-left',
