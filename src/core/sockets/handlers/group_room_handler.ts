@@ -33,7 +33,7 @@ export async function registerGroupRoomHandler(
   if (!userId) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
 
   // host
-  socket.on(SocketChannels.createRoom, (roomId, title) => {
+  socket.on(SocketChannels.createRoom, ({roomId, title}) => {
     const room = hostedRooms[roomId];
     if (room)
       return io.to(socket.id).emit(SocketChannels.error, {
@@ -56,7 +56,7 @@ export async function registerGroupRoomHandler(
     io.to(roomId).emit(SocketChannels.roomList, Object.keys(hostedRooms));
   });
 
-  socket.on(SocketChannels.deleteRoom, (roomId) => {
+  socket.on(SocketChannels.deleteRoom, ({roomId}) => {
     const room = hostedRooms[roomId];
     if (!room)
       return io.to(socket.id).emit(SocketChannels.error, {
@@ -87,7 +87,7 @@ export async function registerGroupRoomHandler(
     io.emit(SocketChannels.roomList, Object.keys(hostedRooms));
   });
 
-  socket.on(SocketChannels.joinCallReq, (roomId) => {
+  socket.on(SocketChannels.joinCallReq, ({roomId}) => {
     const room = hostedRooms[roomId];
     // if the room exists
     if (!room)
@@ -140,7 +140,7 @@ export async function registerGroupRoomHandler(
     );
   });
 
-  socket.on(SocketChannels.joinCallReqList, (roomId) => {
+  socket.on(SocketChannels.joinCallReqList, ({roomId}) => {
     const room = hostedRooms[roomId];
     if (!room)
       return io.to(socket.id).emit(SocketChannels.error, {
@@ -154,11 +154,18 @@ export async function registerGroupRoomHandler(
         message: "You are not host of this room",
       });
 
-    io.to(socket.id).emit(SocketChannels.joinCallReqList, room.callRequests);
+    io.to(socket.id).emit(
+      SocketChannels.joinCallReqList,
+      Array.from(room.callRequests)
+    );
   });
 
-  socket.on(SocketChannels.acceptCallReq, ({ roomId, targetId }) => {
+  socket.on(SocketChannels.acceptCallReq, ({roomId, targetId}) => {
+  
+
     const room = hostedRooms[roomId];
+    console.log(room, roomId);
+    
     // check if the room exists
     if (!room)
       return io.to(socket.id).emit(SocketChannels.error, {
@@ -207,13 +214,13 @@ export async function registerGroupRoomHandler(
       SocketChannels.broadcasterList,
       Array.from(room.brodcasters)
     );
-    io.to(roomId).emit(
-      SocketChannels.joinCallReqList,
-      Array.from(room.callRequests)
-    );
+    // io.to(roomId).emit(
+    //   SocketChannels.joinCallReqList,
+    //   Array.from(room.callRequests)
+    // );
   });
 
-  socket.on(SocketChannels.broadcasterList, (roomId) => {
+  socket.on(SocketChannels.broadcasterList, ({roomId}) => {
     const room = hostedRooms[roomId];
     if (!room)
       return io.to(socket.id).emit(SocketChannels.error, {
@@ -258,7 +265,7 @@ export async function registerGroupRoomHandler(
   });
 
   // user only
-  socket.on(SocketChannels.joinRoom, (roomId) => {
+  socket.on(SocketChannels.joinRoom, ({roomId}) => {
     const room = hostedRooms[roomId];
     if (!room)
       return io.to(socket.id).emit(SocketChannels.error, {
@@ -280,7 +287,7 @@ export async function registerGroupRoomHandler(
     io.to(roomId).emit(SocketChannels.userJoined, userDetails);
   });
 
-  socket.on(SocketChannels.leaveRoom, (roomId) => {
+  socket.on(SocketChannels.leaveRoom, ({roomId}) => {
     const room = hostedRooms[roomId];
     if (!room)
       return io.to(socket.id).emit(SocketChannels.error, {
@@ -294,9 +301,12 @@ export async function registerGroupRoomHandler(
       });
 
     room.members.delete(userId);
+    if (room.brodcasters.has(userId)) room.brodcasters.delete(userId);
+    if (room.callRequests.has(userId)) room.callRequests.delete(userId);
+
     socket.leave(roomId);
 
-    io.to(roomId).emit(SocketChannels.userLeft, userId);
+    io.to(roomId).emit(SocketChannels.userLeft, userDetails);
   });
 
   socket.on(SocketChannels.getRooms, () => {
