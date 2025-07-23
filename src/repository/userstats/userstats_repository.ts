@@ -25,7 +25,7 @@ export default class UserStatsRepository implements IUserStatsRepository {
     }
 
     async updateCoins(userId: string, coins: number, session?: ClientSession): Promise<IUSerStatsDocument | null> {
-        return await this.model.findOneAndUpdate({ userId }, { $inc: { coins } }, { new: true });
+        return await this.model.findOneAndUpdate({ userId }, { $inc: { coins } }, { new: true }).session(session || null);
     }
 
 
