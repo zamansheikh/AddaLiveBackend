@@ -3,7 +3,7 @@
 import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
 import { registerGroupRoomHandler } from "./handlers/group_room_handler";
-import { SocketChannels } from "../Utils/enums";
+import { RoomTypes, SocketChannels } from "../Utils/enums";
 import UserRepository from "../../repository/user_repository";
 import User from "../../models/user/user_model";
 import { IUserDocument } from "../../models/user/user_model_interface";
@@ -11,6 +11,7 @@ import { Socket } from "net";
 
 export interface RoomData {
   hostId: string;
+  roomType: RoomTypes,
   hostDetails?: IUserDocument | null;
   members: Set<string>;
   bannedUsers: Set<string>;
