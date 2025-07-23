@@ -7,6 +7,7 @@ import { SocketChannels } from "../Utils/enums";
 import UserRepository from "../../repository/user_repository";
 import User from "../../models/user/user_model";
 import { IUserDocument } from "../../models/user/user_model_interface";
+import { Socket } from "net";
 
 export interface RoomData {
   hostId: string;
@@ -77,6 +78,20 @@ export default class SocketServer {
         // remove the users and leave the room when diconnected
         for (const [roomId, roomData] of Object.entries(this.hostedRooms)) {
           if (roomData.members.has(userId)) {
+            if (roomData.brodcasters.has(userId)) {
+              roomData.brodcasters.delete(userId);
+              this.io
+                .to(roomId)
+                .emit(
+                  SocketChannels.broadcasterList,
+                  Array.from(roomData.brodcasters)
+                );
+            }
+
+            if (roomData.callRequests.has(userId)) {
+              roomData.callRequests.delete(userId);
+              this.io.to(roomId).emit(SocketChannels.joinCallReqList, Array.from(roomData.callRequests));
+            }
             roomData.members.delete(userId);
             socket.leave(roomId);
             this.io.to(roomId).emit(SocketChannels.userLeft, userId);
@@ -84,6 +99,7 @@ export default class SocketServer {
           // Optionally delete empty rooms
           if (roomData.members.size === 0) {
             delete this.hostedRooms[roomId];
+            this.io.to(roomId).emit(SocketChannels.roomClosed,  Object.keys(this.hostedRooms));
           }
         }
       });

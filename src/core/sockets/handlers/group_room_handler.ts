@@ -94,7 +94,7 @@ export async function registerGroupRoomHandler(
     delete hostedRooms[roomId];
 
     // ! if unintended users are also getting the event, use io.to(roomId),
-    io.emit(SocketChannels.roomList, Object.keys(hostedRooms));
+    io.to(roomId).emit(SocketChannels.roomList, Object.keys(hostedRooms));
   });
 
   socket.on(SocketChannels.joinCallReq, ({roomId}) => {
@@ -353,11 +353,12 @@ export async function registerGroupRoomHandler(
   });
 
   socket.on(SocketChannels.getRooms, () => {
-    const serializedRoom: Record<string, ISerializedRoomData> = {};
+    const serializedRoom: ISerializedRoomData[] = [];
 
     for (const [room, roomData] of Object.entries(hostedRooms)) {
-      serializedRoom[room as string] = {
+      const obj = {
         hostId: roomData.hostId,
+        roomId: room,
         hostDetails: roomData.hostDetails,
         members: Array.from(roomData.members),
         bannedUsers: Array.from(roomData.bannedUsers),
@@ -365,9 +366,10 @@ export async function registerGroupRoomHandler(
         callRequests: Array.from(roomData.callRequests),
         title: roomData.title,
       };
+      serializedRoom.push(obj);
     }
 
-    io.emit(SocketChannels.roomList, serializedRoom);
+    io.emit(SocketChannels.getRooms, serializedRoom);
   });
 
   // host only
