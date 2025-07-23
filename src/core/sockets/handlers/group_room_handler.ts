@@ -34,6 +34,11 @@ export async function registerGroupRoomHandler(
 
   // host
   socket.on(SocketChannels.createRoom, ({roomId, title}) => {
+    if(!roomId || !title)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Room ID and title are required",
+      });
     const room = hostedRooms[roomId];
     if (room)
       return io.to(socket.id).emit(SocketChannels.error, {
@@ -57,6 +62,11 @@ export async function registerGroupRoomHandler(
   });
 
   socket.on(SocketChannels.deleteRoom, ({roomId}) => {
+    if(!roomId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Room ID is required",
+      });
     const room = hostedRooms[roomId];
     if (!room)
       return io.to(socket.id).emit(SocketChannels.error, {
@@ -88,6 +98,11 @@ export async function registerGroupRoomHandler(
   });
 
   socket.on(SocketChannels.joinCallReq, ({roomId}) => {
+    if(!roomId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Room ID is required",
+      });
     const room = hostedRooms[roomId];
     // if the room exists
     if (!room)
@@ -141,6 +156,11 @@ export async function registerGroupRoomHandler(
   });
 
   socket.on(SocketChannels.joinCallReqList, ({roomId}) => {
+    if(!roomId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Room ID is required",
+      });
     const room = hostedRooms[roomId];
     if (!room)
       return io.to(socket.id).emit(SocketChannels.error, {
@@ -161,7 +181,11 @@ export async function registerGroupRoomHandler(
   });
 
   socket.on(SocketChannels.acceptCallReq, ({roomId, targetId}) => {
-  
+    if(!roomId || !targetId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Room ID and Target ID are required",
+      });
 
     const room = hostedRooms[roomId];
     
@@ -220,6 +244,11 @@ export async function registerGroupRoomHandler(
   });
 
   socket.on(SocketChannels.broadcasterList, ({roomId}) => {
+    if(!roomId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Room ID is required",
+      });
     const room = hostedRooms[roomId];
     if (!room)
       return io.to(socket.id).emit(SocketChannels.error, {
@@ -233,6 +262,11 @@ export async function registerGroupRoomHandler(
   });
 
   socket.on(SocketChannels.removeBroadCaster, ({ roomId, targetId }) => {
+    if (!roomId || !targetId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Room ID and Target ID are required",
+      });
     const room = hostedRooms[roomId];
     if (!room)
       return io.to(socket.id).emit(SocketChannels.error, {
@@ -265,6 +299,11 @@ export async function registerGroupRoomHandler(
 
   // user only
   socket.on(SocketChannels.joinRoom, ({roomId}) => {
+    if(!roomId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Room ID is required",
+      });
     const room = hostedRooms[roomId];
     if (!room)
       return io.to(socket.id).emit(SocketChannels.error, {
@@ -287,6 +326,11 @@ export async function registerGroupRoomHandler(
   });
 
   socket.on(SocketChannels.leaveRoom, ({roomId}) => {
+    if(!roomId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Room ID is required",
+      });
     const room = hostedRooms[roomId];
     if (!room)
       return io.to(socket.id).emit(SocketChannels.error, {
