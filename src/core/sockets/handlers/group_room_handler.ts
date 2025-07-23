@@ -164,7 +164,6 @@ export async function registerGroupRoomHandler(
   
 
     const room = hostedRooms[roomId];
-    console.log(room, roomId);
     
     // check if the room exists
     if (!room)
