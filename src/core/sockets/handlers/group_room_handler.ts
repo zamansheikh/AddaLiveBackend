@@ -301,6 +301,19 @@ export async function registerGroupRoomHandler(
         status: StatusCodes.NOT_FOUND,
         message: "This room does not exists",
       });
+
+    if (userId == targetId) {
+      room.brodcasters.delete(targetId);
+      io.to(roomId).emit(
+        SocketChannels.broadcasterList,
+        Array.from(room.brodcasters)
+      );
+      return io.to(socket.id).emit(SocketChannels.removeBroadCaster, {
+        roomId,
+        message: "You have been removed from broadcasters",
+      });
+    }
+
     if (room.hostId != userId)
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.UNAUTHORIZED,
@@ -338,6 +351,11 @@ export async function registerGroupRoomHandler(
         status: StatusCodes.NOT_FOUND,
         message: "This room does not exists",
       });
+    if (room.hostId == userId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Host cannot join their own room",
+      });
     if (room.bannedUsers.has(userId))
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.UNAUTHORIZED,
@@ -346,7 +364,7 @@ export async function registerGroupRoomHandler(
     if (room.members.has(userId))
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.CONTINUE,
-        message: "You are already inthis room",
+        message: "You are already in this room",
       });
     room.members.add(userId);
     socket.join(roomId);
@@ -365,6 +383,13 @@ export async function registerGroupRoomHandler(
         status: StatusCodes.NOT_FOUND,
         message: "This room does not exists",
       });
+
+    if (room.hostId == userId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Host cannot leave the room, they can only close it",
+      });
+
     if (!room.members.has(userId))
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.CONTINUE,
