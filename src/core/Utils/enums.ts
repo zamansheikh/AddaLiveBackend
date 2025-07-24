@@ -27,16 +27,15 @@ export enum DatabaseNames {
   conversations = "conversations",
   messages = "messages",
 
-  userStats = 'userstats',
+  userStats = "userstats",
 
-  history = 'histories',
+  history = "histories",
 
-  followers = 'followers',
+  followers = "followers",
 
   Admin = "admins",
 
   Gifts = "gifts",
-
 }
 
 export enum ReelStatus {
@@ -52,23 +51,23 @@ export enum UserStatus {
 export enum CloudinaryFolder {
   Reels = "reels",
   UserPRofile = "user_profiles",
-  PostImages = 'post_images',
-  PostVideos = 'post_videos',
-  userStories = 'user_stories',
-  messageImages = 'message_photos',
-  messageVideos = 'message_videos',
-  giftAssets = 'gift_assets',
+  PostImages = "post_images",
+  PostVideos = "post_videos",
+  userStories = "user_stories",
+  messageImages = "message_photos",
+  messageVideos = "message_videos",
+  giftAssets = "gift_assets",
 }
 
 export enum FriendshipStatus {
   accepted = "accepted",
-  rejected = 'rejected',
-  pending = 'pending',
+  rejected = "rejected",
+  pending = "pending",
 }
 
 export enum RequestTypes {
   sent = "sent",
-  recieved = "recieved"
+  recieved = "recieved",
 }
 
 export enum SocketChannels {
@@ -80,17 +79,17 @@ export enum SocketChannels {
   roomList = "room-list",
   joinRoom = "join-room",
   joinCallReq = "join-call-request",
-  
+
   joinCallReqList = "join-call-request-list",
   acceptCallReq = "accept-call-request",
   broadcasterList = "broadcaster-list",
   removeBroadCaster = "remove-broadcaster",
   leaveRoom = "leave-room",
-  userJoined = 'user-joined',
-  userLeft = 'user-left',
-  banUser = 'ban-user',
-  banned = 'banned',
-  userBanned = 'user-banned',
+  userJoined = "user-joined",
+  userLeft = "user-left",
+  banUser = "ban-user",
+  banned = "banned",
+  userBanned = "user-banned",
   roomClosed = "room-closed",
   inviteUser = "invite-user",
   invited = "invited",
@@ -100,50 +99,54 @@ export enum SocketChannels {
   sendGift = "sent-gift",
 }
 
-
-export enum GiftTypes {
-  rose = 'rose',
-  love = 'love',
-  car = 'car',
+export enum RoomTypes {
+  live = "live",
+  pk = "pk",
+  audio = "audio",
+  party = "party",
 }
 
+export enum GiftTypes {
+  rose = "rose",
+  love = "love",
+  car = "car",
+}
 
 export enum Gender {
-  male = 'male',
-  female = 'female',
-  other = 'other',
+  male = "male",
+  female = "female",
+  other = "other",
 }
 
 export enum ActivityZoneState {
   safe = "safe",
   temporaryBlock = "temp_block",
-  permanentBlock = "permanent_block"
+  permanentBlock = "permanent_block",
 }
 
 export enum UserActiveStatus {
   online = "Online",
-  offline = "Offline"
+  offline = "Offline",
 }
 
 export enum UserRoles {
   User = "user",
   Admin = "admin",
-  Moderator = "moderator"
+  Moderator = "moderator",
 }
-
 
 export enum ModeratorPermissions {
   CoinDistribute = "coin_distributor",
-  UpdateUsers = "update_users"
+  UpdateUsers = "update_users",
 }
 
 export enum WhoCanTextMe {
-  AllUsers = 'all_users',
-  MyFollowers = 'my_followers',
-  HighLevel = 'high_level'
+  AllUsers = "all_users",
+  MyFollowers = "my_followers",
+  HighLevel = "high_level",
 }
 
 export enum WhoCanTextMeLevelTypes {
-  UserLevel  = 'user_level',
-  talentLevel = 'talent_level',
+  UserLevel = "user_level",
+  talentLevel = "talent_level",
 }
