@@ -24,6 +24,7 @@ export interface IAdminUserService {
     registerAdmin(admin: IAdmin): Promise<IAdminDocument | null>;
     updateAdmin(id: string, admin: Partial<IAdmin>): Promise<IAdminDocument | null>;
     deleteAdmin(id: string): Promise<IAdminDocument | null>;
+    getAdminProfile(id: string): Promise<IAdminDocument | null>;
     retrieveAllUsers(query: Record<string, any>): Promise<{ pagination: IPagination, users: IUserDocument[] }>;
     updateActivityZone({ id, zone, dateTill }: { id: string, zone: "safe" | "temp_block" | "permanent_block", dateTill?: string }): Promise<IUserDocument | null>
     updateUserStat(body: { diamonds?: number, stars?: number, userId: string }): Promise<IUSerStatsDocument>
@@ -97,6 +98,15 @@ export default class AdminUserService implements IAdminUserService {
             throw new AppError(StatusCodes.NOT_FOUND, "Admin not found");
         }
         return deletedAdmin;
+    }
+
+    async getAdminProfile(id: string): Promise<IAdminDocument | null> {
+        const admin = await this.AdminRepository.getAdminById(id);
+        if (!admin) {
+            throw new AppError(StatusCodes.NOT_FOUND, "Admin not found");
+        }
+        return admin;
+        
     }
 
 

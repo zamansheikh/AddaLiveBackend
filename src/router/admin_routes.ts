@@ -37,7 +37,8 @@ router
   .route("/auth")
   .post(adminUserController.registerAdmin)
   .put(authenticate([UserRoles.Admin]), adminUserController.updateAdmin)
-  .delete(authenticate([UserRoles.Admin]), adminUserController.deleteAdmin);
+  .delete(authenticate([UserRoles.Admin]), adminUserController.deleteAdmin)
+  .get(authenticate([UserRoles.Admin]),adminUserController.getAdminProfile )
 
 router.route("/login").post(adminUserController.loginAdmin);
 
