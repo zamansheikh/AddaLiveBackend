@@ -125,12 +125,18 @@ export default class AdminUserController {
   });
 
   promoteUser = catchAsync(async (req: Request, res: Response) => {
+    const { id, role } = req.user!;
     const { userId } = req.body;
-    const { permissions } = req.body;
+    const { permissions, userRole } = req.body;
+    if(!userRole ) throw new AppError(StatusCodes.BAD_REQUEST, "User role is required");
+    if(!Object.values(UserRoles).includes(userRole)) throw new AppError(StatusCodes.BAD_REQUEST, "Invalid user role");
     validatePromoteUserPermission(permissions);
     const updatedUser = await this.AdminUserService.promoteUser(
       userId,
-      permissions
+      permissions,
+      userRole,
+      id,
+      role as UserRoles
     );
     sendResponse(res, {
       statusCode: StatusCodes.OK,

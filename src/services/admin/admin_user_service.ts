@@ -29,7 +29,7 @@ export interface IAdminUserService {
     updateActivityZone({ id, zone, dateTill }: { id: string, zone: "safe" | "temp_block" | "permanent_block", dateTill?: string }): Promise<IUserDocument | null>
     updateUserStat(body: { diamonds?: number, stars?: number, userId: string }): Promise<IUSerStatsDocument>
     searchUserEmail(email: string, query: Record<string, unknown>): Promise<{ pagination: IPagination, users: IUserDocument[] } | null>;
-    promoteUser(id: string, permissions: string[]): Promise<IUserDocument | null>;
+    promoteUser(id: string, permissions: string[], userRole: UserRoles, myId: string, myRole: UserRoles): Promise<IUserDocument | null>;
     getAllModerators(query: Record<string, unknown>): Promise<{ pagination: IPagination, users: IUserDocument[] }>;
     updatePermissions(id: string, permissions: string[]): Promise<IUserDocument | null>;
     removePermissions(id: string, permissions: string[]): Promise<IUserDocument | null>;
@@ -155,19 +155,25 @@ export default class AdminUserService implements IAdminUserService {
         return users;
     }
 
-    async promoteUser(id: string, permissions: string[]): Promise<IUserDocument | null> {
+    async promoteUser(id: string, permissions: string[], userRole: UserRoles, myId: string, myRole: UserRoles): Promise<IUserDocument | null> {
+        let myProfile;
+        if(myRole == UserRoles.Admin){
+            myProfile = await this.AdminRepository.getAdminById(myId);
+        }else{
+            myProfile = await this.UserRepository.findUserById(myId);
+        }
+        if (!myProfile) throw new AppError(StatusCodes.NOT_FOUND, "Notvalid token");
+
         const user = await this.UserRepository.findUserById(id);
         if (!user) {
             throw new AppError(StatusCodes.NOT_FOUND, "User not found");
         }
-        if (user.userRole === UserRoles.Admin) {
-            throw new AppError(StatusCodes.BAD_REQUEST, "User is already an admin");
-        }
-        if (user.userRole === UserRoles.Agency) {
-            throw new AppError(StatusCodes.BAD_REQUEST, "User is already a moderator");
-        }
+        
+        const hasPermission = canUserUpdate(myProfile, [AdminPowers.PromoteUser]);
+        if (!hasPermission) throw new AppError(StatusCodes.UNAUTHORIZED, "You are not authorized to perform this action");
 
-        const updatedUser = await this.UserRepository.findUserByIdAndUpdate(id, { userRole: UserRoles.Agency, userPermissions: permissions });
+        const updatedUser = await this.UserRepository.findUserByIdAndUpdate(id, { userRole: userRole, userPermissions: permissions });
+
         if (!updatedUser) {
             throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update user");
         }
@@ -258,6 +264,7 @@ export default class AdminUserService implements IAdminUserService {
         }
         if (!myProfile) throw new AppError(StatusCodes.NOT_FOUND, "Not valid token");
 
+        // todo: update the functiuon
         const canUpdateCoins = canUserUpdate(myProfile, [AdminPowers.CoinDistribute]);
 
         if (!canUpdateCoins) throw new AppError(StatusCodes.UNAUTHORIZED, "You are not authorized to perform this action");

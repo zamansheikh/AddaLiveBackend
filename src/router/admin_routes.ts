@@ -49,18 +49,22 @@ router
 router
   .route("/users/promote")
   .put(authenticate([UserRoles.Admin]), adminUserController.promoteUser);
+  
 router
   .route("/users/moderator-permissions")
   .put(
     authenticate([UserRoles.Admin]),
     adminUserController.moderatorPermissionEdit
   );
+  
 router
   .route("/users/remove-permissions")
   .put(authenticate([UserRoles.Admin]), adminUserController.removePermissions);
+
 router
   .route("/users/demote")
   .put(authenticate([UserRoles.Admin]), adminUserController.demoteUser);
+
 router
   .route("/users/moderators")
   .get(authenticate([UserRoles.Admin]), adminUserController.getAllModerators);

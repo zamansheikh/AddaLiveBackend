@@ -43,8 +43,7 @@ export function validatePromoteUserPermission(permissions: string[]): void {
       "permissions array must contain at least one permission"
     );
   const invalidatePermissions = permissions.filter(
-    (p) =>
-      !Object.values(AdminPowers).includes(p as AdminPowers)
+    (p) => !Object.values(AdminPowers).includes(p as AdminPowers)
   );
   if (invalidatePermissions.length > 0)
     throw new AppError(
@@ -57,15 +56,16 @@ export function canUserUpdate(
   myProfile: IUserDocument | IAdminDocument,
   requiredPermissions: AdminPowers[]
 ): boolean {
+
   if (myProfile.userRole == UserRoles.Admin) {
     return true;
   }
-  if (myProfile.userRole == UserRoles.Agency) {
-    const hasPermission = (myProfile as IUserDocument).userPermissions.filter(
-      (p) => requiredPermissions.includes(p as AdminPowers)
-    );
-    if (hasPermission.length == requiredPermissions.length) return true;
-  }
+
+  const hasPermission = (myProfile as IUserDocument).userPermissions.filter(
+    (p) => requiredPermissions.includes(p as AdminPowers)
+  );
+
+  if (hasPermission.length == requiredPermissions.length) return true;
 
   if (myProfile.userRole == UserRoles.User) return false;
   return false;
