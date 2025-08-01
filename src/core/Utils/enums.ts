@@ -132,13 +132,18 @@ export enum UserActiveStatus {
 export enum UserRoles {
   User = "user",
   Admin = "admin",
-  Agency = "Agency",
+  Merchant = "merchant",
+  Reseller = 're-seller',
+  SubAdmin = 'sub-admin',
+  Agency = "agency",
+  Host = "host",
+  CountryAdmin = "country-admin",
+  countrySubAdmin = "country-sub-admin",
 }
 
 export enum AdminPowers {
   CoinDistribute = "coin_distributor",
   UpdateUsers = "update_users",
-
 }
 
 export enum WhoCanTextMe {
