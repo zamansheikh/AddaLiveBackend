@@ -68,7 +68,7 @@ router
 router
   .route("/users/assign-coin")
   .put(
-    authenticate([UserRoles.Admin, UserRoles.Moderator]),
+    authenticate([UserRoles.Admin, UserRoles.Agency]),
     adminUserController.assignCoinToUser
   );
 
@@ -105,7 +105,7 @@ router
   )
   .get(authenticate(), adminUserController.getGifts);
 
-router.route("/gift-category").get(authenticate([UserRoles.Admin, UserRoles.Moderator]), adminUserController.getGiftCategory)
+router.route("/gift-category").get(authenticate([UserRoles.Admin, UserRoles.Agency]), adminUserController.getGiftCategory)
 
 router
   .route("/gift/:id")

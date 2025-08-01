@@ -7,7 +7,7 @@ import sendResponse, {
 } from "../../core/Utils/send_response";
 import AppError from "../../core/errors/app_errors";
 import { log } from "console";
-import { ModeratorPermissions, UserRoles } from "../../core/Utils/enums";
+import { AdminPowers, UserRoles } from "../../core/Utils/enums";
 import { validatePromoteUserPermission } from "../../core/Utils/helper_functions";
 
 export default class AdminUserController {

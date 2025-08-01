@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import AppError from "../errors/app_errors";
 import { StatusCodes } from "http-status-codes";
-import { ModeratorPermissions, UserRoles } from "./enums";
+import { AdminPowers, UserRoles } from "./enums";
 import { IUserDocument } from "../../models/user/user_model_interface";
 import { IAdminDocument } from "../../entities/admin/admin_interface";
 
@@ -44,7 +44,7 @@ export function validatePromoteUserPermission(permissions: string[]): void {
     );
   const invalidatePermissions = permissions.filter(
     (p) =>
-      !Object.values(ModeratorPermissions).includes(p as ModeratorPermissions)
+      !Object.values(AdminPowers).includes(p as AdminPowers)
   );
   if (invalidatePermissions.length > 0)
     throw new AppError(
@@ -55,14 +55,14 @@ export function validatePromoteUserPermission(permissions: string[]): void {
 
 export function canUserUpdate(
   myProfile: IUserDocument | IAdminDocument,
-  requiredPermissions: ModeratorPermissions[]
+  requiredPermissions: AdminPowers[]
 ): boolean {
   if (myProfile.userRole == UserRoles.Admin) {
     return true;
   }
-  if (myProfile.userRole == UserRoles.Moderator) {
+  if (myProfile.userRole == UserRoles.Agency) {
     const hasPermission = (myProfile as IUserDocument).userPermissions.filter(
-      (p) => requiredPermissions.includes(p as ModeratorPermissions)
+      (p) => requiredPermissions.includes(p as AdminPowers)
     );
     if (hasPermission.length == requiredPermissions.length) return true;
   }

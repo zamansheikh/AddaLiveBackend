@@ -132,12 +132,13 @@ export enum UserActiveStatus {
 export enum UserRoles {
   User = "user",
   Admin = "admin",
-  Moderator = "moderator",
+  Agency = "Agency",
 }
 
-export enum ModeratorPermissions {
+export enum AdminPowers {
   CoinDistribute = "coin_distributor",
   UpdateUsers = "update_users",
+
 }
 
 export enum WhoCanTextMe {

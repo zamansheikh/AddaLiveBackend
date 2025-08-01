@@ -114,7 +114,7 @@ export default class UserRepository implements IUserRepository {
 
     async getAllModarators(query: Record<string, unknown>): Promise<{ pagination: IPagination; users: IUserDocument[]; }> {
         const qb = new QueryBuilder(this.UserModel, query);
-        const res = qb.find({ userRole: UserRoles.Moderator });
+        const res = qb.find({ userRole: UserRoles.Agency });
         const users = await res.paginate().sort().exec();
         const pagination = await res.countTotal();
         return { users, pagination };

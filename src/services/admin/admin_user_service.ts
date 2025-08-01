@@ -7,7 +7,7 @@ import { IAdminRepository } from "../../repository/admin/admin_repository";
 import { IAdmin, IAdminDocument } from "../../entities/admin/admin_interface";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { CloudinaryFolder, ModeratorPermissions, UserRoles } from "../../core/Utils/enums";
+import { CloudinaryFolder, AdminPowers, UserRoles } from "../../core/Utils/enums";
 import { IPagination } from "../../core/Utils/query_builder";
 import { IUserRepository } from "../../repository/user_repository";
 import { canUserUpdate, isVideoFile } from "../../core/Utils/helper_functions";
@@ -65,14 +65,17 @@ export default class AdminUserService implements IAdminUserService {
         if (!admin) {
             throw new AppError(StatusCodes.NOT_FOUND, "Invalid credentials");
         }
-        const isMatch = await bcrypt.compare(credentials.password, admin.password);
+        const isMatch = await bcrypt.compare(credentials.password, admin.password!);
         if (!isMatch) {
             throw new AppError(StatusCodes.UNAUTHORIZED, "Invalid credentials");
         }
+        const adminObj = admin.toObject();
+        delete adminObj.password;
+        
         const jwtSecret = process.env.JWT_SECRET || "secret";
 
         const token = jwt.sign({ id: admin._id, role: UserRoles.Admin }, jwtSecret);
-        return { user: admin, token };
+        return { user: adminObj, token };
     }
 
     async registerAdmin(admin: IAdmin): Promise<IAdminDocument | null> {
@@ -80,7 +83,7 @@ export default class AdminUserService implements IAdminUserService {
         if (existingAdmin) {
             throw new AppError(StatusCodes.CONFLICT, "You cannot have more than one admin");
         }
-        const hashedPass = await bcrypt.hash(admin.password, 10);
+        const hashedPass = await bcrypt.hash(admin.password!, 10);
         const newAdmin = await this.AdminRepository.createAdmin({ ...admin, password: hashedPass });
         return newAdmin;
     }
@@ -160,11 +163,11 @@ export default class AdminUserService implements IAdminUserService {
         if (user.userRole === UserRoles.Admin) {
             throw new AppError(StatusCodes.BAD_REQUEST, "User is already an admin");
         }
-        if (user.userRole === UserRoles.Moderator) {
+        if (user.userRole === UserRoles.Agency) {
             throw new AppError(StatusCodes.BAD_REQUEST, "User is already a moderator");
         }
 
-        const updatedUser = await this.UserRepository.findUserByIdAndUpdate(id, { userRole: UserRoles.Moderator, userPermissions: permissions });
+        const updatedUser = await this.UserRepository.findUserByIdAndUpdate(id, { userRole: UserRoles.Agency, userPermissions: permissions });
         if (!updatedUser) {
             throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update user");
         }
@@ -181,7 +184,7 @@ export default class AdminUserService implements IAdminUserService {
         if (!user) {
             throw new AppError(StatusCodes.NOT_FOUND, "User not found");
         }
-        if (user.userRole !== UserRoles.Moderator) {
+        if (user.userRole !== UserRoles.Agency) {
             throw new AppError(StatusCodes.BAD_REQUEST, "User is not a moderator");
         }
 
@@ -206,7 +209,7 @@ export default class AdminUserService implements IAdminUserService {
             throw new AppError(StatusCodes.NOT_FOUND, "User not found");
         }
 
-        if (user.userRole !== UserRoles.Moderator) {
+        if (user.userRole !== UserRoles.Agency) {
             throw new AppError(StatusCodes.BAD_REQUEST, "User is not a moderator");
         }
 
@@ -255,7 +258,7 @@ export default class AdminUserService implements IAdminUserService {
         }
         if (!myProfile) throw new AppError(StatusCodes.NOT_FOUND, "Not valid token");
 
-        const canUpdateCoins = canUserUpdate(myProfile, [ModeratorPermissions.CoinDistribute]);
+        const canUpdateCoins = canUserUpdate(myProfile, [AdminPowers.CoinDistribute]);
 
         if (!canUpdateCoins) throw new AppError(StatusCodes.UNAUTHORIZED, "You are not authorized to perform this action");
 
@@ -271,7 +274,7 @@ export default class AdminUserService implements IAdminUserService {
         if (role == UserRoles.Admin) {
             myStats = await this.AdminRepository.getAdminById(myId);
         }
-        else if (role == UserRoles.Moderator) {
+        else if (role == UserRoles.Agency) {
             myStats = await this.UserStatsRepository.getUserStats(myId);
         }
 
