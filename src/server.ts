@@ -19,6 +19,8 @@ import StoryRouter from "./router/story_routes";
 import ChatRouter from "./router/chat_router";
 import GameRouter from "./router/game_router";
 import FollowerRouter from "./router/follower_routes";
+import PowerSharedRoutes from "./router/power_shared_route";
+
 // error handlers
 import globalErrorHandler from './core/errors/global_error_handlar';
 
@@ -79,6 +81,7 @@ app.use("/api/stories", StoryRouter);
 app.use("/api/chats", ChatRouter);
 app.use("/api/games", GameRouter);
 app.use("/api/followers", FollowerRouter);
+app.use("/api/power-shared", PowerSharedRoutes);
 
 app.use(globalErrorHandler);
 

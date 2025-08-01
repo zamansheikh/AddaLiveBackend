@@ -26,6 +26,11 @@ const portaLUserSchema = new mongoose.Schema<IPortalUserDocument>({
       type: Number,
       default: 0,
     },
+    parentCreator: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: DatabaseNames.PortalUsers,
+      default: null,
+    },
     userPermissions: {
       type: [String],
       default: [],

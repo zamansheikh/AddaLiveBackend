@@ -42,13 +42,7 @@ router
 
 router.route("/login").post(adminUserController.loginAdmin);
 
-router
-  .route("/users/search")
-  .get(authenticate([UserRoles.Admin]), adminUserController.searchUsersByEmail);
 
-router
-  .route("/users/promote")
-  .put(authenticate([UserRoles.Admin]), adminUserController.promoteUser);
   
 router
   .route("/users/moderator-permissions")
@@ -56,25 +50,17 @@ router
     authenticate([UserRoles.Admin]),
     adminUserController.moderatorPermissionEdit
   );
-  
+
 router
   .route("/users/remove-permissions")
   .put(authenticate([UserRoles.Admin]), adminUserController.removePermissions);
 
-router
-  .route("/users/demote")
-  .put(authenticate([UserRoles.Admin]), adminUserController.demoteUser);
+
 
 router
   .route("/users/moderators")
   .get(authenticate([UserRoles.Admin]), adminUserController.getAllModerators);
 
-router
-  .route("/users/assign-coin")
-  .put(
-    authenticate([UserRoles.Admin, UserRoles.Agency]),
-    adminUserController.assignCoinToUser
-  );
 
 router.get(
   "/users",
