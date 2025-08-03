@@ -82,25 +82,7 @@ export default class AdminUserController {
     });
   });
 
-  searchUsersByEmail = catchAsync(async (req: Request, res: Response) => {
-    const { email } = req.query;
-    if (!email)
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        "Email query parameter is required"
-      );
-    const result = await this.AdminUserService.searchUserEmail(
-      email as string,
-      req.query
-    );
-    sendResponse(res, {
-      statusCode: StatusCodes.OK,
-      success: true,
-      result: result?.users,
-      meta: result?.pagination,
-      message: "Users retrieved successfully",
-    });
-  });
+
 
   deleteAdmin = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
