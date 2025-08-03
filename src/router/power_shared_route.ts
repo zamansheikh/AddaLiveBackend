@@ -31,21 +31,21 @@ const sharedPowerController = new SharedPowerController(sharedPowerService);
 
 router
   .route("/users/search")
-  .get(authenticate([UserRoles.Admin]), sharedPowerController.searchUsersByEmail); // todo shift
+  .get(authenticate([UserRoles.Admin]), sharedPowerController.searchUsersByEmail); 
 
 router
   .route("/users/promote")
-  .put(authenticate([UserRoles.Admin]), sharedPowerController.promoteUser); // todo shift
+  .put(authenticate([UserRoles.Admin]), sharedPowerController.promoteUser); 
 
 router
   .route("/users/demote")
-  .put(authenticate([UserRoles.Admin]), sharedPowerController.demoteUser); // todo shift
+  .put(authenticate([UserRoles.Admin]), sharedPowerController.demoteUser); 
 
 router
   .route("/users/assign-coin")
   .put(
     authenticate([UserRoles.Admin, UserRoles.Agency]),
     sharedPowerController.assignCoinToUser
-  ); // todo shift
+  ); 
 
 export default router;
