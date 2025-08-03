@@ -13,29 +13,21 @@ export enum DatabaseNames {
   ReelsReactions = "reels_reactions",
   ReelsComments = "reels_comments",
   Reels_comment_reaction = "reels_comments_reactions",
-
   Post = "posts",
   PostReactions = "post_reactions",
   PostComments = "post_comments",
   PostCommentReactions = "post_comment_reactions",
-
   stories = "stories",
   story_reactions = "story_reactions",
-
   friendships = "friendships",
-
   conversations = "conversations",
   messages = "messages",
-
   userStats = "userstats",
-
   history = "histories",
-
   followers = "followers",
-
   Admin = "admins",
-
   Gifts = "gifts",
+  PortalUsers = "portal_users",
 }
 
 export enum ReelStatus {
@@ -132,12 +124,22 @@ export enum UserActiveStatus {
 export enum UserRoles {
   User = "user",
   Admin = "admin",
-  Moderator = "moderator",
+  Merchant = "merchant",
+  Reseller = 're-seller',
+  SubAdmin = 'sub-admin',
+  Agency = "agency",
+  Host = "host",
+  CountryAdmin = "country-admin",
+  countrySubAdmin = "country-sub-admin",
 }
 
-export enum ModeratorPermissions {
-  CoinDistribute = "coin_distributor",
-  UpdateUsers = "update_users",
+export enum AdminPowers {
+  CoinDistribute = "coin-distributor",
+  PromoteUser = "promote-user",
+  UpdateUsers = "update-users",
+  BlockUser = "block-user",
+  DeviceBan = "device-ban",
+  LiveRoomClose = "live-room-close"
 }
 
 export enum WhoCanTextMe {

@@ -1,335 +1,351 @@
 import mongoose from "mongoose";
 import { DatabaseNames } from "../../core/Utils/enums";
 import { IPagination, QueryBuilder } from "../../core/Utils/query_builder";
-import { IPost, IPostDocument, IPostModel } from "../../entities/posts/post_interface";
-import { postReactionStructure, postStructure } from "./post_repository_constants";
+import {
+  IPost,
+  IPostDocument,
+  IPostModel,
+} from "../../entities/posts/post_interface";
+import {
+  postReactionStructure,
+  postStructure,
+} from "./post_repository_constants";
 import { IPostRepository } from "./post_repository_interface";
 
-
 export default class PostRepository implements IPostRepository {
-    PostModel: IPostModel;
+  PostModel: IPostModel;
 
-    constructor(PostModel: IPostModel) {
-        this.PostModel = PostModel;
-    }
+  constructor(PostModel: IPostModel) {
+    this.PostModel = PostModel;
+  }
 
-    async create(ReelEntity: IPost) {
-        const reel = new this.PostModel(ReelEntity);
-        return await reel.save();
-    }
-    async getAllPosts(query: Record<string, any>) {
-        const userId = new mongoose.Types.ObjectId(query.userId);
-        const qb = new QueryBuilder(this.PostModel, query);
+  async create(ReelEntity: IPost) {
+    const reel = new this.PostModel(ReelEntity);
+    return await reel.save();
+  }
+  async getAllPosts(query: Record<string, any>) {
+    const userId = new mongoose.Types.ObjectId(query.userId);
+    const qb = new QueryBuilder(this.PostModel, query);
 
-        const result = qb.aggregate(
-            [
-                {
-                    $lookup: {
-                        from: DatabaseNames.User,
-                        localField: "ownerId",
-                        foreignField: "_id",
-                        as: "userInfo",
-                    },
+    const result = qb
+      .aggregate([
+        {
+          $lookup: {
+            from: DatabaseNames.User,
+            localField: "ownerId",
+            foreignField: "_id",
+            as: "userInfo",
+          },
+        },
+        { $unwind: "$userInfo" },
+        {
+          $addFields: {
+            userName: "$userInfo.name",
+            avatar: "$userInfo.avatar",
+          },
+        },
+        {
+          $lookup: {
+            from: DatabaseNames.PostReactions,
+            let: { postId: "$_id", userId: userId },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$reactedTo", "$$postId"] },
+                      { $eq: ["$reactedBy", "$$userId"] },
+                    ],
+                  },
                 },
-                { $unwind: "$userInfo" },
-                {
-                    $addFields: {
-                        userName: "$userInfo.name",
-                        avatar: "$userInfo.avatar"
-                    }
+              },
+            ],
+            as: "myReaction",
+          },
+        },
+        {
+          $lookup: {
+            from: DatabaseNames.PostReactions,
+            let: { postId: "$_id" },
+            pipeline: [
+              { $match: { $expr: { $eq: ["$reactedTo", "$$postId"] } } },
+              { $sort: { createdAt: -1 } },
+              { $limit: 10 },
+              {
+                $lookup: {
+                  from: DatabaseNames.User,
+                  localField: "reactedBy",
+                  foreignField: "_id",
+                  as: "userInfo",
                 },
-                {
-                    $lookup: {
-                        from: DatabaseNames.PostReactions,
-                        let: { postId: "$_id", userId: userId },
-                        pipeline: [
-                            {
-                                $match: {
-                                    $expr: {
-                                        $and: [
-                                            { $eq: ["$reactedTo", "$$postId"] },
-                                            { $eq: ["$reactedBy", "$$userId"] }
-                                        ]
-                                    }
-                                }
-                            }
-                        ],
-                        as: "myReaction",
-                    },
+              },
+              {
+                $unwind: "$userInfo",
+              },
+              {
+                $addFields: {
+                  userName: "$userInfo.name",
+                  avatar: "$userInfo.avatar",
                 },
-                {
-                    $lookup: {
-                        from: DatabaseNames.PostReactions,
-                        let: { postId: "$_id" },
-                        pipeline: [
-                            { $match: { $expr: { $eq: ["$reactedTo", "$$postId"] } } },
-                            { $sort: { createdAt: -1 } },
-                            { $limit: 10 },
-                            {
-                                $lookup: {
-                                    from: DatabaseNames.User,
-                                    localField: "reactedBy",
-                                    foreignField: "_id",
-                                    as: "userInfo"
-                                }
-                            },
-                            {
-                                $unwind: "$userInfo"
-                            },
-                            {
-                                $addFields: {
-                                    userName: "$userInfo.name",
-                                    avatar: "$userInfo.avatar"
-                                }
-                            },
+              },
 
-                            {
-                                $project: postReactionStructure,
-                            }
-                        ],
-                        as: "latestReactions",
-                    },
-                },
-                {
-                    $unwind: {
-                        path: "$myReaction",
-                        preserveNullAndEmptyArrays: true
-                    }
-                },
-                {
-                    $unwind: "$userInfo"
-                },
-                {
-                    $sort: {
-                        updatedAt: -1
-                    }
-                },
-                postStructure
-            ]
-        ).sort().paginate();
-        const pagination = await result.countTotal();
-        const data = await result.exec();
+              {
+                $project: postReactionStructure,
+              },
+            ],
+            as: "latestReactions",
+          },
+        },
+        {
+          $unwind: {
+            path: "$myReaction",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $unwind: "$userInfo",
+        },
+        {
+          $sort: {
+            updatedAt: -1,
+          },
+        },
+        postStructure,
+      ])
+      .sort()
+      .paginate();
+    const pagination = await result.countTotal();
+    const data = await result.exec();
 
-        return {
-            pagination,
-            data
-        }
-    }
+    return {
+      pagination,
+      data,
+    };
+  }
 
-    async getPostDetails(postId: string, userId: string): Promise<IPostDocument | null> {
-        const postObjectId = new mongoose.Types.ObjectId(postId);
-        const userObjectId = new mongoose.Types.ObjectId(userId);
-        const post = await this.PostModel.aggregate(
-            [
-                {
-                    $match: {
-                        _id: postObjectId
-                    },
+  async getPostDetails(
+    postId: string,
+    userId: string
+  ): Promise<IPostDocument | null> {
+    const postObjectId = new mongoose.Types.ObjectId(postId);
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const post = await this.PostModel.aggregate([
+      {
+        $match: {
+          _id: postObjectId,
+        },
+      },
+      {
+        $lookup: {
+          from: DatabaseNames.User,
+          localField: "ownerId",
+          foreignField: "_id",
+          as: "userInfo",
+        },
+      },
+      { $unwind: { path: "$userInfo", preserveNullAndEmptyArrays: true } },
+      {
+        $addFields: {
+          userName: "$userInfo.name",
+          avatar: "$userInfo.avatar",
+        },
+      },
+      {
+        $lookup: {
+          from: DatabaseNames.PostReactions,
+          let: { postId: "$_id", userId: userObjectId },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$reactedTo", "$$postId"] },
+                    { $eq: ["$reactedBy", "$$userId"] },
+                  ],
                 },
-                {
-                    $lookup: {
-                        from: DatabaseNames.User,
-                        localField: "ownerId",
-                        foreignField: "_id",
-                        as: "userInfo",
-                    },
+              },
+            },
+          ],
+          as: "myReaction",
+        },
+      },
+      {
+        $unwind: {
+          path: "$myReaction",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: DatabaseNames.PostReactions,
+          let: { postId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$reactedTo", "$$postId"] } } },
+            { $sort: { createdAt: -1 } },
+            { $limit: 10 },
+            {
+              $lookup: {
+                from: DatabaseNames.User,
+                localField: "reactedBy",
+                foreignField: "_id",
+                as: "userInfo",
+              },
+            },
+            {
+              $unwind: "$userInfo",
+            },
+
+            {
+              $addFields: {
+                userName: "$userInfo.name",
+                avatar: "$userInfo.avatar",
+              },
+            },
+
+            {
+              $project: postReactionStructure,
+            },
+          ],
+          as: "latestReactions",
+        },
+      },
+
+      postStructure,
+    ]);
+
+    return post[0];
+  }
+
+  async findPostById(id: string) {
+    return await this.PostModel.findById(id);
+  }
+
+  async findAllPosts() {
+    return await this.PostModel.find();
+  }
+
+  async findPostsConditionally(condition: Record<string, string | number>) {
+    return await this.PostModel.find(condition);
+  }
+
+  async updateCount(postID: string, payload: Record<string, number>) {
+    return this.PostModel.findByIdAndUpdate(
+      postID,
+      { $inc: payload },
+      { new: true }
+    );
+  }
+
+  async deletePostById(reelId: string): Promise<IPostDocument | null> {
+    return await this.PostModel.findByIdAndDelete(reelId);
+  }
+
+  async findPostByIdAndUpdate(id: string, payload: Record<string, any>) {
+    return await this.PostModel.findByIdAndUpdate(id, payload, { new: true });
+  }
+
+  async getUserPost(
+    userId: string,
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; data: IPostDocument[] }> {
+    const qb = new QueryBuilder(this.PostModel, query);
+    const res = qb
+      .aggregate([
+        {
+          $match: {
+            ownerId: new mongoose.Types.ObjectId(userId),
+          },
+        },
+        {
+          $lookup: {
+            from: DatabaseNames.User,
+            localField: "ownerId",
+            foreignField: "_id",
+            as: "userInfo",
+          },
+        },
+        { $unwind: "$userInfo" },
+        {
+          $addFields: {
+            userName: "$userInfo.name",
+            avatar: "$userInfo.avatar",
+          },
+        },
+        {
+          $lookup: {
+            from: DatabaseNames.PostReactions,
+            let: {
+              postId: "$_id",
+              userId: new mongoose.Types.ObjectId(userId),
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$reactedTo", "$$postId"] },
+                      { $eq: ["$reactedBy", "$$userId"] },
+                    ],
+                  },
                 },
-                { $unwind: { path: "$userInfo", preserveNullAndEmptyArrays: true } },
-                {
-                    $addFields: {
-                        userName: "$userInfo.name",
-                        avatar: "$userInfo.avatar"
-                    }
+              },
+            ],
+            as: "myReaction",
+          },
+        },
+        {
+          $lookup: {
+            from: DatabaseNames.PostReactions,
+            let: { postId: "$_id" },
+            pipeline: [
+              { $match: { $expr: { $eq: ["$reactedTo", "$$postId"] } } },
+              { $sort: { createdAt: -1 } },
+              { $limit: 10 },
+              {
+                $lookup: {
+                  from: DatabaseNames.User,
+                  localField: "reactedBy",
+                  foreignField: "_id",
+                  as: "userInfo",
                 },
-                {
-                    $lookup: {
-                        from: DatabaseNames.PostReactions,
-                        let: { postId: "$_id", userId: userObjectId },
-                        pipeline: [
-                            {
-                                $match: {
-                                    $expr: {
-                                        $and: [
-                                            { $eq: ["$reactedTo", "$$postId"] },
-                                            { $eq: ["$reactedBy", "$$userId"] }
-                                        ]
-                                    }
-                                }
-                            }
-                        ],
-                        as: "myReaction",
-                    },
+              },
+              {
+                $unwind: "$userInfo",
+              },
+              {
+                $addFields: {
+                  userName: "$userInfo.name",
+                  avatar: "$userInfo.avatar",
                 },
-                {
-                    $unwind: {
-                        path: "$myReaction",
-                        preserveNullAndEmptyArrays: true
-                    }
-                },
-                {
-                    $lookup: {
-                        from: DatabaseNames.PostReactions,
-                        let: { postId: "$_id" },
-                        pipeline: [
-                            { $match: { $expr: { $eq: ["$reactedTo", "$$postId"] } } },
-                            { $sort: { createdAt: -1 } },
-                            { $limit: 10 },
-                            {
-                                $lookup: {
-                                    from: DatabaseNames.User,
-                                    localField: "reactedBy",
-                                    foreignField: "_id",
-                                    as: "userInfo"
-                                }
-                            },
-                            {
-                                $unwind: "$userInfo"
-                            },
+              },
 
-                            {
-                                $addFields: {
-                                    userName: "$userInfo.name",
-                                    avatar: "$userInfo.avatar"
-                                }
-                            },
-
-                            {
-                                $project: postReactionStructure,
-                            }
-                        ],
-                        as: "latestReactions",
-                    },
-                },
-
-                postStructure
-            ]
-        );
-
-
-        return post[0];
-    }
-
-    async findPostById(id: string) {
-        return await this.PostModel.findById(id);
-    }
-
-    async findAllPosts() {
-        return await this.PostModel.find();
-    }
-
-    async findPostsConditionally(condition: Record<string, string | number>) {
-        return await this.PostModel.find(condition);
-    }
-
-    async updateCount(postID: string, payload: Record<string, number>) {
-        return this.PostModel.findByIdAndUpdate(postID, { $inc: payload }, { new: true });
-    }
-
-    async deletePostById(reelId: string): Promise<IPostDocument | null> {
-        return await this.PostModel.findByIdAndDelete(reelId);
-    }
-
-
-    async findPostByIdAndUpdate(id: string, payload: Record<string, any>) {
-        return await this.PostModel.findByIdAndUpdate(id, payload, { new: true });
-    }
-
-    async getUserPost(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IPostDocument[]; }> {
-        const qb = new QueryBuilder(this.PostModel, query);
-        const res = qb.aggregate(
-            [
-                {
-                    $match: {
-                        ownerId: new mongoose.Types.ObjectId(userId)
-                    }
-                },
-                {
-                    $lookup: {
-                        from: DatabaseNames.User,
-                        localField: "ownerId",
-                        foreignField: "_id",
-                        as: "userInfo",
-                    },
-                },
-                { $unwind: "$userInfo" },
-                {
-                    $addFields: {
-                        userName: "$userInfo.name",
-                        avatar: "$userInfo.avatar"
-                    }
-                },
-                {
-                    $lookup: {
-                        from: DatabaseNames.PostReactions,
-                        let: { postId: "$_id", userId: new mongoose.Types.ObjectId(userId) },
-                        pipeline: [
-                            {
-                                $match: {
-                                    $expr: {
-                                        $and: [
-                                            { $eq: ["$reactedTo", "$$postId"] },
-                                            { $eq: ["$reactedBy", "$$userId"] }
-                                        ]
-                                    }
-                                }
-                            }
-                        ],
-                        as: "myReaction",
-                    },
-                },
-                {
-                    $lookup: {
-                        from: DatabaseNames.PostReactions,
-                        let: { postId: "$_id" },
-                        pipeline: [
-                            { $match: { $expr: { $eq: ["$reactedTo", "$$postId"] } } },
-                            { $sort: { createdAt: -1 } },
-                            { $limit: 10 },
-                            {
-                                $lookup: {
-                                    from: DatabaseNames.User,
-                                    localField: "reactedBy",
-                                    foreignField: "_id",
-                                    as: "userInfo"
-                                }
-                            },
-                            {
-                                $unwind: "$userInfo"
-                            },
-                            {
-                                $addFields: {
-                                    userName: "$userInfo.name",
-                                    avatar: "$userInfo.avatar"
-                                }
-                            },
-
-                            {
-                                $project: postReactionStructure,
-                            }
-                        ],
-                        as: "latestReactions",
-                    },
-                },
-                {
-                    $unwind: {
-                        path: "$myReaction",
-                        preserveNullAndEmptyArrays: true
-                    }
-                },
-                {
-                    $unwind: "$userInfo"
-                },
-                {
-                    $sort: {
-                        updatedAt: -1
-                    }
-                },
-                postStructure
-            ]
-        ).sort().paginate();
-        const data = await res.exec();
-        const pagination = await res.countTotal();
-        return {data, pagination};
-    }
-
+              {
+                $project: postReactionStructure,
+              },
+            ],
+            as: "latestReactions",
+          },
+        },
+        {
+          $unwind: {
+            path: "$myReaction",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $unwind: "$userInfo",
+        },
+        {
+          $sort: {
+            updatedAt: -1,
+          },
+        },
+        postStructure,
+      ])
+      .sort()
+      .paginate();
+    const data = await res.exec();
+    const pagination = await res.countTotal();
+    return { data, pagination };
+  }
 }
