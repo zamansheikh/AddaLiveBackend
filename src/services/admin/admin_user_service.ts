@@ -564,11 +564,7 @@ export default class AdminUserService implements IAdminUserService {
     let payload: Record<string, any> = {};
     payload["zone"] = zone;
     payload["createdAt"] = new Date().toISOString();
-    if (zone === ActivityZoneState.temporaryBlock && dateTill == null)
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        "date_till is required for temporary block"
-      );
+
     if (zone === ActivityZoneState.temporaryBlock && dateTill != null) {
       payload["expire"] = dateTill;
     }
