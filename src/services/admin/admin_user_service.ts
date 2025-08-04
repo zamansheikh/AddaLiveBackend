@@ -40,6 +40,7 @@ export interface IAdminUserService {
   ): Promise<IAdminDocument | null>;
   deleteAdmin(id: string): Promise<IAdminDocument | null>;
   getAdminProfile(id: string): Promise<IAdminDocument | null>;
+  assignCoinToSelf(id: string, coins: number): Promise<IAdminDocument | null>;
   retrieveAllUsers(
     query: Record<string, any>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] }>;
@@ -170,6 +171,17 @@ export default class AdminUserService implements IAdminUserService {
       throw new AppError(StatusCodes.NOT_FOUND, "Admin not found");
     }
     return admin;
+  }
+
+  async assignCoinToSelf(
+    id: string,
+    coins: number
+  ): Promise<IAdminDocument | null> {
+    const existingAdmin = await this.AdminRepository.getAdminById(id);
+    if(!existingAdmin) throw new AppError(StatusCodes.BAD_GATEWAY, "Invalid token");
+    const updateCoin = await this.AdminRepository.updateCoin(id, coins);
+    if(!updateCoin) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to assign coins to self");
+    return updateCoin;
   }
 
   async retrieveAllUsers(
@@ -455,46 +467,80 @@ export default class AdminUserService implements IAdminUserService {
     return deletedRole;
   }
 
-  async addPermissionsToPortalUser(roleId: string, permissions: string[]): Promise<IPortalUser> {
-    const portalUser = await this.PortalUserRepository.getPortalUserById(roleId);
+  async addPermissionsToPortalUser(
+    roleId: string,
+    permissions: string[]
+  ): Promise<IPortalUser> {
+    const portalUser = await this.PortalUserRepository.getPortalUserById(
+      roleId
+    );
     if (!portalUser) {
       throw new AppError(StatusCodes.NOT_FOUND, "Portal user not found");
     }
 
     const existingPermissions = new Set(portalUser.userPermissions);
-    const permissionsToAdd = permissions.filter(p => !existingPermissions.has(p));
+    const permissionsToAdd = permissions.filter(
+      (p) => !existingPermissions.has(p)
+    );
 
     if (permissionsToAdd.length === 0) {
-      throw new AppError(StatusCodes.BAD_REQUEST, "All specified permissions already exist for this role.");
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "All specified permissions already exist for this role."
+      );
     }
 
     const updatedPermissions = [...existingPermissions, ...permissionsToAdd];
 
-    const updatedPortalUser = await this.PortalUserRepository.updatePortalUser(roleId, { userPermissions: updatedPermissions });
+    const updatedPortalUser = await this.PortalUserRepository.updatePortalUser(
+      roleId,
+      { userPermissions: updatedPermissions }
+    );
     if (!updatedPortalUser) {
-      throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to add permissions to portal user");
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to add permissions to portal user"
+      );
     }
     return updatedPortalUser;
   }
 
-  async removePermissionsFromPortalUser(roleId: string, permissions: string[]): Promise<IPortalUser> {
-    const portalUser = await this.PortalUserRepository.getPortalUserById(roleId);
+  async removePermissionsFromPortalUser(
+    roleId: string,
+    permissions: string[]
+  ): Promise<IPortalUser> {
+    const portalUser = await this.PortalUserRepository.getPortalUserById(
+      roleId
+    );
     if (!portalUser) {
       throw new AppError(StatusCodes.NOT_FOUND, "Portal user not found");
     }
 
     const existingPermissions = new Set(portalUser.userPermissions);
-    const permissionsToRemove = permissions.filter(p => existingPermissions.has(p));
+    const permissionsToRemove = permissions.filter((p) =>
+      existingPermissions.has(p)
+    );
 
     if (permissionsToRemove.length === 0) {
-      throw new AppError(StatusCodes.BAD_REQUEST, "None of the specified permissions exist for this role.");
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "None of the specified permissions exist for this role."
+      );
     }
 
-    const updatedPermissions = portalUser.userPermissions.filter(p => !permissionsToRemove.includes(p));
+    const updatedPermissions = portalUser.userPermissions.filter(
+      (p) => !permissionsToRemove.includes(p)
+    );
 
-    const updatedPortalUser = await this.PortalUserRepository.updatePortalUser(roleId, { userPermissions: updatedPermissions });
+    const updatedPortalUser = await this.PortalUserRepository.updatePortalUser(
+      roleId,
+      { userPermissions: updatedPermissions }
+    );
     if (!updatedPortalUser) {
-      throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to remove permissions from portal user");
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to remove permissions from portal user"
+      );
     }
     return updatedPortalUser;
   }

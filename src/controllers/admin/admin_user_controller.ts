@@ -60,8 +60,11 @@ export default class AdminUserController {
   updateAdmin = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.user!;
     const { username, password, email, role, coins } = req.body;
-    if(coins)
-      throw new AppError(StatusCodes.FORBIDDEN, "Coins cannot be updated directly");
+    if (coins)
+      throw new AppError(
+        StatusCodes.FORBIDDEN,
+        "Coins cannot be updated directly"
+      );
     if (role)
       throw new AppError(StatusCodes.FORBIDDEN, "Role cannot be updated");
     if (!username && !password && !email && !coins)
@@ -105,6 +108,33 @@ export default class AdminUserController {
     });
   });
 
+  assignCoinToAdmin = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const { coins } = req.body;
+    if (!coins)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "User ID and coins are required"
+      );
+    if(isNaN(Number(coins)))
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Coins must be a number"
+      );
+    if (coins <= 0)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Coins must be greater than 0"
+      );
+    const updatedUser = await this.AdminUserService.assignCoinToSelf(id, Number(coins));
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: updatedUser,
+      message: "Coins assigned to user successfully",
+    });
+  });
+
   getAllModerators = catchAsync(async (req: Request, res: Response) => {
     const moderators = await this.AdminUserService.getAllModerators(
       req.query as Record<string, unknown>
@@ -118,12 +148,11 @@ export default class AdminUserController {
   });
 
   moderatorPermissionEdit = catchAsync(async (req: Request, res: Response) => {
-
     sendResponse(res, {
       statusCode: StatusCodes.BAD_GATEWAY,
       success: true,
       result: {},
-      message:  "This Api is No longer Supported",
+      message: "This Api is No longer Supported",
     });
   });
 

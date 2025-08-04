@@ -44,6 +44,8 @@ router
   .delete(authenticate([UserRoles.Admin]), adminUserController.deleteAdmin)
   .get(authenticate([UserRoles.Admin]), adminUserController.getAdminProfile);
 
+router.route("/auth/assign-coin").put(authenticate([UserRoles.Admin]), adminUserController.assignCoinToAdmin );
+
 router.route("/login").post(adminUserController.loginAdmin);
 
 router
