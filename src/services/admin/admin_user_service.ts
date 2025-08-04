@@ -14,6 +14,7 @@ import {
   CloudinaryFolder,
   AdminPowers,
   UserRoles,
+  ActivityZoneState,
 } from "../../core/Utils/enums";
 import { IPagination } from "../../core/Utils/query_builder";
 import { IUserRepository } from "../../repository/user_repository";
@@ -24,7 +25,10 @@ import { IGift, IGiftDocument } from "../../entities/admin/gift_interface";
 import { IGiftRepository } from "../../repository/gifts/gifts_repositories";
 import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
 import { Transaction } from "mongodb";
-import { IPortalUser } from "../../entities/portal_users/portal_user_interface";
+import {
+  IPortalUser,
+  IPortalUserDocument,
+} from "../../entities/portal_users/portal_user_interface";
 import { IPortalUserRepository } from "../../repository/portal_user/portal_user_repository";
 import PortalUser from "../../models/portal_users/protal_user_model";
 
@@ -85,6 +89,7 @@ export interface IAdminUserService {
     roleId: string,
     permissions: string[]
   ): Promise<IPortalUser>;
+  updateRoleActivityZone(id: string, zone: ActivityZoneState, dateTill: string): Promise<IPortalUserDocument>;
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -178,9 +183,14 @@ export default class AdminUserService implements IAdminUserService {
     coins: number
   ): Promise<IAdminDocument | null> {
     const existingAdmin = await this.AdminRepository.getAdminById(id);
-    if(!existingAdmin) throw new AppError(StatusCodes.BAD_GATEWAY, "Invalid token");
+    if (!existingAdmin)
+      throw new AppError(StatusCodes.BAD_GATEWAY, "Invalid token");
     const updateCoin = await this.AdminRepository.updateCoin(id, coins);
-    if(!updateCoin) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to assign coins to self");
+    if (!updateCoin)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to assign coins to self"
+      );
     return updateCoin;
   }
 
@@ -540,6 +550,34 @@ export default class AdminUserService implements IAdminUserService {
       throw new AppError(
         StatusCodes.INTERNAL_SERVER_ERROR,
         "Failed to remove permissions from portal user"
+      );
+    }
+    return updatedPortalUser;
+  }
+
+  async updateRoleActivityZone(id: string, zone: ActivityZoneState, dateTill: string): Promise<IPortalUserDocument> {
+    const portalUser = await this.PortalUserRepository.getPortalUserById(id);
+    if (!portalUser) {
+      throw new AppError(StatusCodes.NOT_FOUND, "Portal user not found");
+    }
+
+    let payload: Record<string, any> = {};
+    payload["zone"] = zone;
+    payload["createdAt"] = new Date().toISOString();
+    if (zone === ActivityZoneState.temporaryBlock && dateTill == null)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "date_till is required for temporary block"
+      );
+    if (zone === ActivityZoneState.temporaryBlock && dateTill != null) {
+      payload["expire"] = dateTill;
+    }
+    const finalPayload = { activityZone: payload };
+    const updatedPortalUser = await this.PortalUserRepository.updatePortalUser(id, finalPayload);
+    if (!updatedPortalUser) {
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to update portal user activity zone"
       );
     }
     return updatedPortalUser;

@@ -27,25 +27,32 @@ const sharedPowerService = new SharedPowerService(
 );
 const sharedPowerController = new SharedPowerController(sharedPowerService);
 
-
-
 router
   .route("/users/search")
-  .get(authenticate([UserRoles.Admin]), sharedPowerController.searchUsersByEmail); 
+  .get(
+    authenticate([
+      UserRoles.Admin,
+      UserRoles.SubAdmin,
+      UserRoles.Agency,
+      UserRoles.Merchant,
+      UserRoles.Reseller,
+    ]),
+    sharedPowerController.searchUsersByEmail
+  );
 
 router
   .route("/users/promote")
-  .put(authenticate([UserRoles.Admin]), sharedPowerController.promoteUser); 
+  .put(authenticate([UserRoles.Agency]), sharedPowerController.promoteUser);
 
 router
   .route("/users/demote")
-  .put(authenticate([UserRoles.Admin]), sharedPowerController.demoteUser); 
+  .put(authenticate([UserRoles.Agency]), sharedPowerController.demoteUser);
 
 router
   .route("/users/assign-coin")
   .put(
-    authenticate([UserRoles.Admin, UserRoles.Agency]),
+    authenticate([UserRoles.Admin, UserRoles.Merchant, UserRoles.Reseller]),
     sharedPowerController.assignCoinToUser
-  ); 
+  );
 
 export default router;

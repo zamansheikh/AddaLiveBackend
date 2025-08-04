@@ -7,8 +7,13 @@ import sendResponse, {
 } from "../../core/Utils/send_response";
 import AppError from "../../core/errors/app_errors";
 import { log } from "console";
-import { AdminPowers, UserRoles } from "../../core/Utils/enums";
 import {
+  ActivityZoneState,
+  AdminPowers,
+  UserRoles,
+} from "../../core/Utils/enums";
+import {
+  validateblockUser,
   validateCreatePortalUserData,
   validatePermissions,
   validatePromoteUserPermission,
@@ -116,17 +121,17 @@ export default class AdminUserController {
         StatusCodes.BAD_REQUEST,
         "User ID and coins are required"
       );
-    if(isNaN(Number(coins)))
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        "Coins must be a number"
-      );
+    if (isNaN(Number(coins)))
+      throw new AppError(StatusCodes.BAD_REQUEST, "Coins must be a number");
     if (coins <= 0)
       throw new AppError(
         StatusCodes.BAD_REQUEST,
         "Coins must be greater than 0"
       );
-    const updatedUser = await this.AdminUserService.assignCoinToSelf(id, Number(coins));
+    const updatedUser = await this.AdminUserService.assignCoinToSelf(
+      id,
+      Number(coins)
+    );
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
@@ -395,6 +400,17 @@ export default class AdminUserController {
       result: updatedPortalUser,
       message: "Permissions removed successfully from portal user",
     });
+  });
+
+  blockPortalUser = catchAsync(async (req: Request, res: Response) => {
+    const { id, zone, date_till } = req.body;
+    validateblockUser(req.body);
+    const result = await this.AdminUserService.updateRoleActivityZone(
+      id,
+      zone,
+      date_till
+    );
+    sendResponseEnhanced(res, result);
   });
 }
 

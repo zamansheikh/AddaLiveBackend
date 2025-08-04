@@ -113,7 +113,7 @@ router
     ]),
     adminUserController.updateGift
   )
-  .delete(authenticate(), adminUserController.deleteGift);
+  .delete(authenticate([UserRoles.Admin]), adminUserController.deleteGift);
 
 router
   .route("/create-role")
@@ -131,5 +131,7 @@ router
   .route("/role/permissions/remove/:roleId")
   .put(
     authenticate([UserRoles.Admin]), adminUserController.removeRolePermissions );
+
+router.route("/role/activity-zone")
 
 export default router;

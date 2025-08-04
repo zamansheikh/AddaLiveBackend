@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import AppError from "../errors/app_errors";
 import { StatusCodes } from "http-status-codes";
-import { AdminPowers, UserRoles } from "./enums";
+import { ActivityZoneState, AdminPowers, UserRoles } from "./enums";
 import { IUserDocument } from "../../models/user/user_model_interface";
 import { IAdminDocument } from "../../entities/admin/admin_interface";
 
@@ -97,5 +97,21 @@ export function validatePermissions(permissions: any) {
     throw new AppError(
       StatusCodes.BAD_REQUEST,
       `Invalid permissions: ${invalidatePermissions.join(", ")}`
+    );
+}
+
+export function validateblockUser(body: any): void {
+  const { id, zone, dateTill } = body;
+  if (!id || !zone)
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "User ID and activity zone are required"
+    );
+  if (!Object.values(ActivityZoneState).includes(zone))
+    throw new AppError(StatusCodes.BAD_REQUEST, "Invalid activity zone");
+  if (zone === ActivityZoneState.temporaryBlock && !dateTill)
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "dateTill is required for temporary block"
     );
 }
