@@ -22,6 +22,10 @@ const portaLUserSchema = new mongoose.Schema<IPortalUserDocument>({
       type: Number,
       default: 0,
     },
+    designation: {
+      type: String,
+      required: true,
+    },
     diamonds: {
       type: Number,
       default: 0,

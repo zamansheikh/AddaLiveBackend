@@ -24,6 +24,9 @@ import { IGift, IGiftDocument } from "../../entities/admin/gift_interface";
 import { IGiftRepository } from "../../repository/gifts/gifts_repositories";
 import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
 import { Transaction } from "mongodb";
+import { IPortalUser } from "../../entities/portal_users/portal_user_interface";
+import { IPortalUserRepository } from "../../repository/portal_user/portal_user_repository";
+import PortalUser from "../../models/portal_users/protal_user_model";
 
 export interface IAdminUserService {
   loginAdmin(credentials: {
@@ -70,6 +73,9 @@ export interface IAdminUserService {
   updateGift(id: string, gift: Partial<IGift>): Promise<IGiftDocument>;
   deleteGift(id: string): Promise<IGiftDocument>;
   getGiftCategories(query: Record<string, string>): Promise<string[]>;
+  createPortalUser(user: IPortalUser): Promise<IPortalUser>;
+  getPortalUser(id: string): Promise<IPortalUser>;
+  deletePortalUser(id: string): Promise<IPortalUser>;
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -77,16 +83,19 @@ export default class AdminUserService implements IAdminUserService {
   UserStatsRepository: IUserStatsRepository;
   AdminRepository: IAdminRepository;
   GiftRepository: IGiftRepository;
+  PortalUserRepository: IPortalUserRepository;
   constructor(
     UserRepository: IUserRepository,
     UserStatsRepository: IUserStatsRepository,
     AdminRepository: IAdminRepository,
-    giftRepository: IGiftRepository
+    giftRepository: IGiftRepository,
+    PortalUserRepository: IPortalUserRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
     this.AdminRepository = AdminRepository;
     this.GiftRepository = giftRepository;
+    this.PortalUserRepository = PortalUserRepository;
   }
 
   async loginAdmin(credentials: {
@@ -403,4 +412,39 @@ export default class AdminUserService implements IAdminUserService {
     const values = categories.map((category) => category.category);
     return values;
   }
+
+  async createPortalUser(user: IPortalUser): Promise<IPortalUser> {
+    const existingUserId =
+      await this.PortalUserRepository.getPortalUserByUserId(user.userId);
+    if (existingUserId)
+      throw new AppError(
+        StatusCodes.CONFLICT,
+        `UserId -> ${user.userId} already exists`
+      );
+    const hashedPassword = await bcrypt.hash(user.password, 10);
+    user.password = hashedPassword;
+    const newPortalUser = await this.PortalUserRepository.createPortalUser(
+      user
+    );
+    if (!newPortalUser)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to create portal user"
+      );
+    return newPortalUser;
+  }
+  async getPortalUser(id: string): Promise<IPortalUser> {
+    const role = await this.PortalUserRepository.getPortalUserById(id);
+    if (!role)
+      throw new AppError(StatusCodes.NOT_FOUND, "Role details not found");
+    return role;
+  }
+
+  async deletePortalUser(id: string): Promise<IPortalUser> {
+    const deletedRole = await this.PortalUserRepository.deletePortalUser(id);
+    if (!deletedRole)
+      throw new AppError(StatusCodes.NOT_FOUND, "Role not found");
+    return deletedRole;
+  }
+  
 }

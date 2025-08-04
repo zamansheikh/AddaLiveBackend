@@ -8,7 +8,7 @@ import sendResponse, {
 import AppError from "../../core/errors/app_errors";
 import { log } from "console";
 import { AdminPowers, UserRoles } from "../../core/Utils/enums";
-import { validatePromoteUserPermission } from "../../core/Utils/helper_functions";
+import { validateCreatePortalUserData, validatePromoteUserPermission } from "../../core/Utils/helper_functions";
 
 export default class AdminUserController {
   AdminUserService: IAdminUserService;
@@ -82,8 +82,6 @@ export default class AdminUserController {
     });
   });
 
-
-
   deleteAdmin = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
     const deletedAdmin = await this.AdminUserService.deleteAdmin(id);
@@ -105,8 +103,6 @@ export default class AdminUserController {
       message: "Admin profile retrieved successfully",
     });
   });
-
-
 
   getAllModerators = catchAsync(async (req: Request, res: Response) => {
     const moderators = await this.AdminUserService.getAllModerators(
@@ -154,7 +150,6 @@ export default class AdminUserController {
     });
   });
 
-
   retrieveAllUsers = catchAsync(async (req: Request, res: Response) => {
     const users = await this.AdminUserService.retrieveAllUsers(req.query);
 
@@ -165,8 +160,6 @@ export default class AdminUserController {
       message: "Users have been successfully retrieved.",
     });
   });
-
-
 
   updateActivityZone = catchAsync(async (req: Request, res: Response) => {
     const { id, zone, date_till } = req.body;
@@ -314,6 +307,38 @@ export default class AdminUserController {
       success: true,
       result: giftCategories,
       message: "Gift categories retrieved successfully",
+    });
+  });
+
+  createPortalUser = catchAsync(async (req: Request, res: Response) => {
+    validateCreatePortalUserData(req.body);
+    const newPortalUser = await this.AdminUserService.createPortalUser(req.body);
+    sendResponse(res, {
+      statusCode: StatusCodes.CREATED,
+      success: true,
+      result: newPortalUser,
+      message: "Role created successfully",
+    });
+  });
+
+  getRoleDetails = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const role = await this.AdminUserService.getPortalUser(id);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: role,
+      message: "Role details retrieved successfully",
+    });
+  });
+  deleteRole = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const deletedRole = await this.AdminUserService.deletePortalUser(id);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: deletedRole,
+      message: "Role deleted successfully",
     });
   });
 }

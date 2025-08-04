@@ -3,9 +3,10 @@ import mongoose, { Model } from "mongoose";
 export interface IPortalUser {
   name: string;
   avatar: string;
-  userId: string;
+  userId: string; //used for authentication like emails 
   password: string;
   coins: number;
+  designation: string;
   parentCreator: mongoose.Schema.Types.ObjectId | string;
   diamonds: number;
   userRole: string;
