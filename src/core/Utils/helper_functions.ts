@@ -56,7 +56,6 @@ export function canUserUpdate(
   myProfile: IUserDocument | IAdminDocument,
   requiredPermissions: AdminPowers[]
 ): boolean {
-
   if (myProfile.userRole == UserRoles.Admin) {
     return true;
   }
@@ -69,4 +68,50 @@ export function canUserUpdate(
 
   if (myProfile.userRole == UserRoles.User) return false;
   return false;
+}
+
+export function validateCreatePortalUserData(
+  body: Record<string, unknown>
+): void {
+  const { name, userId, password, designation, userPermissions, userRole } =
+    body;
+  if (
+    !name ||
+    !userId ||
+    !password ||
+    !designation ||
+    !userPermissions ||
+    !userRole
+  )
+    throw new AppError(StatusCodes.BAD_REQUEST, "All fields are required");
+  if (!Object.values(UserRoles).includes(userRole as UserRoles))
+    throw new AppError(StatusCodes.BAD_REQUEST, "Invalid user role");
+  if (
+    userRole == UserRoles.Agency ||
+    userRole == UserRoles.Admin ||
+    userRole == UserRoles.User ||
+    userRole == UserRoles.Host
+  )
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      `Admin cannot create -> ${userRole}`
+    );
+  if (!Array.isArray(userPermissions))
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "userPermissions must be an array"
+    );
+  if (userPermissions.length === 0)
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "userPermissions array must contain at least one permission"
+    );
+  const invalidatePermissions = userPermissions.filter(
+    (p) => !Object.values(AdminPowers).includes(p as AdminPowers)
+  );
+  if (invalidatePermissions.length > 0)
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      `Invalid permissions: ${invalidatePermissions.join(", ")}`
+    );
 }
