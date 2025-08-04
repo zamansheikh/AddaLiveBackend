@@ -60,14 +60,14 @@ export interface IAdminUserService {
   getAllModerators(
     query: Record<string, unknown>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] }>;
-  updatePermissions(
-    id: string,
-    permissions: string[]
-  ): Promise<IUserDocument | null>;
-  removePermissions(
-    id: string,
-    permissions: string[]
-  ): Promise<IUserDocument | null>;
+  // updatePermissions(
+  //   id: string,
+  //   permissions: string[]
+  // ): Promise<IUserDocument | null>;
+  // removePermissions(
+  //   id: string,
+  //   permissions: string[]
+  // ): Promise<IUserDocument | null>;
   createGift(gift: IGift): Promise<IGiftDocument>;
   getGifts(): Promise<IGiftDocument[]>;
   updateGift(id: string, gift: Partial<IGift>): Promise<IGiftDocument>;
@@ -251,96 +251,96 @@ export default class AdminUserService implements IAdminUserService {
     return moderators;
   }
 
-  async updatePermissions(
-    id: string,
-    permissions: string[]
-  ): Promise<IUserDocument | null> {
-    const user = await this.UserRepository.findUserById(id);
-    if (!user) {
-      throw new AppError(StatusCodes.NOT_FOUND, "User not found");
-    }
-    if (user.userRole !== UserRoles.Agency) {
-      throw new AppError(StatusCodes.BAD_REQUEST, "User is not a moderator");
-    }
+  // async updatePermissions(
+  //   id: string,
+  //   permissions: string[]
+  // ): Promise<IUserDocument | null> {
+  //   const user = await this.UserRepository.findUserById(id);
+  //   if (!user) {
+  //     throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+  //   }
+  //   if (user.userRole !== UserRoles.Agency) {
+  //     throw new AppError(StatusCodes.BAD_REQUEST, "User is not a moderator");
+  //   }
 
-    if (user.userPermissions.length === 0) {
-      const demotedUser = await this.UserRepository.findUserByIdAndUpdate(id, {
-        userRole: UserRoles.User,
-      });
-      if (demotedUser)
-        throw new AppError(
-          StatusCodes.CONFLICT,
-          "The user had no previous permissions demoted to user"
-        );
-    }
+  //   if (user.userPermissions.length === 0) {
+  //     const demotedUser = await this.UserRepository.findUserByIdAndUpdate(id, {
+  //       userRole: UserRoles.User,
+  //     });
+  //     if (demotedUser)
+  //       throw new AppError(
+  //         StatusCodes.CONFLICT,
+  //         "The user had no previous permissions demoted to user"
+  //       );
+  //   }
 
-    const invalidPermission = user.userPermissions.filter((p) =>
-      permissions.includes(p)
-    );
-    if (invalidPermission.length > 0) {
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        `Already has permissions: ${invalidPermission.join(", ")}`
-      );
-    }
+  //   const invalidPermission = user.userPermissions.filter((p) =>
+  //     permissions.includes(p)
+  //   );
+  //   if (invalidPermission.length > 0) {
+  //     throw new AppError(
+  //       StatusCodes.BAD_REQUEST,
+  //       `Already has permissions: ${invalidPermission.join(", ")}`
+  //     );
+  //   }
 
-    const addPermissions = permissions.map((p) =>
-      this.UserRepository.addPermission(id, p)
-    );
-    const updatedUser = await Promise.all(addPermissions);
-    return updatedUser[updatedUser.length - 1];
-  }
+  //   const addPermissions = permissions.map((p) =>
+  //     this.UserRepository.addPermission(id, p)
+  //   );
+  //   const updatedUser = await Promise.all(addPermissions);
+  //   return updatedUser[updatedUser.length - 1];
+  // }
 
-  async removePermissions(
-    id: string,
-    permissions: string[]
-  ): Promise<IUserDocument | null> {
-    const user = await this.UserRepository.findUserById(id);
-    if (!user) {
-      throw new AppError(StatusCodes.NOT_FOUND, "User not found");
-    }
+  // async removePermissions(
+  //   id: string,
+  //   permissions: string[]
+  // ): Promise<IUserDocument | null> {
+  //   const user = await this.UserRepository.findUserById(id);
+  //   if (!user) {
+  //     throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+  //   }
 
-    if (user.userRole !== UserRoles.Agency) {
-      throw new AppError(StatusCodes.BAD_REQUEST, "User is not a moderator");
-    }
+  //   if (user.userRole !== UserRoles.Agency) {
+  //     throw new AppError(StatusCodes.BAD_REQUEST, "User is not a moderator");
+  //   }
 
-    if (user.userPermissions.length === 0) {
-      const demotedUser = await this.UserRepository.findUserByIdAndUpdate(id, {
-        userRole: UserRoles.User,
-      });
-      if (demotedUser)
-        throw new AppError(
-          StatusCodes.CONFLICT,
-          "The user had no previous permissions demoted to user"
-        );
-    }
+  //   if (user.userPermissions.length === 0) {
+  //     const demotedUser = await this.UserRepository.findUserByIdAndUpdate(id, {
+  //       userRole: UserRoles.User,
+  //     });
+  //     if (demotedUser)
+  //       throw new AppError(
+  //         StatusCodes.CONFLICT,
+  //         "The user had no previous permissions demoted to user"
+  //       );
+  //   }
 
-    if (
-      user.userPermissions.length === 1 ||
-      user.userPermissions.length === permissions.length
-    ) {
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        "You cannot remove all permissions. Demote the user instead"
-      );
-    }
+  //   if (
+  //     user.userPermissions.length === 1 ||
+  //     user.userPermissions.length === permissions.length
+  //   ) {
+  //     throw new AppError(
+  //       StatusCodes.BAD_REQUEST,
+  //       "You cannot remove all permissions. Demote the user instead"
+  //     );
+  //   }
 
-    const invalidPermission = permissions.filter(
-      (p) => !user.userPermissions.includes(p)
-    );
-    if (invalidPermission.length > 0) {
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        `Does not have permissions: ${invalidPermission.join(", ")}`
-      );
-    }
+  //   const invalidPermission = permissions.filter(
+  //     (p) => !user.userPermissions.includes(p)
+  //   );
+  //   if (invalidPermission.length > 0) {
+  //     throw new AppError(
+  //       StatusCodes.BAD_REQUEST,
+  //       `Does not have permissions: ${invalidPermission.join(", ")}`
+  //     );
+  //   }
 
-    const removePermissions = permissions.map((p) =>
-      this.UserRepository.removePermission(id, p)
-    );
-    const updatedUser = await Promise.all(removePermissions);
-    return updatedUser[updatedUser.length - 1];
-  }
+  //   const removePermissions = permissions.map((p) =>
+  //     this.UserRepository.removePermission(id, p)
+  //   );
+  //   const updatedUser = await Promise.all(removePermissions);
+  //   return updatedUser[updatedUser.length - 1];
+  // }
 
   async createGift(gift: IGift): Promise<IGiftDocument> {
     const previewImageUrl = await uploadFileToCloudinary({

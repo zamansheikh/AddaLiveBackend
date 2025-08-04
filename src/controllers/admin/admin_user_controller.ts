@@ -117,31 +117,31 @@ export default class AdminUserController {
     });
   });
 
-  moderatorPermissionEdit = catchAsync(async (req: Request, res: Response) => {
-    const { userId, permissions } = req.body;
-    validatePromoteUserPermission(permissions);
-    const updatedUser = await this.AdminUserService.updatePermissions(
-      userId,
-      permissions
-    );
-    sendResponse(res, {
-      statusCode: StatusCodes.OK,
-      success: true,
-      result: updatedUser,
-      message: `Moderator permissions updated successfully: ${permissions.join(
-        ", "
-      )}`,
-    });
-  });
+  // moderatorPermissionEdit = catchAsync(async (req: Request, res: Response) => {
+  //   const { userId, permissions } = req.body;
+  //   validatePromoteUserPermission(permissions);
+  //   const updatedUser = await this.AdminUserService.updatePermissions(
+  //     userId,
+  //     permissions
+  //   );
+  //   sendResponse(res, {
+  //     statusCode: StatusCodes.OK,
+  //     success: true,
+  //     result: updatedUser,
+  //     message: `Moderator permissions updated successfully: ${permissions.join(
+  //       ", "
+  //     )}`,
+  //   });
+  // });
 
-  removePermissions = catchAsync(async (req: Request, res: Response) => {
-    sendResponse(res, {
-      statusCode: StatusCodes.BAD_GATEWAY,
-      success: true,
-      result: {},
-      message: "This Api is No longer Supported",
-    });
-  });
+  // removePermissions = catchAsync(async (req: Request, res: Response) => {
+  //   sendResponse(res, {
+  //     statusCode: StatusCodes.BAD_GATEWAY,
+  //     success: true,
+  //     result: {},
+  //     message: "This Api is No longer Supported",
+  //   });
+  // });
 
   retrieveAllUsers = catchAsync(async (req: Request, res: Response) => {
     const users = await this.AdminUserService.retrieveAllUsers(req.query);
