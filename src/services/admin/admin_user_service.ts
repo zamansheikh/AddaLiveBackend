@@ -14,6 +14,7 @@ import {
   CloudinaryFolder,
   AdminPowers,
   UserRoles,
+  ActivityZoneState,
 } from "../../core/Utils/enums";
 import { IPagination } from "../../core/Utils/query_builder";
 import { IUserRepository } from "../../repository/user_repository";
@@ -24,6 +25,12 @@ import { IGift, IGiftDocument } from "../../entities/admin/gift_interface";
 import { IGiftRepository } from "../../repository/gifts/gifts_repositories";
 import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
 import { Transaction } from "mongodb";
+import {
+  IPortalUser,
+  IPortalUserDocument,
+} from "../../entities/portal_users/portal_user_interface";
+import { IPortalUserRepository } from "../../repository/portal_user/portal_user_repository";
+import PortalUser from "../../models/portal_users/protal_user_model";
 
 export interface IAdminUserService {
   loginAdmin(credentials: {
@@ -37,6 +44,7 @@ export interface IAdminUserService {
   ): Promise<IAdminDocument | null>;
   deleteAdmin(id: string): Promise<IAdminDocument | null>;
   getAdminProfile(id: string): Promise<IAdminDocument | null>;
+  assignCoinToSelf(id: string, coins: number): Promise<IAdminDocument | null>;
   retrieveAllUsers(
     query: Record<string, any>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] }>;
@@ -57,19 +65,31 @@ export interface IAdminUserService {
   getAllModerators(
     query: Record<string, unknown>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] }>;
-  updatePermissions(
-    id: string,
-    permissions: string[]
-  ): Promise<IUserDocument | null>;
-  removePermissions(
-    id: string,
-    permissions: string[]
-  ): Promise<IUserDocument | null>;
+  // updatePermissions(
+  //   id: string,
+  //   permissions: string[]
+  // ): Promise<IUserDocument | null>;
+  // removePermissions(
+  //   id: string,
+  //   permissions: string[]
+  // ): Promise<IUserDocument | null>;
   createGift(gift: IGift): Promise<IGiftDocument>;
   getGifts(): Promise<IGiftDocument[]>;
   updateGift(id: string, gift: Partial<IGift>): Promise<IGiftDocument>;
   deleteGift(id: string): Promise<IGiftDocument>;
   getGiftCategories(query: Record<string, string>): Promise<string[]>;
+  createPortalUser(user: IPortalUser): Promise<IPortalUser>;
+  getPortalUser(id: string): Promise<IPortalUser>;
+  deletePortalUser(id: string): Promise<IPortalUser>;
+  addPermissionsToPortalUser(
+    roleId: string,
+    permissions: string[]
+  ): Promise<IPortalUser>;
+  removePermissionsFromPortalUser(
+    roleId: string,
+    permissions: string[]
+  ): Promise<IPortalUser>;
+  updateRoleActivityZone(id: string, zone: ActivityZoneState, dateTill: string): Promise<IPortalUserDocument>;
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -77,16 +97,19 @@ export default class AdminUserService implements IAdminUserService {
   UserStatsRepository: IUserStatsRepository;
   AdminRepository: IAdminRepository;
   GiftRepository: IGiftRepository;
+  PortalUserRepository: IPortalUserRepository;
   constructor(
     UserRepository: IUserRepository,
     UserStatsRepository: IUserStatsRepository,
     AdminRepository: IAdminRepository,
-    giftRepository: IGiftRepository
+    giftRepository: IGiftRepository,
+    PortalUserRepository: IPortalUserRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
     this.AdminRepository = AdminRepository;
     this.GiftRepository = giftRepository;
+    this.PortalUserRepository = PortalUserRepository;
   }
 
   async loginAdmin(credentials: {
@@ -153,6 +176,22 @@ export default class AdminUserService implements IAdminUserService {
       throw new AppError(StatusCodes.NOT_FOUND, "Admin not found");
     }
     return admin;
+  }
+
+  async assignCoinToSelf(
+    id: string,
+    coins: number
+  ): Promise<IAdminDocument | null> {
+    const existingAdmin = await this.AdminRepository.getAdminById(id);
+    if (!existingAdmin)
+      throw new AppError(StatusCodes.BAD_GATEWAY, "Invalid token");
+    const updateCoin = await this.AdminRepository.updateCoin(id, coins);
+    if (!updateCoin)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to assign coins to self"
+      );
+    return updateCoin;
   }
 
   async retrieveAllUsers(
@@ -234,96 +273,96 @@ export default class AdminUserService implements IAdminUserService {
     return moderators;
   }
 
-  async updatePermissions(
-    id: string,
-    permissions: string[]
-  ): Promise<IUserDocument | null> {
-    const user = await this.UserRepository.findUserById(id);
-    if (!user) {
-      throw new AppError(StatusCodes.NOT_FOUND, "User not found");
-    }
-    if (user.userRole !== UserRoles.Agency) {
-      throw new AppError(StatusCodes.BAD_REQUEST, "User is not a moderator");
-    }
+  // async updatePermissions(
+  //   id: string,
+  //   permissions: string[]
+  // ): Promise<IUserDocument | null> {
+  //   const user = await this.UserRepository.findUserById(id);
+  //   if (!user) {
+  //     throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+  //   }
+  //   if (user.userRole !== UserRoles.Agency) {
+  //     throw new AppError(StatusCodes.BAD_REQUEST, "User is not a moderator");
+  //   }
 
-    if (user.userPermissions.length === 0) {
-      const demotedUser = await this.UserRepository.findUserByIdAndUpdate(id, {
-        userRole: UserRoles.User,
-      });
-      if (demotedUser)
-        throw new AppError(
-          StatusCodes.CONFLICT,
-          "The user had no previous permissions demoted to user"
-        );
-    }
+  //   if (user.userPermissions.length === 0) {
+  //     const demotedUser = await this.UserRepository.findUserByIdAndUpdate(id, {
+  //       userRole: UserRoles.User,
+  //     });
+  //     if (demotedUser)
+  //       throw new AppError(
+  //         StatusCodes.CONFLICT,
+  //         "The user had no previous permissions demoted to user"
+  //       );
+  //   }
 
-    const invalidPermission = user.userPermissions.filter((p) =>
-      permissions.includes(p)
-    );
-    if (invalidPermission.length > 0) {
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        `Already has permissions: ${invalidPermission.join(", ")}`
-      );
-    }
+  //   const invalidPermission = user.userPermissions.filter((p) =>
+  //     permissions.includes(p)
+  //   );
+  //   if (invalidPermission.length > 0) {
+  //     throw new AppError(
+  //       StatusCodes.BAD_REQUEST,
+  //       `Already has permissions: ${invalidPermission.join(", ")}`
+  //     );
+  //   }
 
-    const addPermissions = permissions.map((p) =>
-      this.UserRepository.addPermission(id, p)
-    );
-    const updatedUser = await Promise.all(addPermissions);
-    return updatedUser[updatedUser.length - 1];
-  }
+  //   const addPermissions = permissions.map((p) =>
+  //     this.UserRepository.addPermission(id, p)
+  //   );
+  //   const updatedUser = await Promise.all(addPermissions);
+  //   return updatedUser[updatedUser.length - 1];
+  // }
 
-  async removePermissions(
-    id: string,
-    permissions: string[]
-  ): Promise<IUserDocument | null> {
-    const user = await this.UserRepository.findUserById(id);
-    if (!user) {
-      throw new AppError(StatusCodes.NOT_FOUND, "User not found");
-    }
+  // async removePermissions(
+  //   id: string,
+  //   permissions: string[]
+  // ): Promise<IUserDocument | null> {
+  //   const user = await this.UserRepository.findUserById(id);
+  //   if (!user) {
+  //     throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+  //   }
 
-    if (user.userRole !== UserRoles.Agency) {
-      throw new AppError(StatusCodes.BAD_REQUEST, "User is not a moderator");
-    }
+  //   if (user.userRole !== UserRoles.Agency) {
+  //     throw new AppError(StatusCodes.BAD_REQUEST, "User is not a moderator");
+  //   }
 
-    if (user.userPermissions.length === 0) {
-      const demotedUser = await this.UserRepository.findUserByIdAndUpdate(id, {
-        userRole: UserRoles.User,
-      });
-      if (demotedUser)
-        throw new AppError(
-          StatusCodes.CONFLICT,
-          "The user had no previous permissions demoted to user"
-        );
-    }
+  //   if (user.userPermissions.length === 0) {
+  //     const demotedUser = await this.UserRepository.findUserByIdAndUpdate(id, {
+  //       userRole: UserRoles.User,
+  //     });
+  //     if (demotedUser)
+  //       throw new AppError(
+  //         StatusCodes.CONFLICT,
+  //         "The user had no previous permissions demoted to user"
+  //       );
+  //   }
 
-    if (
-      user.userPermissions.length === 1 ||
-      user.userPermissions.length === permissions.length
-    ) {
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        "You cannot remove all permissions. Demote the user instead"
-      );
-    }
+  //   if (
+  //     user.userPermissions.length === 1 ||
+  //     user.userPermissions.length === permissions.length
+  //   ) {
+  //     throw new AppError(
+  //       StatusCodes.BAD_REQUEST,
+  //       "You cannot remove all permissions. Demote the user instead"
+  //     );
+  //   }
 
-    const invalidPermission = permissions.filter(
-      (p) => !user.userPermissions.includes(p)
-    );
-    if (invalidPermission.length > 0) {
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        `Does not have permissions: ${invalidPermission.join(", ")}`
-      );
-    }
+  //   const invalidPermission = permissions.filter(
+  //     (p) => !user.userPermissions.includes(p)
+  //   );
+  //   if (invalidPermission.length > 0) {
+  //     throw new AppError(
+  //       StatusCodes.BAD_REQUEST,
+  //       `Does not have permissions: ${invalidPermission.join(", ")}`
+  //     );
+  //   }
 
-    const removePermissions = permissions.map((p) =>
-      this.UserRepository.removePermission(id, p)
-    );
-    const updatedUser = await Promise.all(removePermissions);
-    return updatedUser[updatedUser.length - 1];
-  }
+  //   const removePermissions = permissions.map((p) =>
+  //     this.UserRepository.removePermission(id, p)
+  //   );
+  //   const updatedUser = await Promise.all(removePermissions);
+  //   return updatedUser[updatedUser.length - 1];
+  // }
 
   async createGift(gift: IGift): Promise<IGiftDocument> {
     const previewImageUrl = await uploadFileToCloudinary({
@@ -402,5 +441,141 @@ export default class AdminUserService implements IAdminUserService {
     const categories = await this.GiftRepository.getGiftCategories(query);
     const values = categories.map((category) => category.category);
     return values;
+  }
+
+  async createPortalUser(user: IPortalUser): Promise<IPortalUser> {
+    const existingUserId =
+      await this.PortalUserRepository.getPortalUserByUserId(user.userId);
+    if (existingUserId)
+      throw new AppError(
+        StatusCodes.CONFLICT,
+        `UserId -> ${user.userId} already exists`
+      );
+    const hashedPassword = await bcrypt.hash(user.password, 10);
+    user.password = hashedPassword;
+    const newPortalUser = await this.PortalUserRepository.createPortalUser(
+      user
+    );
+    if (!newPortalUser)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to create portal user"
+      );
+    return newPortalUser;
+  }
+  async getPortalUser(id: string): Promise<IPortalUser> {
+    const role = await this.PortalUserRepository.getPortalUserById(id);
+    if (!role)
+      throw new AppError(StatusCodes.NOT_FOUND, "Role details not found");
+    return role;
+  }
+
+  async deletePortalUser(id: string): Promise<IPortalUser> {
+    const deletedRole = await this.PortalUserRepository.deletePortalUser(id);
+    if (!deletedRole)
+      throw new AppError(StatusCodes.NOT_FOUND, "Role not found");
+    return deletedRole;
+  }
+
+  async addPermissionsToPortalUser(
+    roleId: string,
+    permissions: string[]
+  ): Promise<IPortalUser> {
+    const portalUser = await this.PortalUserRepository.getPortalUserById(
+      roleId
+    );
+    if (!portalUser) {
+      throw new AppError(StatusCodes.NOT_FOUND, "Portal user not found");
+    }
+
+    const existingPermissions = new Set(portalUser.userPermissions);
+    const permissionsToAdd = permissions.filter(
+      (p) => !existingPermissions.has(p)
+    );
+
+    if (permissionsToAdd.length === 0) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "All specified permissions already exist for this role."
+      );
+    }
+
+    const updatedPermissions = [...existingPermissions, ...permissionsToAdd];
+
+    const updatedPortalUser = await this.PortalUserRepository.updatePortalUser(
+      roleId,
+      { userPermissions: updatedPermissions }
+    );
+    if (!updatedPortalUser) {
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to add permissions to portal user"
+      );
+    }
+    return updatedPortalUser;
+  }
+
+  async removePermissionsFromPortalUser(
+    roleId: string,
+    permissions: string[]
+  ): Promise<IPortalUser> {
+    const portalUser = await this.PortalUserRepository.getPortalUserById(
+      roleId
+    );
+    if (!portalUser) {
+      throw new AppError(StatusCodes.NOT_FOUND, "Portal user not found");
+    }
+
+    const existingPermissions = new Set(portalUser.userPermissions);
+    const permissionsToRemove = permissions.filter((p) =>
+      existingPermissions.has(p)
+    );
+
+    if (permissionsToRemove.length === 0) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "None of the specified permissions exist for this role."
+      );
+    }
+
+    const updatedPermissions = portalUser.userPermissions.filter(
+      (p) => !permissionsToRemove.includes(p)
+    );
+
+    const updatedPortalUser = await this.PortalUserRepository.updatePortalUser(
+      roleId,
+      { userPermissions: updatedPermissions }
+    );
+    if (!updatedPortalUser) {
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to remove permissions from portal user"
+      );
+    }
+    return updatedPortalUser;
+  }
+
+  async updateRoleActivityZone(id: string, zone: ActivityZoneState, dateTill: string): Promise<IPortalUserDocument> {
+    const portalUser = await this.PortalUserRepository.getPortalUserById(id);
+    if (!portalUser) {
+      throw new AppError(StatusCodes.NOT_FOUND, "Portal user not found");
+    }
+
+    let payload: Record<string, any> = {};
+    payload["zone"] = zone;
+    payload["createdAt"] = new Date().toISOString();
+
+    if (zone === ActivityZoneState.temporaryBlock && dateTill != null) {
+      payload["expire"] = dateTill;
+    }
+    const finalPayload = { activityZone: payload };
+    const updatedPortalUser = await this.PortalUserRepository.updatePortalUser(id, finalPayload);
+    if (!updatedPortalUser) {
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to update portal user activity zone"
+      );
+    }
+    return updatedPortalUser;
   }
 }

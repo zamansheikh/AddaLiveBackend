@@ -7,8 +7,17 @@ import sendResponse, {
 } from "../../core/Utils/send_response";
 import AppError from "../../core/errors/app_errors";
 import { log } from "console";
-import { AdminPowers, UserRoles } from "../../core/Utils/enums";
-import { validatePromoteUserPermission } from "../../core/Utils/helper_functions";
+import {
+  ActivityZoneState,
+  AdminPowers,
+  UserRoles,
+} from "../../core/Utils/enums";
+import {
+  validateblockUser,
+  validateCreatePortalUserData,
+  validatePermissions,
+  validatePromoteUserPermission,
+} from "../../core/Utils/helper_functions";
 
 export default class AdminUserController {
   AdminUserService: IAdminUserService;
@@ -56,13 +65,13 @@ export default class AdminUserController {
   updateAdmin = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.user!;
     const { username, password, email, role, coins } = req.body;
+    if (coins)
+      throw new AppError(
+        StatusCodes.FORBIDDEN,
+        "Coins cannot be updated directly"
+      );
     if (role)
       throw new AppError(StatusCodes.FORBIDDEN, "Role cannot be updated");
-    if (coins && Number(coins) <= 0)
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        "Coins cannot be less than or equal to 0"
-      );
     if (!username && !password && !email && !coins)
       throw new AppError(
         StatusCodes.BAD_REQUEST,
@@ -81,8 +90,6 @@ export default class AdminUserController {
       message: "Admin updated successfully",
     });
   });
-
-
 
   deleteAdmin = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
@@ -106,7 +113,32 @@ export default class AdminUserController {
     });
   });
 
-
+  assignCoinToAdmin = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const { coins } = req.body;
+    if (!coins)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "User ID and coins are required"
+      );
+    if (isNaN(Number(coins)))
+      throw new AppError(StatusCodes.BAD_REQUEST, "Coins must be a number");
+    if (coins <= 0)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Coins must be greater than 0"
+      );
+    const updatedUser = await this.AdminUserService.assignCoinToSelf(
+      id,
+      Number(coins)
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: updatedUser,
+      message: "Coins assigned to user successfully",
+    });
+  });
 
   getAllModerators = catchAsync(async (req: Request, res: Response) => {
     const moderators = await this.AdminUserService.getAllModerators(
@@ -121,39 +153,22 @@ export default class AdminUserController {
   });
 
   moderatorPermissionEdit = catchAsync(async (req: Request, res: Response) => {
-    const { userId, permissions } = req.body;
-    validatePromoteUserPermission(permissions);
-    const updatedUser = await this.AdminUserService.updatePermissions(
-      userId,
-      permissions
-    );
     sendResponse(res, {
-      statusCode: StatusCodes.OK,
+      statusCode: StatusCodes.BAD_GATEWAY,
       success: true,
-      result: updatedUser,
-      message: `Moderator permissions updated successfully: ${permissions.join(
-        ", "
-      )}`,
+      result: {},
+      message: "This Api is No longer Supported",
     });
   });
 
   removePermissions = catchAsync(async (req: Request, res: Response) => {
-    const { userId, permissions } = req.body;
-    validatePromoteUserPermission(permissions);
-    const updatedUser = await this.AdminUserService.removePermissions(
-      userId,
-      permissions
-    );
     sendResponse(res, {
-      statusCode: StatusCodes.OK,
+      statusCode: StatusCodes.BAD_GATEWAY,
       success: true,
-      result: updatedUser,
-      message: `Moderator permissions removed successfully: ${permissions.join(
-        ", "
-      )}`,
+      result: {},
+      message: "This Api is No longer Supported",
     });
   });
-
 
   retrieveAllUsers = catchAsync(async (req: Request, res: Response) => {
     const users = await this.AdminUserService.retrieveAllUsers(req.query);
@@ -165,8 +180,6 @@ export default class AdminUserController {
       message: "Users have been successfully retrieved.",
     });
   });
-
-
 
   updateActivityZone = catchAsync(async (req: Request, res: Response) => {
     const { id, zone, date_till } = req.body;
@@ -315,6 +328,89 @@ export default class AdminUserController {
       result: giftCategories,
       message: "Gift categories retrieved successfully",
     });
+  });
+
+  createPortalUser = catchAsync(async (req: Request, res: Response) => {
+    validateCreatePortalUserData(req.body);
+    const newPortalUser = await this.AdminUserService.createPortalUser(
+      req.body
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.CREATED,
+      success: true,
+      result: newPortalUser,
+      message: "Role created successfully",
+    });
+  });
+
+  getRoleDetails = catchAsync(async (req: Request, res: Response) => {
+    const { roleId } = req.params;
+    const role = await this.AdminUserService.getPortalUser(roleId);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: role,
+      message: "Role details retrieved successfully",
+    });
+  });
+  deleteRole = catchAsync(async (req: Request, res: Response) => {
+    const { roleId } = req.params;
+    const deletedRole = await this.AdminUserService.deletePortalUser(roleId);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: deletedRole,
+      message: "Role deleted successfully",
+    });
+  });
+
+  addRolePermissions = catchAsync(async (req: Request, res: Response) => {
+    const { roleId } = req.params;
+    const { permissions } = req.body;
+    validatePermissions(permissions);
+    // Assuming a method in AdminUserService to add permissions to a portal user
+    // This method would need to be implemented in admin_user_service.ts
+    const updatedPortalUser =
+      await this.AdminUserService.addPermissionsToPortalUser(
+        roleId,
+        permissions
+      );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: updatedPortalUser,
+      message: "Permissions added successfully to portal user",
+    });
+  });
+
+  removeRolePermissions = catchAsync(async (req: Request, res: Response) => {
+    const { roleId } = req.params;
+    const { permissions } = req.body;
+    validatePermissions(permissions);
+    // Assuming a method in AdminUserService to remove permissions from a portal user
+    // This method would need to be implemented in admin_user_service.ts
+    const updatedPortalUser =
+      await this.AdminUserService.removePermissionsFromPortalUser(
+        roleId,
+        permissions
+      );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: updatedPortalUser,
+      message: "Permissions removed successfully from portal user",
+    });
+  });
+
+  blockPortalUser = catchAsync(async (req: Request, res: Response) => {
+    const { targetId, zone, date_till } = req.body;
+    validateblockUser(req.body);
+    const result = await this.AdminUserService.updateRoleActivityZone(
+      targetId,
+      zone,
+      date_till
+    );
+    sendResponseEnhanced(res, result);
   });
 }
 

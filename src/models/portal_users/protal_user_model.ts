@@ -1,8 +1,9 @@
 import mongoose from "mongoose";
 import { IPortalUserDocument } from "../../entities/portal_users/portal_user_interface";
-import { DatabaseNames } from "../../core/Utils/enums";
+import { ActivityZoneState, DatabaseNames } from "../../core/Utils/enums";
 
-const portaLUserSchema = new mongoose.Schema<IPortalUserDocument>({
+const portaLUserSchema = new mongoose.Schema<IPortalUserDocument>(
+  {
     name: {
       type: String,
       required: true,
@@ -22,6 +23,10 @@ const portaLUserSchema = new mongoose.Schema<IPortalUserDocument>({
       type: Number,
       default: 0,
     },
+    designation: {
+      type: String,
+      required: true,
+    },
     diamonds: {
       type: Number,
       default: 0,
@@ -35,12 +40,27 @@ const portaLUserSchema = new mongoose.Schema<IPortalUserDocument>({
       type: [String],
       default: [],
     },
+    activityZone: {
+      zone: {
+        type: String,
+        enum: ActivityZoneState,
+        default: ActivityZoneState.safe,
+      },
+      createdAt: { type: Date },
+      expire: { type: Date },
+    },
     userRole: {
       type: String,
       required: true,
     },
-}, { timestamps: true });
+  },
+  { timestamps: true }
+);
 
-const PortalUser = mongoose.model<IPortalUserDocument>(DatabaseNames.PortalUsers, portaLUserSchema, DatabaseNames.PortalUsers);
+const PortalUser = mongoose.model<IPortalUserDocument>(
+  DatabaseNames.PortalUsers,
+  portaLUserSchema,
+  DatabaseNames.PortalUsers
+);
 
 export default PortalUser;

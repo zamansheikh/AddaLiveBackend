@@ -17,6 +17,8 @@ import multer from "multer";
 import { upload } from "../core/middlewares/multer";
 import { GiftRepository } from "../repository/gifts/gifts_repositories";
 import Gifts from "../models/gifts/gifts_model";
+import PortalUser from "../models/portal_users/protal_user_model";
+import PortalUserRepository from "../repository/portal_user/portal_user_repository";
 
 const router = express.Router();
 
@@ -24,12 +26,14 @@ const userRepository = new UserRepository(User);
 const userStatsRepository = new UserStatsRepository(UserStats);
 const adminRepository = new AdminRepository(Admin);
 const giftRepository = new GiftRepository(Gifts);
+const portalUserRepository = new PortalUserRepository(PortalUser);
 
 const adminUserService = new AdminUserService(
   userRepository,
   userStatsRepository,
   adminRepository,
-  giftRepository
+  giftRepository,
+  portalUserRepository
 );
 const adminUserController = new AdminUserController(adminUserService);
 
@@ -38,12 +42,12 @@ router
   .post(adminUserController.registerAdmin)
   .put(authenticate([UserRoles.Admin]), adminUserController.updateAdmin)
   .delete(authenticate([UserRoles.Admin]), adminUserController.deleteAdmin)
-  .get(authenticate([UserRoles.Admin]),adminUserController.getAdminProfile )
+  .get(authenticate([UserRoles.Admin]), adminUserController.getAdminProfile);
+
+router.route("/auth/assign-coin").put(authenticate([UserRoles.Admin]), adminUserController.assignCoinToAdmin );
 
 router.route("/login").post(adminUserController.loginAdmin);
 
-
-  
 router
   .route("/users/moderator-permissions")
   .put(
@@ -55,12 +59,9 @@ router
   .route("/users/remove-permissions")
   .put(authenticate([UserRoles.Admin]), adminUserController.removePermissions);
 
-
-
 router
   .route("/users/moderators")
   .get(authenticate([UserRoles.Admin]), adminUserController.getAllModerators);
-
 
 router.get(
   "/users",
@@ -95,7 +96,12 @@ router
   )
   .get(authenticate(), adminUserController.getGifts);
 
-router.route("/gift-category").get(authenticate([UserRoles.Admin, UserRoles.Agency]), adminUserController.getGiftCategory)
+router
+  .route("/gift-category")
+  .get(
+    authenticate([UserRoles.Admin, UserRoles.Agency]),
+    adminUserController.getGiftCategory
+  );
 
 router
   .route("/gift/:id")
@@ -107,6 +113,25 @@ router
     ]),
     adminUserController.updateGift
   )
-  .delete(authenticate(), adminUserController.deleteGift);
+  .delete(authenticate([UserRoles.Admin]), adminUserController.deleteGift);
+
+router
+  .route("/create-role")
+  .post(authenticate([UserRoles.Admin]), adminUserController.createPortalUser);
+
+router
+  .route("/role/:roleId")
+  .get(authenticate([UserRoles.Admin]), adminUserController.getRoleDetails)
+  .delete(authenticate([UserRoles.Admin]), adminUserController.deleteRole);
+
+router
+  .route("/role/permissions/add/:roleId")
+  .put(authenticate([UserRoles.Admin]), adminUserController.addRolePermissions);
+router
+  .route("/role/permissions/remove/:roleId")
+  .put(
+    authenticate([UserRoles.Admin]), adminUserController.removeRolePermissions );
+
+router.route("/role/activity-zone").put(authenticate([UserRoles.Admin]), adminUserController.blockPortalUser);
 
 export default router;
