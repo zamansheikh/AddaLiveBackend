@@ -46,16 +46,16 @@ router
 
 router.route("/login").post(adminUserController.loginAdmin);
 
-// router
-//   .route("/users/moderator-permissions")
-//   .put(
-//     authenticate([UserRoles.Admin]),
-//     adminUserController.moderatorPermissionEdit
-//   );
+router
+  .route("/users/moderator-permissions")
+  .put(
+    authenticate([UserRoles.Admin]),
+    adminUserController.moderatorPermissionEdit
+  );
 
-// router
-//   .route("/users/remove-permissions")
-//   .put(authenticate([UserRoles.Admin]), adminUserController.removePermissions);
+router
+  .route("/users/remove-permissions")
+  .put(authenticate([UserRoles.Admin]), adminUserController.removePermissions);
 
 router
   .route("/users/moderators")
