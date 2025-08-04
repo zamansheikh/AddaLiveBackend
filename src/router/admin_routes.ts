@@ -116,10 +116,12 @@ router
 router
   .route("/create-role")
   .post(authenticate([UserRoles.Admin]), adminUserController.createPortalUser);
-  
+
 router
-  .route("/role/:id")
+  .route("/role/:roleId")
   .get(authenticate([UserRoles.Admin]), adminUserController.getRoleDetails)
   .delete(authenticate([UserRoles.Admin]), adminUserController.deleteRole);
+
+  router.route("/role/permissions/:roleId")
 
 export default router;

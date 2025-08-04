@@ -322,8 +322,8 @@ export default class AdminUserController {
   });
 
   getRoleDetails = catchAsync(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const role = await this.AdminUserService.getPortalUser(id);
+    const { roleId } = req.params;
+    const role = await this.AdminUserService.getPortalUser(roleId);
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
@@ -332,8 +332,8 @@ export default class AdminUserController {
     });
   });
   deleteRole = catchAsync(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const deletedRole = await this.AdminUserService.deletePortalUser(id);
+    const { roleId } = req.params;
+    const deletedRole = await this.AdminUserService.deletePortalUser(roleId);
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
