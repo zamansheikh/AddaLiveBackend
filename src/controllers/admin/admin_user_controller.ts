@@ -8,7 +8,11 @@ import sendResponse, {
 import AppError from "../../core/errors/app_errors";
 import { log } from "console";
 import { AdminPowers, UserRoles } from "../../core/Utils/enums";
-import { validateCreatePortalUserData, validatePromoteUserPermission } from "../../core/Utils/helper_functions";
+import {
+  validateCreatePortalUserData,
+  validatePermissions,
+  validatePromoteUserPermission,
+} from "../../core/Utils/helper_functions";
 
 export default class AdminUserController {
   AdminUserService: IAdminUserService;
@@ -134,19 +138,11 @@ export default class AdminUserController {
   });
 
   removePermissions = catchAsync(async (req: Request, res: Response) => {
-    const { userId, permissions } = req.body;
-    validatePromoteUserPermission(permissions);
-    const updatedUser = await this.AdminUserService.removePermissions(
-      userId,
-      permissions
-    );
     sendResponse(res, {
-      statusCode: StatusCodes.OK,
+      statusCode: StatusCodes.BAD_GATEWAY,
       success: true,
-      result: updatedUser,
-      message: `Moderator permissions removed successfully: ${permissions.join(
-        ", "
-      )}`,
+      result: {},
+      message: "This Api is No longer Supported",
     });
   });
 
@@ -312,7 +308,9 @@ export default class AdminUserController {
 
   createPortalUser = catchAsync(async (req: Request, res: Response) => {
     validateCreatePortalUserData(req.body);
-    const newPortalUser = await this.AdminUserService.createPortalUser(req.body);
+    const newPortalUser = await this.AdminUserService.createPortalUser(
+      req.body
+    );
     sendResponse(res, {
       statusCode: StatusCodes.CREATED,
       success: true,
@@ -339,6 +337,44 @@ export default class AdminUserController {
       success: true,
       result: deletedRole,
       message: "Role deleted successfully",
+    });
+  });
+
+  addRolePermissions = catchAsync(async (req: Request, res: Response) => {
+    const { roleId } = req.params;
+    const { permissions } = req.body;
+    validatePermissions(permissions);
+    // Assuming a method in AdminUserService to add permissions to a portal user
+    // This method would need to be implemented in admin_user_service.ts
+    const updatedPortalUser =
+      await this.AdminUserService.addPermissionsToPortalUser(
+        roleId,
+        permissions
+      );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: updatedPortalUser,
+      message: "Permissions added successfully to portal user",
+    });
+  });
+
+  removeRolePermissions = catchAsync(async (req: Request, res: Response) => {
+    const { roleId } = req.params;
+    const { permissions } = req.body;
+    validatePermissions(permissions);
+    // Assuming a method in AdminUserService to remove permissions from a portal user
+    // This method would need to be implemented in admin_user_service.ts
+    const updatedPortalUser =
+      await this.AdminUserService.removePermissionsFromPortalUser(
+        roleId,
+        permissions
+      );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: updatedPortalUser,
+      message: "Permissions removed successfully from portal user",
     });
   });
 }

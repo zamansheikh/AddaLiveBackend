@@ -30,26 +30,7 @@ export function isVideoFile(filename: string): boolean {
 }
 
 export function validatePromoteUserPermission(permissions: string[]): void {
-  if (!permissions)
-    throw new AppError(
-      StatusCodes.BAD_REQUEST,
-      "at least one value in the permissions is required"
-    );
-  if (!Array.isArray(permissions))
-    throw new AppError(StatusCodes.BAD_REQUEST, "permissions must be an array");
-  if (permissions.length === 0)
-    throw new AppError(
-      StatusCodes.BAD_REQUEST,
-      "permissions array must contain at least one permission"
-    );
-  const invalidatePermissions = permissions.filter(
-    (p) => !Object.values(AdminPowers).includes(p as AdminPowers)
-  );
-  if (invalidatePermissions.length > 0)
-    throw new AppError(
-      StatusCodes.BAD_REQUEST,
-      `Invalid permissions: ${invalidatePermissions.join(", ")}`
-    );
+ validatePermissions(permissions);
 }
 
 export function canUserUpdate(
@@ -96,18 +77,21 @@ export function validateCreatePortalUserData(
       StatusCodes.BAD_REQUEST,
       `Admin cannot create -> ${userRole}`
     );
-  if (!Array.isArray(userPermissions))
+  validatePermissions(userPermissions);
+}
+
+export function validatePermissions(permissions: any) {
+  if (!permissions)
+    throw new AppError(StatusCodes.BAD_REQUEST, "permissions are required");
+  if (!Array.isArray(permissions))
+    throw new AppError(StatusCodes.BAD_REQUEST, "permissions must be an array");
+  if (permissions.length === 0)
     throw new AppError(
       StatusCodes.BAD_REQUEST,
-      "userPermissions must be an array"
+      "permissions array must contain at least one permission"
     );
-  if (userPermissions.length === 0)
-    throw new AppError(
-      StatusCodes.BAD_REQUEST,
-      "userPermissions array must contain at least one permission"
-    );
-  const invalidatePermissions = userPermissions.filter(
-    (p) => !Object.values(AdminPowers).includes(p as AdminPowers)
+  const invalidatePermissions = permissions.filter(
+    (p: any) => !Object.values(AdminPowers).includes(p as AdminPowers)
   );
   if (invalidatePermissions.length > 0)
     throw new AppError(

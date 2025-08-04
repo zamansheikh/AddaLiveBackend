@@ -122,6 +122,12 @@ router
   .get(authenticate([UserRoles.Admin]), adminUserController.getRoleDetails)
   .delete(authenticate([UserRoles.Admin]), adminUserController.deleteRole);
 
-  router.route("/role/permissions/:roleId")
+router
+  .route("/role/permissions/add/:roleId")
+  .put(authenticate([UserRoles.Admin]), adminUserController.addRolePermissions);
+router
+  .route("/role/permissions/remove/:roleId")
+  .put(
+    authenticate([UserRoles.Admin]), adminUserController.removeRolePermissions );
 
 export default router;
