@@ -101,15 +101,15 @@ export function validatePermissions(permissions: any) {
 }
 
 export function validateblockUser(body: any): void {
-  const { id, zone, dateTill } = body;
-  if (!id || !zone)
+  const { targetId, zone, date_till } = body;
+  if (!targetId || !zone)
     throw new AppError(
       StatusCodes.BAD_REQUEST,
-      "User ID and activity zone are required"
+      "Target ID and activity zone are required"
     );
   if (!Object.values(ActivityZoneState).includes(zone))
     throw new AppError(StatusCodes.BAD_REQUEST, "Invalid activity zone");
-  if (zone === ActivityZoneState.temporaryBlock && !dateTill)
+  if (zone === ActivityZoneState.temporaryBlock && !date_till)
     throw new AppError(
       StatusCodes.BAD_REQUEST,
       "dateTill is required for temporary block"

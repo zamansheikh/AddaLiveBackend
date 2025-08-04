@@ -132,6 +132,6 @@ router
   .put(
     authenticate([UserRoles.Admin]), adminUserController.removeRolePermissions );
 
-router.route("/role/activity-zone")
+router.route("/role/activity-zone").put(authenticate([UserRoles.Admin]), adminUserController.blockPortalUser);
 
 export default router;

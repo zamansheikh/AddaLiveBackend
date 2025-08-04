@@ -403,10 +403,10 @@ export default class AdminUserController {
   });
 
   blockPortalUser = catchAsync(async (req: Request, res: Response) => {
-    const { id, zone, date_till } = req.body;
+    const { targetId, zone, date_till } = req.body;
     validateblockUser(req.body);
     const result = await this.AdminUserService.updateRoleActivityZone(
-      id,
+      targetId,
       zone,
       date_till
     );
