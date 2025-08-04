@@ -60,13 +60,10 @@ export default class AdminUserController {
   updateAdmin = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.user!;
     const { username, password, email, role, coins } = req.body;
+    if(coins)
+      throw new AppError(StatusCodes.FORBIDDEN, "Coins cannot be updated directly");
     if (role)
       throw new AppError(StatusCodes.FORBIDDEN, "Role cannot be updated");
-    if (coins && Number(coins) <= 0)
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        "Coins cannot be less than or equal to 0"
-      );
     if (!username && !password && !email && !coins)
       throw new AppError(
         StatusCodes.BAD_REQUEST,
