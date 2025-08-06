@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString } from "class-validator";
+import { IsNumber, IsOptional, isString, IsString } from "class-validator";
 
 export class GiftUserDto {
     @IsString()
@@ -13,4 +13,7 @@ export class GiftUserDto {
 
     @IsString()
     roomId!: string;
+
+    @IsString()
+    giftId!:string
 }

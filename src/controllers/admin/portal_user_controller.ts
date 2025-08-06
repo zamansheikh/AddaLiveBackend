@@ -122,15 +122,12 @@ export class PortalUserControllers {
         StatusCodes.BAD_REQUEST,
         "User ID and coins are required"
       );
+    if (isNaN(Number(coins)))
+      throw new AppError(StatusCodes.BAD_REQUEST, "Coins must be a number");
     if (coins <= 0)
       throw new AppError(
         StatusCodes.BAD_REQUEST,
         "Coins must be greater than 0"
-      );
-    if (!Object.values(UserRoles).includes(role as UserRoles))
-      throw new AppError(
-        StatusCodes.UNAUTHORIZED,
-        "Role is not of correct type"
       );
     const updatedUser = await this.Service.assignCoinToUser(
       userId,

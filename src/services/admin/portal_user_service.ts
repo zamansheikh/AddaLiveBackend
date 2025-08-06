@@ -41,9 +41,10 @@ export interface ISharedPowerService {
   ): Promise<IUserDocument | null>;
   assignCoinToUser(
     userId: string,
+    userRole: UserRoles,
     coins: number,
     myId: string,
-    role: UserRoles
+    myRole: UserRoles
   ): Promise<IUSerStatsDocument | null>;
   demoteUser(userId: string): Promise<IUserDocument | null>;
 }

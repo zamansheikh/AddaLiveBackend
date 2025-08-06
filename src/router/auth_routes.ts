@@ -13,6 +13,8 @@ import UserStatsRepository from "../repository/userstats/userstats_repository";
 import { GiftUserDto } from "../dtos/auth/gift_user_dto";
 import { validate } from "class-validator";
 import { GenerateTokenDto } from "../dtos/auth/generate_token_dto";
+import { GiftRepository } from "../repository/gifts/gifts_repositories";
+import Gifts from "../models/gifts/gifts_model";
 
 
 
@@ -21,7 +23,8 @@ const router = express.Router();
 
 const userRepository = new UserRepository(User);
 const userstatsRepository = new UserStatsRepository(UserStats);
-const authService = new AuthService(userRepository, userstatsRepository);
+const giftRepository = new GiftRepository(Gifts);
+const authService = new AuthService(userRepository, userstatsRepository, giftRepository);
 const authController = new AuthController(authService);
 
 
