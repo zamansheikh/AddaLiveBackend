@@ -86,7 +86,7 @@ export async function registerGroupRoomHandler(
     io.emit(SocketChannels.getRooms, serializedRoom);
 
     // ! if unintended users are also getting the event, use io.to(roomId),
-    // io.to(roomId).emit(SocketChannels.roomList, Object.keys(hostedRooms));
+    io.to(roomId).emit(SocketChannels.roomList, Object.keys(hostedRooms));
   });
 
   socket.on(SocketChannels.deleteRoom, ({ roomId }) => {

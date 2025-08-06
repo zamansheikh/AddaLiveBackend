@@ -22,6 +22,11 @@ export class GiftRepository implements IGiftRepository {
         const newGift = new this.Model(gift);
         return await newGift.save();
     }
+    async getGiftById(id: string): Promise<IGiftDocument> {
+        const gift = await this.Model.findById(id);
+        if (!gift) throw new AppError(StatusCodes.NOT_FOUND, "Gift not found");
+        return gift;
+    }
 
     async findGiftById(id: string): Promise<IGiftDocument | null> {
         return await this.Model.findById(id);
