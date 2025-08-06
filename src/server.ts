@@ -19,7 +19,7 @@ import StoryRouter from "./router/story_routes";
 import ChatRouter from "./router/chat_router";
 import GameRouter from "./router/game_router";
 import FollowerRouter from "./router/follower_routes";
-import PowerSharedRoutes from "./router/power_shared_route";
+import PowerSharedRoutes from "./router/portal_user_routes";
 
 // error handlers
 import globalErrorHandler from './core/errors/global_error_handlar';

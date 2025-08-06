@@ -89,7 +89,11 @@ export interface IAdminUserService {
     roleId: string,
     permissions: string[]
   ): Promise<IPortalUser>;
-  updateRoleActivityZone(id: string, zone: ActivityZoneState, dateTill: string): Promise<IPortalUserDocument>;
+  updateRoleActivityZone(
+    id: string,
+    zone: ActivityZoneState,
+    dateTill: string
+  ): Promise<IPortalUserDocument>;
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -451,6 +455,24 @@ export default class AdminUserService implements IAdminUserService {
         StatusCodes.CONFLICT,
         `UserId -> ${user.userId} already exists`
       );
+    if (user.userRole == UserRoles.Reseller && user.parentCreator == null)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Reseller must have a parent creator"
+      );
+    if (user.userRole == UserRoles.Reseller) {
+      const creatorUser = await this.PortalUserRepository.getPortalUserById(
+        user.parentCreator!.toString()
+      );
+      if (!creatorUser)
+        throw new AppError(StatusCodes.NOT_FOUND, "Parent creator not found");
+      if (creatorUser.userRole != UserRoles.Merchant)
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          "Parent creator must be a merchant"
+        );
+    }
+
     const hashedPassword = await bcrypt.hash(user.password, 10);
     user.password = hashedPassword;
     const newPortalUser = await this.PortalUserRepository.createPortalUser(
@@ -555,7 +577,11 @@ export default class AdminUserService implements IAdminUserService {
     return updatedPortalUser;
   }
 
-  async updateRoleActivityZone(id: string, zone: ActivityZoneState, dateTill: string): Promise<IPortalUserDocument> {
+  async updateRoleActivityZone(
+    id: string,
+    zone: ActivityZoneState,
+    dateTill: string
+  ): Promise<IPortalUserDocument> {
     const portalUser = await this.PortalUserRepository.getPortalUserById(id);
     if (!portalUser) {
       throw new AppError(StatusCodes.NOT_FOUND, "Portal user not found");
@@ -569,7 +595,10 @@ export default class AdminUserService implements IAdminUserService {
       payload["expire"] = dateTill;
     }
     const finalPayload = { activityZone: payload };
-    const updatedPortalUser = await this.PortalUserRepository.updatePortalUser(id, finalPayload);
+    const updatedPortalUser = await this.PortalUserRepository.updatePortalUser(
+      id,
+      finalPayload
+    );
     if (!updatedPortalUser) {
       throw new AppError(
         StatusCodes.INTERNAL_SERVER_ERROR,

@@ -55,7 +55,7 @@ export default class AuthService implements IAuthService {
         }
         const userWithStats = existingUser.toObject();
         userWithStats.stats = userStats;
-        const token = jwt.sign({ id: existingUser._id, role: existingUser.userRole }, SECRET);
+        const token = jwt.sign({ id: existingUser._id, role: existingUser.userRole, permissions: existingUser.userPermissions }, SECRET);
         return { user: userWithStats, token };
     }
 
