@@ -7,6 +7,7 @@ import AppError from '../errors/app_errors';
 interface JwtPayload {
   id: string;
   role: string;
+  permissions: string[];
   // Add more fields if needed
 }
 
@@ -19,7 +20,7 @@ declare global {
   }
 }
 
-const secret = process.env.JWT_SECRET || 'your-default-secret';
+const secret = process.env.JWT_SECRET || 'jwt_secret';
 
 // Higher-order middleware to accept roles
 export const authenticate =

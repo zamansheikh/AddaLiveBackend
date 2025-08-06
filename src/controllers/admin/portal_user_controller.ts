@@ -1,17 +1,62 @@
 import { Request, Response } from "express";
 import AppError from "../../core/errors/app_errors";
 import catchAsync from "../../core/Utils/catch_async";
-import { ISharedPowerService } from "../../services/admin/shared_power_service";
+import { ISharedPowerService } from "../../services/admin/portal_user_service";
 import { StatusCodes } from "http-status-codes";
 import sendResponse from "../../core/Utils/send_response";
 import { UserRoles } from "../../core/Utils/enums";
 import { validatePromoteUserPermission } from "../../core/Utils/helper_functions";
 
-export class SharedPowerController {
+export class PortalUserControllers {
   Service: ISharedPowerService;
   constructor(Service: ISharedPowerService) {
     this.Service = Service;
   }
+
+  loginPortalUser = catchAsync(async (req: Request, res: Response) => {
+    const { userId, password } = req.body;
+    if (!userId || !password)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "userId and password are required"
+      );
+
+    const { user, token } = await this.Service.loginPortalUser(
+      userId,
+      password
+    );
+
+    sendResponse(res, {
+      statusCode: StatusCodes.BAD_GATEWAY,
+      success: true,
+      result: user,
+      access_token: token,
+      message: "loggged in successfully",
+    });
+  });
+
+  updateMyProfile = catchAsync(async (req: Request, res: Response) => {
+    const { id, role } = req.user!;
+    const { password, name } = req.body;
+    const file = req.file!;
+    if (!password && !name && !file)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "At least one field is required (password, name, avatar)"
+      );
+
+    const updatedProfile = await this.Service.updateMyProfile(id, {
+      password,
+      name,
+      avatar: file as Express.Multer.File,
+    });
+    sendResponse(res, {
+      statusCode: StatusCodes.BAD_GATEWAY,
+      success: true,
+      result: updatedProfile,
+      message: "profile updated succesfully",
+    });
+  });
 
   searchUsersByEmail = catchAsync(async (req: Request, res: Response) => {
     const { email } = req.query;
@@ -24,7 +69,7 @@ export class SharedPowerController {
       email as string,
       req.query
     );
-    
+
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
@@ -77,15 +122,12 @@ export class SharedPowerController {
         StatusCodes.BAD_REQUEST,
         "User ID and coins are required"
       );
+    if (isNaN(Number(coins)))
+      throw new AppError(StatusCodes.BAD_REQUEST, "Coins must be a number");
     if (coins <= 0)
       throw new AppError(
         StatusCodes.BAD_REQUEST,
         "Coins must be greater than 0"
-      );
-    if (!Object.values(UserRoles).includes(role as UserRoles))
-      throw new AppError(
-        StatusCodes.UNAUTHORIZED,
-        "Role is not of correct type"
       );
     const updatedUser = await this.Service.assignCoinToUser(
       userId,

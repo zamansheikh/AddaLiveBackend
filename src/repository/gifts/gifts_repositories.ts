@@ -5,6 +5,7 @@ import { QueryBuilder } from "../../core/Utils/query_builder";
 
 export interface IGiftRepository {
     createGift(gift: IGift): Promise<IGiftDocument>;
+    getGiftById(id: string): Promise<IGiftDocument>;
     getGifts(): Promise<IGiftDocument[]>;
     updateGift(id: string, gift: Partial<IGift>): Promise<IGiftDocument>;
     deleteGift(id: string): Promise<IGiftDocument>;
@@ -22,6 +23,10 @@ export class GiftRepository implements IGiftRepository {
         return await newGift.save();
     }
 
+    async findGiftById(id: string): Promise<IGiftDocument | null> {
+        return await this.Model.findById(id);
+    }
+    
     async getGifts(): Promise<IGiftDocument[]> {
         return await this.Model.find();
     }

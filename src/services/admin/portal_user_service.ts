@@ -1,5 +1,9 @@
 import { StatusCodes } from "http-status-codes";
-import { AdminPowers, UserRoles } from "../../core/Utils/enums";
+import {
+  ActivityZoneState,
+  AdminPowers,
+  UserRoles,
+} from "../../core/Utils/enums";
 import { IPagination } from "../../core/Utils/query_builder";
 import { IUSerStatsDocument } from "../../entities/userstats/userstats_interface";
 import { IUserDocument } from "../../models/user/user_model_interface";
@@ -10,8 +14,20 @@ import IUserStatsRepository from "../../repository/userstats/userstats_repositor
 import AppError from "../../core/errors/app_errors";
 import { canUserUpdate } from "../../core/Utils/helper_functions";
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { IPortalUserDocument } from "../../entities/portal_users/portal_user_interface";
+import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
 
 export interface ISharedPowerService {
+  loginPortalUser(
+    userId: string,
+    password: string
+  ): Promise<{ user: IPortalUserDocument; token: string }>;
+  updateMyProfile(
+    id: string,
+    user: Partial<IPortalUserDocument>
+  ): Promise<IPortalUserDocument | null>;
   searchUserEmail(
     email: string,
     query: Record<string, unknown>
@@ -25,9 +41,10 @@ export interface ISharedPowerService {
   ): Promise<IUserDocument | null>;
   assignCoinToUser(
     userId: string,
+    userRole: UserRoles,
     coins: number,
     myId: string,
-    role: UserRoles
+    myRole: UserRoles
   ): Promise<IUSerStatsDocument | null>;
   demoteUser(userId: string): Promise<IUserDocument | null>;
 }
@@ -47,6 +64,66 @@ export default class SharedPowerService implements ISharedPowerService {
     this.UserStatsRepository = UserStatsRepository;
     this.AdminRepository = AdminRepository;
     this.PortalUserRepository = PortalUserRepository;
+  }
+
+  async loginPortalUser(
+    userId: string,
+    password: string
+  ): Promise<{ user: IPortalUserDocument; token: string }> {
+    const existingUser = await this.PortalUserRepository.getPortalUserByUserId(
+      userId
+    );
+    if (!existingUser)
+      throw new AppError(StatusCodes.NOT_FOUND, "Invalid credentials");
+    const isMatch = await bcrypt.compare(password, existingUser.password!);
+    if (!isMatch) {
+      throw new AppError(StatusCodes.UNAUTHORIZED, "Invalid credentials");
+    }
+    if (
+      existingUser.activityZone?.zone == ActivityZoneState.temporaryBlock &&
+      existingUser.activityZone.expire!.toISOString() > new Date().toISOString()
+    )
+      throw new AppError(
+        StatusCodes.FORBIDDEN,
+        "Your account is temporarily blocked till " +
+          existingUser.activityZone.expire!.toDateString()
+      );
+    if (existingUser.activityZone?.zone == ActivityZoneState.permanentBlock)
+      throw new AppError(
+        StatusCodes.FORBIDDEN,
+        "Your account is permanently blocked"
+      );
+    const SECRET = process.env.JWT_SECRET || "jwt_secret";
+    const token = jwt.sign(
+      {
+        id: existingUser._id,
+        role: existingUser.userRole,
+        permissions: existingUser.userPermissions,
+      },
+      SECRET
+    );
+    return { user: existingUser.toObject(), token };
+  }
+
+  async updateMyProfile(
+    id: string,
+    user: Partial<IPortalUserDocument>
+  ): Promise<IPortalUserDocument | null> {
+    if(user.password) {
+      user.password = await bcrypt.hash(user.password, 10);
+    }
+    if(user.avatar) {
+      user.avatar = await uploadFileToCloudinary(
+        {
+          file: user.avatar as Express.Multer.File,
+          folder: "portal_users",
+          isVideo: false,
+        }
+      );
+    }
+    const updatedUser = await this.PortalUserRepository.updatePortalUser(id, user);
+    if(!updatedUser) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+    return updatedUser;
   }
 
   async searchUserEmail(
@@ -181,8 +258,7 @@ export default class SharedPowerService implements ISharedPowerService {
     return updatedUser;
   }
 
-
-    async demoteUser(userId: string): Promise<IUserDocument | null> {
+  async demoteUser(userId: string): Promise<IUserDocument | null> {
     const user = await this.UserRepository.findUserById(userId);
     if (!user) {
       throw new AppError(StatusCodes.NOT_FOUND, "User not found");
