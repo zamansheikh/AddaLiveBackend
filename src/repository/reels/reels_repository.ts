@@ -4,7 +4,7 @@ import { IReelRepository } from "./reels_interface";
 import { IPagination, QueryBuilder } from "../../core/Utils/query_builder";
 import { IReelEntity } from "../../entities/reel/reel_entity_interface";
 import { DatabaseNames } from "../../core/Utils/enums";
-import mongoose from "mongoose";
+import mongoose, { DeleteResult } from "mongoose";
 import { reelReactionStructure, reelStructure } from "./reels_reposotory_constants";
 
 export default class ReelsRepository implements IReelRepository {
@@ -17,6 +17,11 @@ export default class ReelsRepository implements IReelRepository {
         const reel = new this.ReelModel(ReelEntity);
         return await reel.save();
     }
+
+    async deleteUserReels(userId: string): Promise<DeleteResult> {
+        return await this.ReelModel.deleteMany({ ownerId: userId });
+    }
+    
     async getAllReels(query: Record<string, any>) {
         const userId = new mongoose.Types.ObjectId(query.userId);
 

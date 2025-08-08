@@ -25,6 +25,10 @@ export default class PostsCommentRepostitory implements IPostCommentRepository {
         return await this.PostCommentModel.findByIdAndDelete(commentId);
     }
 
+    async deleteUserComments(userId: string) {
+        return await this.PostCommentModel.deleteMany({ commentedBy: userId });
+    }
+
     async findCommentByIdAndUpdate(commentId: string, payload: Record<string, string>): Promise<IPostCommentDocument | null> {
         return await this.PostCommentModel.findByIdAndUpdate(commentId, payload, { new: true });
     }

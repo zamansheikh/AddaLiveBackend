@@ -18,20 +18,52 @@ import { RtcRole, RtcTokenBuilder } from "agora-token";
 import { IUserRepository } from "../../repository/user_repository";
 import SocketServer from "../../core/sockets/socket_server";
 import { IGiftRepository } from "../../repository/gifts/gifts_repositories";
+import { IPostRepository } from "../../repository/posts/post_repository_interface";
+import { IReelRepository } from "../../repository/reels/reels_interface";
+import { IStoryRepository } from "../../repository/stories/story_repository_interface";
+import { IPostReactionRepository } from "../../repository/posts/likes/post_reaction_repository_interface";
+import { IPostCommentRepository } from "../../repository/posts/comments/post_commnet_repository_interface";
+import { IReelReactionRepository } from "../../repository/reels/likes/reel_reaction_interface";
+import { IReelCommentRepository } from "../../repository/reels/comments/reel_comments_interface";
+import { IStoryReactionRepository } from "../../repository/stories/likes/story_reaction_repository_interface";
 
 export default class AuthService implements IAuthService {
   UserRepository: IUserRepository;
   UserStatsRepository: IUserStatsRepository;
   GiftRepository: IGiftRepository;
+  PostRepository: IPostRepository;
+  PostReactionRepository: IPostReactionRepository;
+  PostCommentRepository: IPostCommentRepository;
+  ReelRepository: IReelRepository;
+  ReelsReactionReposiory: IReelReactionRepository;
+  ReelsCommentRepository: IReelCommentRepository;
+  StoriesRepository: IStoryRepository;
+  StoriesReactionRepository: IStoryReactionRepository;
 
   constructor(
     UserRepository: IUserRepository,
     UserStatsRepository: IUserStatsRepository,
-    GiftRepository: IGiftRepository
+    GiftRepository: IGiftRepository,
+    PostRepository: IPostRepository,
+    PostReactionRepository: IPostReactionRepository,
+    PostCommentRepository: IPostCommentRepository,
+    ReelRepository: IReelRepository,
+    ReelsReactionReposiory: IReelReactionRepository,
+    ReelsCommentRepository: IReelCommentRepository,
+    StoriesRepository: IStoryRepository,
+    StoriesReactionRepository: IStoryReactionRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
     this.GiftRepository = GiftRepository;
+    this.PostRepository = PostRepository;
+    this.PostReactionRepository = PostReactionRepository;
+    this.PostCommentRepository = PostCommentRepository;
+    this.ReelRepository = ReelRepository;
+    this.ReelsReactionReposiory = ReelsReactionReposiory;
+    this.ReelsCommentRepository = ReelsCommentRepository;
+    this.StoriesRepository = StoriesRepository;
+    this.StoriesReactionRepository = StoriesReactionRepository;
   }
 
   async registerWithGoogle(UserData: IUserEntity) {
@@ -101,6 +133,50 @@ export default class AuthService implements IAuthService {
     const userWithStats = user.toObject();
     userWithStats.stats = userStats;
     return userWithStats;
+  }
+
+  async deleteMyAccount(id: string): Promise<IUserDocument | null> {
+    const user = await this.UserRepository.findUserById(id);
+    if (!user) throw new AppError(StatusCodes.NOT_FOUND, "Invalid token");
+    const deletedUserStats = await this.UserStatsRepository.deleteStats(id);
+    const deletedReels = await this.ReelRepository.deleteUserReels(id);
+    const deletedReelsComment =
+      await this.ReelsCommentRepository.deleteUserComments(id);
+    const deletedReelsReaction =
+      await this.ReelsReactionReposiory.deleteUserReactions(id);
+
+    const deletedPosts = await this.PostRepository.deleteUserPosts(id);
+    const deletedPostComment =
+      await this.PostCommentRepository.deleteUserComments(id);
+    const deletePostReaction =
+      await this.PostReactionRepository.deleteUserReaction(id);
+
+    const deletedStories = await this.StoriesRepository.deleteUserStories(id);
+    const deletedStoriesReaction =
+      await this.StoriesReactionRepository.deleteUserReactions(id);
+
+    if (
+      !deletedUserStats ||
+      !deletedReels ||
+      !deletedReelsComment ||
+      !deletedReelsReaction ||
+      !deletedPosts ||
+      !deletedPostComment ||
+      !deletePostReaction ||
+      !deletedStories ||
+      !deletedStoriesReaction
+    )
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "failed to delete user and associated data"
+      );
+    const deletedUser = await this.UserRepository.deleteUserById(id);
+    if (!deletedUser)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "failed to delete user, please try again later"
+      );
+    return deletedUser;
   }
 
   async retrieveUserDetails(id: string, myId: string) {
@@ -183,7 +259,6 @@ export default class AuthService implements IAuthService {
     await session.commitTransaction();
     session.endSession();
 
-
     // sending the information to the frontend via socket
     const ioInstance = SocketServer.getInstance().getIO();
 
@@ -191,7 +266,7 @@ export default class AuthService implements IAuthService {
       avatar: myUser.avatar,
       name: myUser.name,
       diamonds: diamonds,
-      gift: exisitngGift
+      gift: exisitngGift,
     });
 
     if (!updatedUserStats)

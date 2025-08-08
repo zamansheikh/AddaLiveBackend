@@ -1,9 +1,11 @@
+import { DeleteResult } from "mongoose";
 import { IPagination } from "../../../core/Utils/query_builder";
 import { IPostComment, IPostCommentDocument } from "../../../entities/posts/posts_comments_interface";
 
 export interface IPostCommentRepository {
     create(comment: IPostComment): Promise<IPostCommentDocument | null>;
     findCommentById(commentId: string): Promise<IPostCommentDocument | null>;
+    deleteUserComments(userId: string): Promise<DeleteResult>;
     findCommentByIdAndUpdate(commentId: string, payload:Record<string, string>): Promise<IPostCommentDocument | null>;
     deleteCommentByID(commentId: string):Promise<IPostCommentDocument | null>;
     getAllComments(): Promise<IPostCommentDocument[] | null>;

@@ -1,3 +1,4 @@
+import { DeleteResult } from "mongoose";
 import { IPagination } from "../../../core/Utils/query_builder";
 import { IReelCommentEntity } from "../../../entities/reel/reel_comment_entity_interface";
 import { IReelsCommentDocument } from "../../../models/reels/comments/reels_comment_interface";
@@ -6,6 +7,7 @@ import { IReelsCommentDocument } from "../../../models/reels/comments/reels_comm
 export interface IReelCommentRepository {
     create(comment: IReelCommentEntity): Promise<IReelsCommentDocument | null>;
     findCommentById(commentId: string): Promise<IReelsCommentDocument | null>;
+    deleteUserComments(userId: string): Promise<DeleteResult>;
     findCommentByIdAndUpdate(commentId: string, payload:Record<string, string>): Promise<IReelsCommentDocument | null>;
     deleteCommentByID(commentId: string):Promise<IReelsCommentDocument | null>;
     getAllComments(): Promise<IReelsCommentDocument[] | null>;

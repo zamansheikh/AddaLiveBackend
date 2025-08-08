@@ -1,3 +1,4 @@
+import { DeleteResult } from "mongoose";
 import { IReelReactionEntity } from "../../../entities/reel/reel_reaction_entitiy_interface";
 import { IReelReactionModel, IReelsReaction } from "../../../models/reels/likes/reels_reaction_interface";
 import { IReelReactionRepository } from "./reel_reaction_interface";
@@ -21,6 +22,10 @@ export default class ReelsReactionRepostitory implements IReelReactionRepository
     async findAllReelReactions() {
         return await this.ReelReactionModel.find();
      }
+
+    async deleteUserReactions(userId: string): Promise<DeleteResult> {
+        return await this.ReelReactionModel.deleteMany({reactedBy: userId});
+    }
 
     async findReelReactionsConditionally(condition: Record<string, string|number> ) { 
         return await this.ReelReactionModel.find(condition);

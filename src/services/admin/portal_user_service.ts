@@ -176,6 +176,7 @@ export default class SharedPowerService implements ISharedPowerService {
   }
   async assignCoinToUser(
     userId: string,
+    userRole: UserRoles,
     coins: number,
     myId: string,
     role: UserRoles

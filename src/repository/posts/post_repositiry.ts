@@ -23,6 +23,11 @@ export default class PostRepository implements IPostRepository {
     const reel = new this.PostModel(ReelEntity);
     return await reel.save();
   }
+
+  async deleteUserPosts(userId: string): Promise<mongoose.DeleteResult> {
+    return await this.PostModel.deleteMany({ ownerId: userId });
+  }
+  
   async getAllPosts(query: Record<string, any>) {
     const userId = new mongoose.Types.ObjectId(query.userId);
     const qb = new QueryBuilder(this.PostModel, query);
