@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { DeleteResult, Types } from "mongoose";
 import { IReelsCommentDocument, IReelsCommentModel } from "../../../models/reels/comments/reels_comment_interface";
 import { IReelCommentRepository } from "./reel_comments_interface";
 import { DatabaseNames } from "../../../core/Utils/enums";
@@ -18,6 +18,10 @@ export default class ReelsCommentRepostitory implements IReelCommentRepository {
 
     async findCommentById(commentId: string): Promise<IReelsCommentDocument | null> {
         return await this.ReelCommentModel.findById(commentId);
+    }
+
+    async deleteUserComments(userId: string): Promise<DeleteResult> {
+        return await this.ReelCommentModel.deleteMany({ commentedBy: userId });
     }
 
     async deleteCommentByID(commentId: string): Promise<IReelsCommentDocument | null> {

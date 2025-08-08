@@ -1,3 +1,4 @@
+import { DeleteResult } from "mongoose";
 import { IPagination } from "../../core/Utils/query_builder";
 import { IReelEntity } from "../../entities/reel/reel_entity_interface";
 import { IReelDocument } from "../../models/reels/reel_interface";
@@ -13,4 +14,5 @@ export interface IReelRepository {
     updateCount({ reelId, count, isReaction }: { reelId: string, count: number, isReaction: boolean }): Promise<IReelDocument | string | null>;
     findReelByIdAndUpdate(id: string, payload: Record<string, any>): Promise<IReelDocument | null>;
     deleteReelById(reelId: string): Promise<IReelDocument | null>;
+    deleteUserReels(userId: string): Promise<DeleteResult>;
 }

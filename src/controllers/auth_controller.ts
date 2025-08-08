@@ -47,6 +47,12 @@ export default class AuthController {
     sendResponseEnhanced(res, user);
   });
 
+  deleteMyAccount = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const deletedUser = await this.authService.deleteMyAccount(id);
+    sendResponseEnhanced(res, deletedUser);
+  });
+
   giftUser = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.user!;
     const { coins, diamonds, userId, roomId, giftId } = req.body;

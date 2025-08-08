@@ -24,6 +24,7 @@ export interface IUserRepository {
     removePermission(id: string, permission: string): Promise<IUserDocument | null>;
     getAllModarators(query: Record<string, unknown>): Promise<{ pagination: IPagination, users: IUserDocument[] }>;
     setWhoCanTextMe(id: string, payload: ITextPrivacy): Promise<IUserDocument | null>;
+    deleteUserById(id: string): Promise<IUserDocument | null>;
 }
 
 export default class UserRepository implements IUserRepository {
@@ -47,6 +48,8 @@ export default class UserRepository implements IUserRepository {
     async findByUID(uid: string) {
         return await this.UserModel.findOne({ uid }).select("-password");
     }
+
+    
 
     async findAllUser(query: Record<string, any>): Promise<{ pagination: IPagination, users: IUserDocument[] }> {
         const qb = new QueryBuilder(this.UserModel, query);
@@ -239,4 +242,9 @@ export default class UserRepository implements IUserRepository {
         ]);
         return user[0] ?? null;
     }
+
+    async deleteUserById(id: string): Promise<IUserDocument | null> {
+        return await this.UserModel.findByIdAndDelete(id);
+    }
+    
 }

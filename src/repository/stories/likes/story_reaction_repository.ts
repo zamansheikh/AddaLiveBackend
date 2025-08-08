@@ -17,6 +17,11 @@ export default class StoryReactionRepository implements IStoryReactionRepository
     async delete(id: string): Promise<IStoryReactionDocument | null> {
         return await this.StoryReactionModel.findByIdAndDelete(id);
     }
+    
+    async deleteUserReactions(userId: string) {
+        return await this.StoryReactionModel.deleteMany({ reactedBy: userId });
+    }
+    
 
     async findAndUpdate(id: string, payload: Record<string, any>): Promise<IStoryReactionDocument | null> {
         return await this.StoryReactionModel.findByIdAndUpdate(id, payload);

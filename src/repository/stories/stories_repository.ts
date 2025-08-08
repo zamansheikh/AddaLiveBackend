@@ -26,6 +26,10 @@ class StoriesRepository implements IStoryRepository {
         return await this.StoryModel.findByIdAndUpdate(id, { $inc: payload }, { new: true });
     }
 
+    async deleteUserStories(userId: string): Promise<mongoose.DeleteResult> {
+        return await this.StoryModel.deleteMany({ ownerId: userId });
+    }
+
     async deleteStory(id: string): Promise<IStoryDocument | null> {
         return await this.StoryModel.findByIdAndDelete(id);
     }

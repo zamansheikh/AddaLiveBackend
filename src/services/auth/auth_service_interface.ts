@@ -12,6 +12,7 @@ export interface IGiftUser {
 export interface IAuthService {
     registerWithGoogle(UserData: IUserEntity): Promise<{ user: IUserDocument, token: string }>;
     retrieveMyDetails(id: string): Promise<IUserDocument | null>;
+    deleteMyAccount(id: string): Promise<IUserDocument | null>;
     retrieveUserDetails(id: string, myId: string): Promise<IUserDocument | null>;
     updateProfile({ id, profileData, file }: { id: string, profileData: Partial<Record<string, any>>, file?: Express.Multer.File }): Promise<IUserDocument | null>;
     giftUser(giftUser: IGiftUser, roomId: string, giftId: string): Promise<IUserDocument | null>;
