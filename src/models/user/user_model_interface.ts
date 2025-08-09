@@ -28,6 +28,7 @@ export interface UserData {
     userRole?: UserRoles;
     countryLanguages?: string[];
     isViewer?: boolean;
+    parentCreator?: mongoose.Schema.Types.ObjectId | string;
     objectId?: string;
     activityZone?: {
         zone?: ActivityZoneState;
