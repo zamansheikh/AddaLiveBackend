@@ -170,16 +170,7 @@ export default class AdminUserController {
     });
   });
 
-  retrieveAllUsers = catchAsync(async (req: Request, res: Response) => {
-    const users = await this.AdminUserService.retrieveAllUsers(req.query);
 
-    sendResponse(res, {
-      statusCode: StatusCodes.ACCEPTED,
-      success: true,
-      result: users,
-      message: "Users have been successfully retrieved.",
-    });
-  });
 
   updateActivityZone = catchAsync(async (req: Request, res: Response) => {
     const { id, zone, date_till } = req.body;

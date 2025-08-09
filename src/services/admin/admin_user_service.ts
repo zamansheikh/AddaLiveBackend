@@ -45,9 +45,7 @@ export interface IAdminUserService {
   deleteAdmin(id: string): Promise<IAdminDocument | null>;
   getAdminProfile(id: string): Promise<IAdminDocument | null>;
   assignCoinToSelf(id: string, coins: number): Promise<IAdminDocument | null>;
-  retrieveAllUsers(
-    query: Record<string, any>
-  ): Promise<{ pagination: IPagination; users: IUserDocument[] }>;
+
   updateActivityZone({
     id,
     zone,
@@ -198,12 +196,6 @@ export default class AdminUserService implements IAdminUserService {
     return updateCoin;
   }
 
-  async retrieveAllUsers(
-    query: Record<string, any>
-  ): Promise<{ pagination: IPagination; users: IUserDocument[] }> {
-    const users = await this.UserRepository.findAllUser(query);
-    return users;
-  }
 
   async updateActivityZone({
     id,

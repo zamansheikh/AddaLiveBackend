@@ -57,6 +57,18 @@ router
     portalUserControllers.searchUsersByEmail
   );
 
+router.get(
+  "/users",
+  authenticate([
+    UserRoles.Admin,
+    UserRoles.SubAdmin,
+    UserRoles.Agency,
+    UserRoles.Merchant,
+    UserRoles.Reseller,
+  ]),
+  portalUserControllers.retrieveAllUsers
+);
+
 router
   .route("/users/promote")
   .put(authenticate([UserRoles.Agency]), portalUserControllers.promoteUser);

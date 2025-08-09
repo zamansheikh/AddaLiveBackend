@@ -35,6 +35,17 @@ export class PortalUserControllers {
     });
   });
 
+  retrieveAllUsers = catchAsync(async (req: Request, res: Response) => {
+    const users = await this.Service.retrieveAllUsers(req.query);
+
+    sendResponse(res, {
+      statusCode: StatusCodes.ACCEPTED,
+      success: true,
+      result: users,
+      message: "Users have been successfully retrieved.",
+    });
+  });
+
   updateMyProfile = catchAsync(async (req: Request, res: Response) => {
     const { id, role } = req.user!;
     const { password, name } = req.body;

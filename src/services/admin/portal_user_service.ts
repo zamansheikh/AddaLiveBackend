@@ -32,6 +32,9 @@ export interface ISharedPowerService {
     email: string,
     query: Record<string, unknown>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] } | null>;
+  retrieveAllUsers(
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; users: IUserDocument[] }>;
   promoteUser(
     id: string,
     permissions: string[],
@@ -136,6 +139,13 @@ export default class SharedPowerService implements ISharedPowerService {
     query: Record<string, unknown>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] } | null> {
     const users = await this.UserRepository.searchUserByEmail(email, query);
+    return users;
+  }
+
+  async retrieveAllUsers(
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; users: IUserDocument[] }> {
+    const users = await this.UserRepository.findAllUser(query);
     return users;
   }
 
@@ -276,16 +286,15 @@ export default class SharedPowerService implements ISharedPowerService {
     const myProfile = await this.PortalUserRepository.getPortalUserByUserId(
       myId
     );
-    if(!myProfile) throw new AppError(StatusCodes.NOT_FOUND, "Not valid token");
-    const canDemoteUser = canUserUpdate(myProfile, [
-      AdminPowers.PromoteUser,
-    ]);
-    if (!canDemoteUser) 
-        throw new AppError(
+    if (!myProfile)
+      throw new AppError(StatusCodes.NOT_FOUND, "Not valid token");
+    const canDemoteUser = canUserUpdate(myProfile, [AdminPowers.PromoteUser]);
+    if (!canDemoteUser)
+      throw new AppError(
         StatusCodes.UNAUTHORIZED,
         "You are not authorized to perform this action"
       );
-      
+
     const user = await this.UserRepository.findUserById(userId);
     if (!user) {
       throw new AppError(StatusCodes.NOT_FOUND, "User not found");
