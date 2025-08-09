@@ -35,7 +35,6 @@ export interface ISharedPowerService {
   promoteUser(
     id: string,
     permissions: string[],
-    userRole: UserRoles,
     myId: string,
     myRole: UserRoles
   ): Promise<IUserDocument | null>;
@@ -46,7 +45,11 @@ export interface ISharedPowerService {
     myId: string,
     myRole: UserRoles
   ): Promise<IUSerStatsDocument | null>;
-  demoteUser(userId: string): Promise<IUserDocument | null>;
+  demoteUser(
+    userId: string,
+    myId: string,
+    myRole: string
+  ): Promise<IUserDocument | null>;
 }
 
 export default class SharedPowerService implements ISharedPowerService {
@@ -109,20 +112,22 @@ export default class SharedPowerService implements ISharedPowerService {
     id: string,
     user: Partial<IPortalUserDocument>
   ): Promise<IPortalUserDocument | null> {
-    if(user.password) {
+    if (user.password) {
       user.password = await bcrypt.hash(user.password, 10);
     }
-    if(user.avatar) {
-      user.avatar = await uploadFileToCloudinary(
-        {
-          file: user.avatar as Express.Multer.File,
-          folder: "portal_users",
-          isVideo: false,
-        }
-      );
+    if (user.avatar) {
+      user.avatar = await uploadFileToCloudinary({
+        file: user.avatar as Express.Multer.File,
+        folder: "portal_users",
+        isVideo: false,
+      });
     }
-    const updatedUser = await this.PortalUserRepository.updatePortalUser(id, user);
-    if(!updatedUser) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+    const updatedUser = await this.PortalUserRepository.updatePortalUser(
+      id,
+      user
+    );
+    if (!updatedUser)
+      throw new AppError(StatusCodes.NOT_FOUND, "User not found");
     return updatedUser;
   }
 
@@ -137,23 +142,27 @@ export default class SharedPowerService implements ISharedPowerService {
   async promoteUser(
     id: string,
     permissions: string[],
-    userRole: UserRoles,
     myId: string,
     myRole: UserRoles
   ): Promise<IUserDocument | null> {
-    let myProfile;
-    if (myRole == UserRoles.Admin) {
-      myProfile = await this.AdminRepository.getAdminById(myId);
-    } else {
-      myProfile = await this.UserRepository.findUserById(myId);
-    }
+    if (myRole != UserRoles.Agency)
+      throw new AppError(
+        StatusCodes.UNAUTHORIZED,
+        `${UserRoles} is not authorized to promote user to host`
+      );
+    const myProfile = await this.PortalUserRepository.getPortalUserById(myId);
+
     if (!myProfile) throw new AppError(StatusCodes.NOT_FOUND, "Notvalid token");
 
     const user = await this.UserRepository.findUserById(id);
     if (!user) {
       throw new AppError(StatusCodes.NOT_FOUND, "User not found");
     }
-
+    if (user.userRole == UserRoles.Host)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `${user.name} already a host`
+      );
     const hasPermission = canUserUpdate(myProfile, [AdminPowers.PromoteUser]);
     if (!hasPermission)
       throw new AppError(
@@ -162,7 +171,7 @@ export default class SharedPowerService implements ISharedPowerService {
       );
 
     const updatedUser = await this.UserRepository.findUserByIdAndUpdate(id, {
-      userRole: userRole,
+      userRole: UserRoles.Host,
       userPermissions: permissions,
     });
 
@@ -259,7 +268,24 @@ export default class SharedPowerService implements ISharedPowerService {
     return updatedUser;
   }
 
-  async demoteUser(userId: string): Promise<IUserDocument | null> {
+  async demoteUser(
+    userId: string,
+    myId: string,
+    myRole: string
+  ): Promise<IUserDocument | null> {
+    const myProfile = await this.PortalUserRepository.getPortalUserByUserId(
+      myId
+    );
+    if(!myProfile) throw new AppError(StatusCodes.NOT_FOUND, "Not valid token");
+    const canDemoteUser = canUserUpdate(myProfile, [
+      AdminPowers.PromoteUser,
+    ]);
+    if (!canDemoteUser) 
+        throw new AppError(
+        StatusCodes.UNAUTHORIZED,
+        "You are not authorized to perform this action"
+      );
+      
     const user = await this.UserRepository.findUserById(userId);
     if (!user) {
       throw new AppError(StatusCodes.NOT_FOUND, "User not found");
@@ -267,7 +293,7 @@ export default class SharedPowerService implements ISharedPowerService {
     if (user.userRole === UserRoles.User) {
       throw new AppError(
         StatusCodes.BAD_REQUEST,
-        "User is already a regular user"
+        `${user.name} is already a user`
       );
     }
     const updatedUser = await this.UserRepository.findUserByIdAndUpdate(

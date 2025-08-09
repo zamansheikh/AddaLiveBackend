@@ -81,17 +81,11 @@ export class PortalUserControllers {
 
   promoteUser = catchAsync(async (req: Request, res: Response) => {
     const { id, role } = req.user!;
-    const { userId } = req.body;
-    const { permissions, userRole } = req.body;
-    if (!userRole)
-      throw new AppError(StatusCodes.BAD_REQUEST, "User role is required");
-    if (!Object.values(UserRoles).includes(userRole))
-      throw new AppError(StatusCodes.BAD_REQUEST, "Invalid user role");
+    const { permissions, userId } = req.body;
     validatePromoteUserPermission(permissions);
     const updatedUser = await this.Service.promoteUser(
       userId,
       permissions,
-      userRole,
       id,
       role as UserRoles
     );
@@ -104,8 +98,9 @@ export class PortalUserControllers {
   });
 
   demoteUser = catchAsync(async (req: Request, res: Response) => {
+    const { id, role } = req.user!;
     const { userId } = req.body;
-    const updatedUser = await this.Service.demoteUser(userId);
+    const updatedUser = await this.Service.demoteUser(userId, id, role);
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,

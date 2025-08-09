@@ -4,6 +4,7 @@ import { StatusCodes } from "http-status-codes";
 import { ActivityZoneState, AdminPowers, UserRoles } from "./enums";
 import { IUserDocument } from "../../models/user/user_model_interface";
 import { IAdminDocument } from "../../entities/admin/admin_interface";
+import { IPortalUserDocument } from "../../entities/portal_users/portal_user_interface";
 
 export const generateFileHash = (buffer: Buffer): string => {
   return crypto.createHash("sha256").update(buffer).digest("hex");
@@ -34,7 +35,7 @@ export function validatePromoteUserPermission(permissions: string[]): void {
 }
 
 export function canUserUpdate(
-  myProfile: IUserDocument | IAdminDocument,
+  myProfile: IUserDocument | IAdminDocument | IPortalUserDocument,
   requiredPermissions: AdminPowers[]
 ): boolean {
   if (myProfile.userRole == UserRoles.Admin) {
@@ -68,7 +69,6 @@ export function validateCreatePortalUserData(
   if (!Object.values(UserRoles).includes(userRole as UserRoles))
     throw new AppError(StatusCodes.BAD_REQUEST, "Invalid user role");
   if (
-    userRole == UserRoles.Agency ||
     userRole == UserRoles.Admin ||
     userRole == UserRoles.User ||
     userRole == UserRoles.Host
