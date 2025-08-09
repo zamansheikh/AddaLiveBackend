@@ -45,9 +45,7 @@ export interface IAdminUserService {
   deleteAdmin(id: string): Promise<IAdminDocument | null>;
   getAdminProfile(id: string): Promise<IAdminDocument | null>;
   assignCoinToSelf(id: string, coins: number): Promise<IAdminDocument | null>;
-  retrieveAllUsers(
-    query: Record<string, any>
-  ): Promise<{ pagination: IPagination; users: IUserDocument[] }>;
+
   updateActivityZone({
     id,
     zone,
@@ -198,12 +196,6 @@ export default class AdminUserService implements IAdminUserService {
     return updateCoin;
   }
 
-  async retrieveAllUsers(
-    query: Record<string, any>
-  ): Promise<{ pagination: IPagination; users: IUserDocument[] }> {
-    const users = await this.UserRepository.findAllUser(query);
-    return users;
-  }
 
   async updateActivityZone({
     id,
@@ -460,6 +452,19 @@ export default class AdminUserService implements IAdminUserService {
         StatusCodes.BAD_REQUEST,
         "Reseller must have a parent creator"
       );
+    if (
+      user.userRole == UserRoles.countrySubAdmin &&
+      user.parentCreator == null
+    )
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Sub Country Admin must have a parent creator"
+      );
+    if (user.userRole == UserRoles.Agency && user.parentCreator == null)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Agency must have a parent creator"
+      );
     if (user.userRole == UserRoles.Reseller) {
       const creatorUser = await this.PortalUserRepository.getPortalUserById(
         user.parentCreator!.toString()
@@ -470,6 +475,32 @@ export default class AdminUserService implements IAdminUserService {
         throw new AppError(
           StatusCodes.BAD_REQUEST,
           "Parent creator must be a merchant"
+        );
+    }
+
+    if (user.userRole == UserRoles.Agency) {
+      const creatorUser = await this.PortalUserRepository.getPortalUserById(
+        user.parentCreator!.toString()
+      );
+      if (!creatorUser)
+        throw new AppError(StatusCodes.NOT_FOUND, "Parent creator not found");
+      if (creatorUser.userRole != UserRoles.SubAdmin)
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          "Parent creator must be a Sub Admin"
+        );
+    }
+
+    if (user.userRole == UserRoles.countrySubAdmin) {
+      const creatorUser = await this.PortalUserRepository.getPortalUserById(
+        user.parentCreator!.toString()
+      );
+      if (!creatorUser)
+        throw new AppError(StatusCodes.NOT_FOUND, "Parent creator not found");
+      if (creatorUser.userRole != UserRoles.CountryAdmin)
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          "Parent creator must be a Country Admin"
         );
     }
 

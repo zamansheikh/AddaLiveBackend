@@ -26,6 +26,7 @@ import { IPostCommentRepository } from "../../repository/posts/comments/post_com
 import { IReelReactionRepository } from "../../repository/reels/likes/reel_reaction_interface";
 import { IReelCommentRepository } from "../../repository/reels/comments/reel_comments_interface";
 import { IStoryReactionRepository } from "../../repository/stories/likes/story_reaction_repository_interface";
+import { existsSync } from "fs";
 
 export default class AuthService implements IAuthService {
   UserRepository: IUserRepository;
@@ -222,13 +223,10 @@ export default class AuthService implements IAuthService {
   }
 
   async giftUser(
-    giftUser: IGiftUser,
-    roomId: string,
-    giftId: string
+    {targetUserId, myId, roomId, giftId}: {targetUserId: string, myId: string, roomId: string, giftId: string}
   ): Promise<IUserDocument | null> {
-    const { myId, coins, diamonds, userId } = giftUser;
     const myUser = await this.UserRepository.findUserById(myId);
-    const userToGift = await this.UserRepository.findUserById(userId);
+    const userToGift = await this.UserRepository.findUserById(targetUserId);
     const exisitngGift = await this.GiftRepository.getGiftById(giftId);
     if (!exisitngGift)
       throw new AppError(StatusCodes.NOT_FOUND, "gift not found");
@@ -237,7 +235,7 @@ export default class AuthService implements IAuthService {
       throw new AppError(StatusCodes.NOT_FOUND, "user not found");
 
     const mystats = await this.UserStatsRepository.getUserStats(myId);
-    const userStats = await this.UserStatsRepository.getUserStats(userId);
+    const userStats = await this.UserStatsRepository.getUserStats(targetUserId);
 
     if (!mystats || !userStats)
       throw new AppError(
@@ -249,11 +247,11 @@ export default class AuthService implements IAuthService {
     const session = await mongoose.startSession();
     session.startTransaction();
 
-    if (mystats.coins! < coins)
+    if (mystats.coins! < exisitngGift.coinPrice)
       throw new AppError(StatusCodes.BAD_REQUEST, "insufficient coins");
-    mystats.coins! -= coins;
+    mystats.coins! -= exisitngGift.coinPrice;
     await mystats.save({ session });
-    userStats.diamonds! += diamonds;
+    userStats.diamonds! += exisitngGift.diamonds;
     const updatedUserStats = await userStats.save({ session });
 
     await session.commitTransaction();
@@ -265,7 +263,7 @@ export default class AuthService implements IAuthService {
     ioInstance.to(roomId).emit(SocketChannels.sendGift, {
       avatar: myUser.avatar,
       name: myUser.name,
-      diamonds: diamonds,
+      diamonds: exisitngGift.diamonds,
       gift: exisitngGift,
     });
 

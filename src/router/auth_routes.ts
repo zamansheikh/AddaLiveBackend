@@ -48,7 +48,6 @@ const reelCommentRepository = new ReelsCommentRepostitory(Comments);
 const storyRepository = new StoriesRepository(Story);
 const storyReactionRepository = new StoryReactionRepository(StoryReaction);
 
-
 const authService = new AuthService(
   userRepository,
   userstatsRepository,
@@ -77,7 +76,11 @@ router.put(
   authController.updateProfile
 );
 router.get("/user/:id", authenticate(), authController.getUserDetails);
-router.route("/my-profile").get(authenticate(), authController.getMyDetails).delete(authenticate(), authController.deleteMyAccount)
+router
+  .route("/my-profile")
+  .get(authenticate(), authController.getMyDetails)
+  .delete(authenticate(), authController.deleteMyAccount);
+  
 router.put(
   "/user/gift",
   authenticate(),

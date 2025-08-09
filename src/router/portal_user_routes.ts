@@ -57,6 +57,18 @@ router
     portalUserControllers.searchUsersByEmail
   );
 
+router.get(
+  "/users",
+  authenticate([
+    UserRoles.Admin,
+    UserRoles.SubAdmin,
+    UserRoles.Agency,
+    UserRoles.Merchant,
+    UserRoles.Reseller,
+  ]),
+  portalUserControllers.retrieveAllUsers
+);
+
 router
   .route("/users/promote")
   .put(authenticate([UserRoles.Agency]), portalUserControllers.promoteUser);
@@ -71,5 +83,15 @@ router
     authenticate([UserRoles.Admin, UserRoles.Merchant, UserRoles.Reseller]),
     portalUserControllers.assignCoinToUser
   );
+
+// for upper management exp: sub admin, merchant, country admin
+router
+  .route("/portal/:userRole")
+  .get(authenticate(), portalUserControllers.getPortalUsers);
+// for mid management exp: agency, re-seller, sub country admin
+router
+  .route("/portal/mid/:userRole/:parentId")
+  .get(authenticate(), portalUserControllers.getPortalUsersByParent);
+// for lower management exp: host
 
 export default router;

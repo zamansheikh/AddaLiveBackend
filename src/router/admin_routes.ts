@@ -63,11 +63,7 @@ router
   .route("/users/moderators")
   .get(authenticate([UserRoles.Admin]), adminUserController.getAllModerators);
 
-router.get(
-  "/users",
-  authenticate([UserRoles.Admin]),
-  adminUserController.retrieveAllUsers
-);
+
 router.put(
   "/users/activity-zone",
   authenticate([UserRoles.Admin]),

@@ -32,10 +32,12 @@ export interface ISharedPowerService {
     email: string,
     query: Record<string, unknown>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] } | null>;
+  retrieveAllUsers(
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; users: IUserDocument[] }>;
   promoteUser(
     id: string,
     permissions: string[],
-    userRole: UserRoles,
     myId: string,
     myRole: UserRoles
   ): Promise<IUserDocument | null>;
@@ -45,8 +47,21 @@ export interface ISharedPowerService {
     coins: number,
     myId: string,
     myRole: UserRoles
-  ): Promise<IUSerStatsDocument | null>;
-  demoteUser(userId: string): Promise<IUserDocument | null>;
+  ): Promise<IUSerStatsDocument | IPortalUserDocument>;
+  demoteUser(
+    userId: string,
+    myId: string,
+    myRole: string
+  ): Promise<IUserDocument | null>;
+  getPortalUsers(
+    userRole: UserRoles,
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; data: IPortalUserDocument[] }>;
+  getPortalChildUsers(
+    userRole: UserRoles,
+    parentId: string,
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; data: IPortalUserDocument[] }>;
 }
 
 export default class SharedPowerService implements ISharedPowerService {
@@ -109,20 +124,22 @@ export default class SharedPowerService implements ISharedPowerService {
     id: string,
     user: Partial<IPortalUserDocument>
   ): Promise<IPortalUserDocument | null> {
-    if(user.password) {
+    if (user.password) {
       user.password = await bcrypt.hash(user.password, 10);
     }
-    if(user.avatar) {
-      user.avatar = await uploadFileToCloudinary(
-        {
-          file: user.avatar as Express.Multer.File,
-          folder: "portal_users",
-          isVideo: false,
-        }
-      );
+    if (user.avatar) {
+      user.avatar = await uploadFileToCloudinary({
+        file: user.avatar as Express.Multer.File,
+        folder: "portal_users",
+        isVideo: false,
+      });
     }
-    const updatedUser = await this.PortalUserRepository.updatePortalUser(id, user);
-    if(!updatedUser) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+    const updatedUser = await this.PortalUserRepository.updatePortalUser(
+      id,
+      user
+    );
+    if (!updatedUser)
+      throw new AppError(StatusCodes.NOT_FOUND, "User not found");
     return updatedUser;
   }
 
@@ -134,26 +151,40 @@ export default class SharedPowerService implements ISharedPowerService {
     return users;
   }
 
+  async retrieveAllUsers(
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; users: IUserDocument[] }> {
+    const users = await this.UserRepository.findAllUser(query);
+    return users;
+  }
+
   async promoteUser(
     id: string,
     permissions: string[],
-    userRole: UserRoles,
     myId: string,
     myRole: UserRoles
   ): Promise<IUserDocument | null> {
-    let myProfile;
-    if (myRole == UserRoles.Admin) {
-      myProfile = await this.AdminRepository.getAdminById(myId);
-    } else {
-      myProfile = await this.UserRepository.findUserById(myId);
-    }
+    // checking authority
+    if (myRole != UserRoles.Agency)
+      throw new AppError(
+        StatusCodes.UNAUTHORIZED,
+        `${UserRoles} is not authorized to promote user to host`
+      );
+    // get my profile
+    const myProfile = await this.PortalUserRepository.getPortalUserById(myId);
+
     if (!myProfile) throw new AppError(StatusCodes.NOT_FOUND, "Notvalid token");
 
+    // get target user profile
     const user = await this.UserRepository.findUserById(id);
     if (!user) {
       throw new AppError(StatusCodes.NOT_FOUND, "User not found");
     }
-
+    if (user.userRole == UserRoles.Host)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `${user.name} already a host`
+      );
     const hasPermission = canUserUpdate(myProfile, [AdminPowers.PromoteUser]);
     if (!hasPermission)
       throw new AppError(
@@ -162,7 +193,8 @@ export default class SharedPowerService implements ISharedPowerService {
       );
 
     const updatedUser = await this.UserRepository.findUserByIdAndUpdate(id, {
-      userRole: userRole,
+      userRole: UserRoles.Host,
+      parentCreator: myId,
       userPermissions: permissions,
     });
 
@@ -180,86 +212,106 @@ export default class SharedPowerService implements ISharedPowerService {
     coins: number,
     myId: string,
     role: UserRoles
-  ): Promise<IUSerStatsDocument | null> {
-    const user = await this.UserRepository.findUserById(userId);
+  ): Promise<IUSerStatsDocument | IPortalUserDocument> {
+    // blocking unconventional transactions
+    if (
+      (role == UserRoles.Admin && userRole != UserRoles.Merchant) ||
+      (role == UserRoles.Merchant &&
+        !(userRole == UserRoles.Reseller || userRole == UserRoles.User)) ||
+      (role == UserRoles.Reseller && userRole != UserRoles.User)
+    )
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `${role} cannot assign coins to ${userRole}`
+      );
+
+    // fetching target profile
+    let targetUserProfile;
+    if (userRole == UserRoles.Merchant || userRole == UserRoles.Reseller)
+      targetUserProfile = await this.PortalUserRepository.getPortalUserById(
+        userId
+      );
+    else
+      targetUserProfile = await this.UserStatsRepository.getUserStats(userId);
+    // checking for invalid data
+    if (!targetUserProfile)
+      throw new AppError(
+        StatusCodes.NOT_FOUND,
+        `User with id ${userId} not found`
+      );
+
+    // fetching my profile
     let myProfile;
-    if (role == UserRoles.Admin) {
+    if (role == UserRoles.Admin)
       myProfile = await this.AdminRepository.getAdminById(myId);
-    } else {
-      myProfile = await this.UserRepository.findUserById(myId);
-    }
+    else myProfile = await this.PortalUserRepository.getPortalUserById(myId);
+    if (!myProfile)
+      throw new AppError(
+        StatusCodes.NOT_FOUND,
+        `Portal User with id ${myId} not found`
+      );
+
+    // starting mongoose transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    // checking if i have sufficient funds
+    if (myProfile.coins! < coins)
+      throw new AppError(StatusCodes.BAD_REQUEST, `Insufficient funds`);
+
+    // negating coin from my profile
+    if (role == UserRoles.Admin)
+      await this.AdminRepository.updateCoin(myId, -coins, session);
+    else await this.PortalUserRepository.updateCoin(myId, -coins, session);
+
+    // adding coin to the target user
+    let transactionUpdate;
+    if (userRole == UserRoles.Merchant || userRole == UserRoles.Reseller)
+      transactionUpdate = await this.PortalUserRepository.updateCoin(
+        userId,
+        coins,
+        session
+      );
+    else
+      transactionUpdate = await this.UserStatsRepository.updateCoins(
+        userId,
+        coins,
+        session
+      );
+    // checking if the transaction succeeded
+    if (!transactionUpdate)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to assign coins to user"
+      );
+    // commiting the transaction
+    await session.commitTransaction();
+    session.endSession();
+
+    return transactionUpdate;
+  }
+
+  async demoteUser(
+    userId: string,
+    myId: string,
+    myRole: string
+  ): Promise<IUserDocument | null> {
+    if (myRole != UserRoles.Agency)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "You are not authorized to perform this action"
+      );
+    const myProfile = await this.PortalUserRepository.getPortalUserById(myId);
     if (!myProfile)
       throw new AppError(StatusCodes.NOT_FOUND, "Not valid token");
+    const canDemoteUser = canUserUpdate(myProfile, [AdminPowers.PromoteUser]);
 
-    // todo: update the functiuon
-    const canUpdateCoins = canUserUpdate(myProfile, [
-      AdminPowers.CoinDistribute,
-    ]);
-
-    if (!canUpdateCoins)
+    if (!canDemoteUser)
       throw new AppError(
         StatusCodes.UNAUTHORIZED,
         "You are not authorized to perform this action"
       );
 
-    if (!user) {
-      throw new AppError(StatusCodes.NOT_FOUND, "User not found");
-    }
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
-    // todo: handle for admin as he does not have user stats
-
-    let myStats;
-    if (role == UserRoles.Admin) {
-      myStats = await this.AdminRepository.getAdminById(myId);
-    } else if (role == UserRoles.Agency) {
-      myStats = await this.UserStatsRepository.getUserStats(myId);
-    }
-
-    if (!myStats)
-      throw new AppError(StatusCodes.NOT_FOUND, "My stats not found");
-    if (myStats.coins! < coins)
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        "You do not have enough coins to assign"
-      );
-    let myUpdatedStats;
-    if (role == UserRoles.Admin) {
-      myUpdatedStats = await this.AdminRepository.updateCoin(
-        myId,
-        -coins,
-        session
-      );
-    } else {
-      myUpdatedStats = await this.UserStatsRepository.updateDiamonds(
-        myId,
-        -coins,
-        session
-      );
-    }
-    if (!myUpdatedStats)
-      throw new AppError(
-        StatusCodes.INTERNAL_SERVER_ERROR,
-        "Failed to update my stats"
-      );
-    const updatedUser = await this.UserStatsRepository.updateCoins(
-      userId,
-      coins,
-      session
-    );
-    if (!updatedUser) {
-      throw new AppError(
-        StatusCodes.INTERNAL_SERVER_ERROR,
-        "Failed to assign coins to user"
-      );
-    }
-    await session.commitTransaction();
-    session.endSession();
-    return updatedUser;
-  }
-
-  async demoteUser(userId: string): Promise<IUserDocument | null> {
     const user = await this.UserRepository.findUserById(userId);
     if (!user) {
       throw new AppError(StatusCodes.NOT_FOUND, "User not found");
@@ -267,12 +319,12 @@ export default class SharedPowerService implements ISharedPowerService {
     if (user.userRole === UserRoles.User) {
       throw new AppError(
         StatusCodes.BAD_REQUEST,
-        "User is already a regular user"
+        `${user.name} is already a user`
       );
     }
     const updatedUser = await this.UserRepository.findUserByIdAndUpdate(
       userId,
-      { userRole: UserRoles.User, userPermissions: [] }
+      { userRole: UserRoles.User, userPermissions: [], parentCreator: null }
     );
     if (!updatedUser) {
       throw new AppError(
@@ -281,5 +333,29 @@ export default class SharedPowerService implements ISharedPowerService {
       );
     }
     return updatedUser;
+  }
+
+  async getPortalUsers(
+    userRole: UserRoles,
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; data: IPortalUserDocument[] }> {
+    const users = await this.PortalUserRepository.getPortalUsers(
+      userRole,
+      query
+    );
+    return users;
+  }
+
+  async getPortalChildUsers(
+    userRole: UserRoles,
+    parentId: string,
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; data: IPortalUserDocument[] }> {
+    const users = await this.PortalUserRepository.getPortalChildUsers(
+      userRole,
+      parentId,
+      query
+    );
+    return users;
   }
 }
