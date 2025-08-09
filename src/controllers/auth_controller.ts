@@ -55,22 +55,8 @@ export default class AuthController {
 
   giftUser = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.user!;
-    const { coins, diamonds, userId, roomId, giftId } = req.body;
-    if (isNaN(Number(coins)) || isNaN(Number(diamonds)))
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        "coins and diamonds must be numbers"
-      );
-    if (coins < 1 || diamonds < 1)
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        "coins and diamonds must be greater than 0"
-      );
-    const giftedUser = await this.authService.giftUser(
-      { myId: id, coins, diamonds, userId },
-      roomId,
-      giftId
-    );
+    const { userId, roomId, giftId } = req.body;
+    const giftedUser = await this.authService.giftUser({targetUserId: userId, myId: id, roomId, giftId});
     sendResponseEnhanced(res, giftedUser);
   });
 
