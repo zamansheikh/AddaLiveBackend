@@ -4,6 +4,8 @@ import { IUserDocument, IUserModel } from "../models/user/user_model_interface";
 import { DatabaseNames, UserRoles } from "../core/Utils/enums";
 import Friendship from "../models/friendship/friendship_model";
 import { IPagination, QueryBuilder } from "../core/Utils/query_builder";
+import AppError from "../core/errors/app_errors";
+import { StatusCodes } from "http-status-codes";
 
 export interface ITextPrivacy {
   whoCanTextMe: string;
@@ -16,7 +18,7 @@ export interface IUserRepository {
   getUserDetailsSelectedField(
     id: string,
     fields: string[]
-  ): Promise<IUserDocument | null>;
+  ): Promise<IUserDocument>;
   findByUID(uid: string): Promise<IUserDocument | null>;
   findAllUser(
     query: Record<string, any>
@@ -70,8 +72,11 @@ export default class UserRepository implements IUserRepository {
   async getUserDetailsSelectedField(
     id: string,
     fields: string[]
-  ): Promise<IUserDocument | null> {
-    return await this.UserModel.findById(id, fields);
+  ): Promise<IUserDocument> {
+    const user =  await this.UserModel.findById(id, fields);
+    if(!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+    return user;
+  
   }
   async findByUID(uid: string) {
     return await this.UserModel.findOne({ uid }).select("-password");

@@ -8,15 +8,22 @@ import UserRepository from "../../repository/user_repository";
 import User from "../../models/user/user_model";
 import { IUserDocument } from "../../models/user/user_model_interface";
 import { Socket } from "net";
+import mongoose from "mongoose";
 
 export interface RoomData {
   hostId: string;
-  roomType: RoomTypes,
+  roomType: RoomTypes;
   hostDetails?: IUserDocument | null;
   members: Set<string>;
   bannedUsers: Set<string>;
   brodcasters: Set<string>;
-  callRequests: Set<string>;
+  callRequests: Set<{
+    name: string;
+    avatar: string;
+    uid: string;
+    country: string;
+    _id: mongoose.Schema.Types.ObjectId | string;
+  }>;
   title: string;
 }
 
@@ -88,10 +95,17 @@ export default class SocketServer {
                   Array.from(roomData.brodcasters)
                 );
             }
-
-            if (roomData.callRequests.has(userId)) {
-              roomData.callRequests.delete(userId);
-              this.io.to(roomId).emit(SocketChannels.joinCallReqList, Array.from(roomData.callRequests));
+            const objectToDelete = Array.from(roomData.callRequests).find(
+              (request) => request._id.toString() === userId
+            );
+            if (objectToDelete) {
+              roomData.callRequests.delete(objectToDelete);
+              this.io
+                .to(roomId)
+                .emit(
+                  SocketChannels.joinCallReqList,
+                  Array.from(roomData.callRequests)
+                );
             }
             roomData.members.delete(userId);
             socket.leave(roomId);
@@ -100,7 +114,9 @@ export default class SocketServer {
           // Optionally delete empty rooms
           if (roomData.members.size === 0) {
             delete this.hostedRooms[roomId];
-            this.io.to(roomId).emit(SocketChannels.roomClosed,  Object.keys(this.hostedRooms));
+            this.io
+              .to(roomId)
+              .emit(SocketChannels.roomClosed, Object.keys(this.hostedRooms));
           }
         }
       });
