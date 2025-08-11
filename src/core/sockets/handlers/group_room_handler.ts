@@ -5,6 +5,7 @@ import { RoomData } from "../socket_server";
 import AppError from "../../errors/app_errors";
 import { IUserDocument } from "../../../models/user/user_model_interface";
 import { IUserRepository } from "../../../repository/user_repository";
+import mongoose from "mongoose";
 
 export interface ISerializedRoomData {
   hostId: string;
@@ -13,7 +14,13 @@ export interface ISerializedRoomData {
   members: string[];
   bannedUsers: string[];
   brodcasters: string[];
-  callRequests: string[];
+  callRequests: {
+    name: string;
+    avatar: string;
+    uid: string;
+    country: string;
+    _id: mongoose.Schema.Types.ObjectId | string;
+  }[];
   title: string;
 }
 
@@ -31,6 +38,7 @@ export async function registerGroupRoomHandler(
     "uid",
     "country",
   ]);
+
   if (!userId) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
 
   // host
@@ -162,13 +170,22 @@ export async function registerGroupRoomHandler(
         status: StatusCodes.CONTINUE,
         message: "You are already a broadcaster",
       });
-    if (room.callRequests.has(userId))
+    const hasId = Array.from(room.callRequests).some(
+      (request) => request._id.toString() === userId
+    );
+    if (hasId)
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.CONTINUE,
         message: "You have already sent request to join the call",
       });
 
-    room.callRequests.add(userId);
+    room.callRequests.add({
+      name: userDetails.name as string,
+      avatar: userDetails.avatar as string,
+      uid: userDetails.uid as string,
+      country: userDetails.country as string,
+      _id: userDetails._id as string,
+    });
     const hostSocketId = onlineUsers.get(room.hostId);
     if (hostSocketId) {
       io.to(hostSocketId).emit(SocketChannels.joinCallReq, {
@@ -230,7 +247,10 @@ export async function registerGroupRoomHandler(
         message: "You are not host of this room",
       });
     // check if the target user has sent a call request
-    if (!room.callRequests.has(targetId))
+    const hasId = Array.from(room.callRequests).some(
+      (request) => request._id.toString() === targetId
+    );
+    if (!hasId)
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.NOT_FOUND,
         message: "User has not requested to join the call",
@@ -251,7 +271,12 @@ export async function registerGroupRoomHandler(
         status: StatusCodes.BAD_REQUEST,
         message: "Maximum 3 broadcasters are allowed",
       });
-    room.callRequests.delete(targetId);
+    const objectToDelete = Array.from(room.callRequests).find(
+      (request) => request._id.toString() === targetId
+    );
+    if (objectToDelete) {
+      room.callRequests.delete(objectToDelete);
+    }
     room.brodcasters.add(targetId);
 
     const targetSocketId = onlineUsers.get(targetId);
@@ -398,7 +423,10 @@ export async function registerGroupRoomHandler(
 
     room.members.delete(userId);
     if (room.brodcasters.has(userId)) room.brodcasters.delete(userId);
-    if (room.callRequests.has(userId)) room.callRequests.delete(userId);
+    const objectToDelete = Array.from(room.callRequests).find(
+      (request) => request._id.toString() === userId
+    );
+    if (objectToDelete) room.callRequests.delete(objectToDelete);
 
     socket.leave(roomId);
 
