@@ -263,6 +263,7 @@ export default class AuthService implements IAuthService {
     ioInstance.to(roomId).emit(SocketChannels.sendGift, {
       avatar: myUser.avatar,
       name: myUser.name,
+      recieverId: userToGift._id,
       diamonds: exisitngGift.diamonds,
       gift: exisitngGift,
     });
