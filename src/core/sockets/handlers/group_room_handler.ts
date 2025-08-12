@@ -14,6 +14,14 @@ export interface ISerializedRoomData {
   members: string[];
   bannedUsers: string[];
   brodcasters: string[];
+  messages: {
+    name: string;
+    avatar: string;
+    uid: string;
+    country: string;
+    _id: mongoose.Schema.Types.ObjectId | string;
+    text: string;
+  }[];
   callRequests: {
     name: string;
     avatar: string;
@@ -41,6 +49,38 @@ export async function registerGroupRoomHandler(
 
   if (!userId) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
 
+  // send message
+
+  socket.on(SocketChannels.sendMessage, async ({ roomId, messageText }) => {
+    const room = hostedRooms[roomId];
+    if (!room)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "This room does not exists",
+      });
+
+    if(!messageText){
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Message text cannot be empty",
+      });
+    }
+
+    const message = {
+      name: userDetails.name as string,
+      avatar: userDetails.avatar as string,
+      uid: userDetails.uid as string,
+      country: userDetails.country as string,
+      _id: userDetails._id as string,
+      text: messageText,
+    };
+    if(room.messages.length >= 100) room.messages.shift();
+    room.messages.push(message);
+    io.to(roomId).emit(SocketChannels.sendMessage, message);
+  });
+
+
+
   // host
   socket.on(SocketChannels.createRoom, ({ roomId, title, roomType }) => {
     if (!roomId || !title || !roomType)
@@ -66,6 +106,7 @@ export async function registerGroupRoomHandler(
       hostId: userId,
       roomType: roomType,
       hostDetails: userDetails,
+      messages: [],
       members: new Set([userId]),
       bannedUsers: new Set(),
       brodcasters: new Set([userId]),
@@ -81,6 +122,7 @@ export async function registerGroupRoomHandler(
         hostId: roomData.hostId,
         roomType: roomData.roomType,
         roomId: room,
+        messages : roomData.messages,
         hostDetails: roomData.hostDetails,
         members: Array.from(roomData.members),
         bannedUsers: Array.from(roomData.bannedUsers),
@@ -441,6 +483,7 @@ export async function registerGroupRoomHandler(
         hostId: roomData.hostId,
         roomType: roomData.roomType,
         roomId: room,
+        messages: roomData.messages,
         hostDetails: roomData.hostDetails,
         members: Array.from(roomData.members),
         bannedUsers: Array.from(roomData.bannedUsers),

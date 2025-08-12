@@ -89,6 +89,7 @@ export enum SocketChannels {
   error = "error-message",
 
   sendGift = "sent-gift",
+  sendMessage = "sent-message",
 }
 
 export enum RoomTypes {
