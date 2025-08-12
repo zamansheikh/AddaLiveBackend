@@ -51,24 +51,13 @@ export async function registerGroupRoomHandler(
 
   // send message
 
-  socket.on(SocketChannels.sendMessage, async ({ roomId, senderId, messageText }) => {
+  socket.on(SocketChannels.sendMessage, async ({ roomId, messageText }) => {
     const room = hostedRooms[roomId];
     if (!room)
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.NOT_FOUND,
         message: "This room does not exists",
       });
-    const userDetails = await userRepository.getUserDetailsSelectedField(
-      senderId,
-      ["name", "avatar", "uid", "country"]
-    );
-    if(!userDetails) {
-      return io.to(socket.id).emit(SocketChannels.error, {
-        status: StatusCodes.NOT_FOUND,
-        message: "User details not found",
-      });
-      
-    }
 
     if(!messageText){
       return io.to(socket.id).emit(SocketChannels.error, {
