@@ -15,6 +15,14 @@ export interface RoomData {
   roomType: RoomTypes;
   hostDetails?: IUserDocument | null;
   members: Set<string>;
+  messages: {
+    name: string;
+    avatar: string;
+    uid: string;
+    country: string;
+    _id: mongoose.Schema.Types.ObjectId | string;
+    text: string;
+  }[];
   bannedUsers: Set<string>;
   brodcasters: Set<string>;
   callRequests: Set<{
