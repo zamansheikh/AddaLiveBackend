@@ -22,6 +22,13 @@ export interface ISerializedRoomData {
     _id: mongoose.Schema.Types.ObjectId | string;
     text: string;
   }[];
+  broadcastersDetails: {
+    name: string;
+    avatar: string;
+    uid: string;
+    country: string;
+    _id: mongoose.Schema.Types.ObjectId | string;
+  }[];
   callRequests: {
     name: string;
     avatar: string;
@@ -59,7 +66,7 @@ export async function registerGroupRoomHandler(
         message: "This room does not exists",
       });
 
-    if(!messageText){
+    if (!messageText) {
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.BAD_REQUEST,
         message: "Message text cannot be empty",
@@ -74,12 +81,10 @@ export async function registerGroupRoomHandler(
       _id: userDetails._id as string,
       text: messageText,
     };
-    if(room.messages.length >= 100) room.messages.shift();
+    if (room.messages.length >= 100) room.messages.shift();
     room.messages.push(message);
     io.to(roomId).emit(SocketChannels.sendMessage, message);
   });
-
-
 
   // host
   socket.on(SocketChannels.createRoom, ({ roomId, title, roomType }) => {
@@ -106,6 +111,7 @@ export async function registerGroupRoomHandler(
       hostId: userId,
       roomType: roomType,
       hostDetails: userDetails,
+      broadcastersDetails: [],
       messages: [],
       members: new Set([userId]),
       bannedUsers: new Set(),
@@ -122,8 +128,9 @@ export async function registerGroupRoomHandler(
         hostId: roomData.hostId,
         roomType: roomData.roomType,
         roomId: room,
-        messages : roomData.messages,
+        messages: roomData.messages,
         hostDetails: roomData.hostDetails,
+        broadcastersDetails: roomData.broadcastersDetails,
         members: Array.from(roomData.members),
         bannedUsers: Array.from(roomData.bannedUsers),
         brodcasters: Array.from(roomData.brodcasters),
@@ -321,7 +328,16 @@ export async function registerGroupRoomHandler(
     }
     room.brodcasters.add(targetId);
 
+    room.broadcastersDetails.push({
+      name: userDetails.name as string,
+      avatar: userDetails.avatar as string,
+      uid: userDetails.uid as string,
+      country: userDetails.country as string,
+      _id: userDetails._id as string,
+    });
+
     const targetSocketId = onlineUsers.get(targetId);
+
     if (targetSocketId) {
       io.to(targetSocketId).emit(SocketChannels.acceptCallReq, {
         roomId,
@@ -336,6 +352,26 @@ export async function registerGroupRoomHandler(
     //   SocketChannels.joinCallReqList,
     //   Array.from(room.callRequests)
     // );
+  });
+
+  socket.on(SocketChannels.broadcasterDetails, ({ roomId }) => {
+    if (!roomId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Room ID is required",
+      });
+    const room = hostedRooms[roomId];
+    if (!room)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "This room does not exists",
+      });
+
+    io.to(socket.id).emit(
+      SocketChannels.broadcasterDetails,
+      Array.from(room.broadcastersDetails)
+    );
+    
   });
 
   socket.on(SocketChannels.broadcasterList, ({ roomId }) => {
@@ -391,7 +427,13 @@ export async function registerGroupRoomHandler(
         status: StatusCodes.NOT_FOUND,
         message: "User is not a broadcaster",
       });
+
     room.brodcasters.delete(targetId);
+
+    room.broadcastersDetails = room.broadcastersDetails.filter(
+      (broadcaster) => broadcaster._id.toString() !== targetId
+    );
+    
     const targetSocketId = onlineUsers.get(targetId);
     if (targetSocketId) {
       io.to(targetSocketId).emit(SocketChannels.removeBroadCaster, {
@@ -484,6 +526,7 @@ export async function registerGroupRoomHandler(
         roomType: roomData.roomType,
         roomId: room,
         messages: roomData.messages,
+        broadcastersDetails: roomData.broadcastersDetails,
         hostDetails: roomData.hostDetails,
         members: Array.from(roomData.members),
         bannedUsers: Array.from(roomData.bannedUsers),

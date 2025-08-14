@@ -76,6 +76,7 @@ export enum SocketChannels {
   acceptCallReq = "accept-call-request",
   broadcasterList = "broadcaster-list",
   removeBroadCaster = "remove-broadcaster",
+  broadcasterDetails = "broadcaster-details",
   leaveRoom = "leave-room",
   userJoined = "user-joined",
   userLeft = "user-left",

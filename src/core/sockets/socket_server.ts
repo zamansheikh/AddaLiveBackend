@@ -23,6 +23,13 @@ export interface RoomData {
     _id: mongoose.Schema.Types.ObjectId | string;
     text: string;
   }[];
+  broadcastersDetails:{
+    name: string;
+    avatar: string;
+    uid: string;
+    country: string;
+    _id: mongoose.Schema.Types.ObjectId | string;
+  }[];
   bannedUsers: Set<string>;
   brodcasters: Set<string>;
   callRequests: Set<{
