@@ -81,7 +81,7 @@ export enum SocketChannels {
   userJoined = "user-joined",
   userLeft = "user-left",
   banUser = "ban-user",
-  banned = "banned",
+  bannedList = "banned-list",
   userBanned = "user-banned",
   roomClosed = "room-closed",
   inviteUser = "invite-user",

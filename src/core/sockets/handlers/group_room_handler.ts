@@ -534,14 +534,89 @@ export async function registerGroupRoomHandler(
         callRequests: Array.from(roomData.callRequests),
         title: roomData.title,
       };
-      serializedRoom.push(obj);
+      if(!obj.bannedUsers.includes(userId)){
+        serializedRoom.push(obj);
+      }
     }
 
     io.emit(SocketChannels.getRooms, serializedRoom);
   });
 
   // host only
-  socket.on(SocketChannels.banUser, ({ roomId, targetId }) => {});
+  socket.on(SocketChannels.banUser, ({ roomId, targetId }) => {
+    if(!roomId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Room ID is required",
+      });
+    const room = hostedRooms[roomId];
+    if (!room)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "This room does not exists",
+      });
+    if (room.hostId != userId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.UNAUTHORIZED,
+        message: "You are not host of this room",
+      });
+    if (room.hostId == targetId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Host cannot be banned",
+      });
+    if (!room.members.has(targetId))
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "User is not in this room",
+      });
+    if (room.bannedUsers.has(targetId))
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.CONTINUE,
+        message: "User is already banned from this room",
+      });
+
+    room.bannedUsers.add(targetId);
+    room.members.delete(targetId);
+    if (room.brodcasters.has(targetId)) room.brodcasters.delete(targetId);
+    const objectToDelete = Array.from(room.callRequests).find(
+      (request) => request._id.toString() === targetId
+    );
+    if (objectToDelete) room.callRequests.delete(objectToDelete);
+
+    const targetSocketId = onlineUsers.get(targetId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit(SocketChannels.banUser, {
+        roomId,
+        targetId,
+        message: "You have been banned from this room",
+      });
+      io.sockets.sockets.get(targetSocketId)?.leave(roomId);
+    }
+  });
+  
+  socket.on(SocketChannels.bannedList, ({roomId})=> {
+    if(!roomId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Room ID is required",
+      });
+    const room = hostedRooms[roomId];
+    if (!room)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "This room does not exists",
+      });
+    if (room.hostId != userId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.UNAUTHORIZED,
+        message: "You are not host of this room",
+      });
+    io.to(socket.id).emit(
+      SocketChannels.bannedList,
+      Array.from(room.bannedUsers)
+    );
+  })
 
   socket.on(SocketChannels.inviteUser, ({ roomId, targetId }) => {});
 }
