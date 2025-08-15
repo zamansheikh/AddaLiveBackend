@@ -454,7 +454,7 @@ export async function registerGroupRoomHandler(
     }
     io.to(roomId).emit(
       SocketChannels.broadcasterList,
-      Array.from(room.brodcasters)
+      room.broadcastersDetails
     );
   });
 
