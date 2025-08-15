@@ -111,7 +111,15 @@ export async function registerGroupRoomHandler(
       hostId: userId,
       roomType: roomType,
       hostDetails: userDetails,
-      broadcastersDetails: [],
+      broadcastersDetails: [
+        {
+          name: userDetails.name as string,
+          avatar: userDetails.avatar as string,
+          uid: userDetails.uid as string,
+          country: userDetails.country as string,
+          _id: userDetails._id as string,
+        },
+      ],
       messages: [],
       members: new Set([userId]),
       bannedUsers: new Set(),
@@ -274,7 +282,7 @@ export async function registerGroupRoomHandler(
     );
   });
 
-  socket.on(SocketChannels.acceptCallReq, ({ roomId, targetId }) => {
+  socket.on(SocketChannels.acceptCallReq, async ({ roomId, targetId }) => {
     if (!roomId || !targetId)
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.BAD_REQUEST,
@@ -327,13 +335,17 @@ export async function registerGroupRoomHandler(
       room.callRequests.delete(objectToDelete);
     }
     room.brodcasters.add(targetId);
-
+    // ! update
+    const targetUser = await userRepository.getUserDetailsSelectedField(
+      targetId,
+      ["name", "avatar", "uid", "country"]
+    );
     room.broadcastersDetails.push({
-      name: userDetails.name as string,
-      avatar: userDetails.avatar as string,
-      uid: userDetails.uid as string,
-      country: userDetails.country as string,
-      _id: userDetails._id as string,
+      name: targetUser.name as string,
+      avatar: targetUser.avatar as string,
+      uid: targetUser.uid as string,
+      country: targetUser.country as string,
+      _id: targetUser._id as string,
     });
 
     const targetSocketId = onlineUsers.get(targetId);
@@ -346,7 +358,7 @@ export async function registerGroupRoomHandler(
     }
     io.to(roomId).emit(
       SocketChannels.broadcasterList,
-      Array.from(room.brodcasters)
+      Array.from(room.broadcastersDetails)
     );
     // io.to(roomId).emit(
     //   SocketChannels.joinCallReqList,
@@ -371,7 +383,6 @@ export async function registerGroupRoomHandler(
       SocketChannels.broadcasterDetails,
       Array.from(room.broadcastersDetails)
     );
-    
   });
 
   socket.on(SocketChannels.broadcasterList, ({ roomId }) => {
@@ -433,7 +444,7 @@ export async function registerGroupRoomHandler(
     room.broadcastersDetails = room.broadcastersDetails.filter(
       (broadcaster) => broadcaster._id.toString() !== targetId
     );
-    
+
     const targetSocketId = onlineUsers.get(targetId);
     if (targetSocketId) {
       io.to(targetSocketId).emit(SocketChannels.removeBroadCaster, {
@@ -477,6 +488,15 @@ export async function registerGroupRoomHandler(
       });
     room.members.add(userId);
     socket.join(roomId);
+    const message = {
+      name: userDetails.name as string,
+      avatar: userDetails.avatar as string,
+      uid: userDetails.uid as string,
+      country: userDetails.country as string,
+      _id: userDetails._id as string,
+      text: "joined the room",
+    };
+    io.to(roomId).emit(SocketChannels.sendMessage, message);
     io.to(roomId).emit(SocketChannels.userJoined, userDetails);
   });
 
@@ -513,6 +533,15 @@ export async function registerGroupRoomHandler(
     if (objectToDelete) room.callRequests.delete(objectToDelete);
 
     socket.leave(roomId);
+    const message = {
+      name: userDetails.name as string,
+      avatar: userDetails.avatar as string,
+      uid: userDetails.uid as string,
+      country: userDetails.country as string,
+      _id: userDetails._id as string,
+      text: `left the room`,
+    };
+    io.to(roomId).emit(SocketChannels.sendMessage, message);
 
     io.to(roomId).emit(SocketChannels.userLeft, userDetails);
   });
@@ -534,7 +563,7 @@ export async function registerGroupRoomHandler(
         callRequests: Array.from(roomData.callRequests),
         title: roomData.title,
       };
-      if(!obj.bannedUsers.includes(userId)){
+      if (!obj.bannedUsers.includes(userId)) {
         serializedRoom.push(obj);
       }
     }
@@ -544,7 +573,7 @@ export async function registerGroupRoomHandler(
 
   // host only
   socket.on(SocketChannels.banUser, ({ roomId, targetId }) => {
-    if(!roomId)
+    if (!roomId)
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.BAD_REQUEST,
         message: "Room ID is required",
@@ -582,9 +611,15 @@ export async function registerGroupRoomHandler(
     const objectToDelete = Array.from(room.callRequests).find(
       (request) => request._id.toString() === targetId
     );
+
     if (objectToDelete) room.callRequests.delete(objectToDelete);
+    room.broadcastersDetails.filter(
+      (broadcaster) => broadcaster._id.toString() !== targetId
+    );
 
     const targetSocketId = onlineUsers.get(targetId);
+    console.log(targetSocketId);
+    
     if (targetSocketId) {
       io.to(targetSocketId).emit(SocketChannels.banUser, {
         roomId,
@@ -594,9 +629,9 @@ export async function registerGroupRoomHandler(
       io.sockets.sockets.get(targetSocketId)?.leave(roomId);
     }
   });
-  
-  socket.on(SocketChannels.bannedList, ({roomId})=> {
-    if(!roomId)
+
+  socket.on(SocketChannels.bannedList, ({ roomId }) => {
+    if (!roomId)
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.BAD_REQUEST,
         message: "Room ID is required",
@@ -616,7 +651,7 @@ export async function registerGroupRoomHandler(
       SocketChannels.bannedList,
       Array.from(room.bannedUsers)
     );
-  })
+  });
 
   socket.on(SocketChannels.inviteUser, ({ roomId, targetId }) => {});
 }
