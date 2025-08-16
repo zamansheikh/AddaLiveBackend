@@ -358,7 +358,7 @@ export async function registerGroupRoomHandler(
     }
     io.to(roomId).emit(
       SocketChannels.broadcasterList,
-     room.broadcastersDetails
+      room.broadcastersDetails
     );
     // io.to(roomId).emit(
     //   SocketChannels.joinCallReqList,
@@ -399,7 +399,7 @@ export async function registerGroupRoomHandler(
       });
     io.to(socket.id).emit(
       SocketChannels.broadcasterList,
-     room.broadcastersDetails
+      room.broadcastersDetails
     );
   });
 
@@ -418,6 +418,10 @@ export async function registerGroupRoomHandler(
 
     if (userId == targetId) {
       room.brodcasters.delete(targetId);
+      room.broadcastersDetails = room.broadcastersDetails.filter(
+        (broadcaster) => broadcaster._id.toString() !== targetId
+      );
+
       io.to(roomId).emit(
         SocketChannels.broadcasterList,
         room.broadcastersDetails
@@ -619,7 +623,7 @@ export async function registerGroupRoomHandler(
 
     const targetSocketId = onlineUsers.get(targetId);
     console.log(targetSocketId);
-    
+
     if (targetSocketId) {
       io.to(targetSocketId).emit(SocketChannels.banUser, {
         roomId,
