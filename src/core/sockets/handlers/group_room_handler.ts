@@ -358,7 +358,7 @@ export async function registerGroupRoomHandler(
     }
     io.to(roomId).emit(
       SocketChannels.broadcasterList,
-      Array.from(room.broadcastersDetails)
+     room.broadcastersDetails
     );
     // io.to(roomId).emit(
     //   SocketChannels.joinCallReqList,
@@ -381,7 +381,7 @@ export async function registerGroupRoomHandler(
 
     io.to(socket.id).emit(
       SocketChannels.broadcasterDetails,
-      Array.from(room.broadcastersDetails)
+      room.broadcastersDetails
     );
   });
 
@@ -399,7 +399,7 @@ export async function registerGroupRoomHandler(
       });
     io.to(socket.id).emit(
       SocketChannels.broadcasterList,
-      Array.from(room.brodcasters)
+     room.broadcastersDetails
     );
   });
 
@@ -420,7 +420,7 @@ export async function registerGroupRoomHandler(
       room.brodcasters.delete(targetId);
       io.to(roomId).emit(
         SocketChannels.broadcasterList,
-        Array.from(room.brodcasters)
+        room.broadcastersDetails
       );
       return io.to(socket.id).emit(SocketChannels.removeBroadCaster, {
         roomId,
