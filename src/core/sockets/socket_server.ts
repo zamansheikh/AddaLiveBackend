@@ -15,6 +15,13 @@ export interface RoomData {
   roomType: RoomTypes;
   hostDetails?: IUserDocument | null;
   members: Set<string>;
+  membersDetails: {
+    name: string;
+    avatar: string;
+    uid: string;
+    country: string;
+    _id: mongoose.Schema.Types.ObjectId | string;
+  }[];
   messages: {
     name: string;
     avatar: string;
@@ -23,7 +30,7 @@ export interface RoomData {
     _id: mongoose.Schema.Types.ObjectId | string;
     text: string;
   }[];
-  broadcastersDetails:{
+  broadcastersDetails: {
     name: string;
     avatar: string;
     uid: string;
@@ -103,11 +110,14 @@ export default class SocketServer {
           if (roomData.members.has(userId)) {
             if (roomData.brodcasters.has(userId)) {
               roomData.brodcasters.delete(userId);
+              roomData.broadcastersDetails = roomData.broadcastersDetails.filter(
+                (broadcaster) => broadcaster._id.toString() !== userId
+              );
               this.io
                 .to(roomId)
                 .emit(
                   SocketChannels.broadcasterList,
-                  Array.from(roomData.brodcasters)
+                  Array.from(roomData.broadcastersDetails)
                 );
             }
             const objectToDelete = Array.from(roomData.callRequests).find(
@@ -123,8 +133,14 @@ export default class SocketServer {
                 );
             }
             roomData.members.delete(userId);
+            const userDetails = roomData.membersDetails.filter(
+              (member) => member._id.toString() == userId
+            );
+            roomData.membersDetails = roomData.membersDetails.filter(
+              (member) => member._id.toString() !== userId
+            );
             socket.leave(roomId);
-            this.io.to(roomId).emit(SocketChannels.userLeft, userId);
+            this.io.to(roomId).emit(SocketChannels.userLeft, userDetails);
           }
           // Optionally delete empty rooms
           if (roomData.members.size === 0) {
