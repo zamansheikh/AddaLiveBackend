@@ -12,6 +12,13 @@ export interface ISerializedRoomData {
   roomType: RoomTypes;
   hostDetails?: IUserDocument | null;
   members: string[];
+  membersDetails: {
+    name: string;
+    avatar: string;
+    uid: string;
+    country: string;
+    _id: mongoose.Schema.Types.ObjectId | string;
+  }[];
   bannedUsers: string[];
   brodcasters: string[];
   messages: {
@@ -122,6 +129,15 @@ export async function registerGroupRoomHandler(
       ],
       messages: [],
       members: new Set([userId]),
+      membersDetails: [
+        {
+          name: userDetails.name as string,
+          avatar: userDetails.avatar as string,
+          uid: userDetails.uid as string,
+          country: userDetails.country as string,
+          _id: userDetails._id as string,
+        },
+      ],
       bannedUsers: new Set(),
       brodcasters: new Set([userId]),
       callRequests: new Set(),
@@ -140,6 +156,7 @@ export async function registerGroupRoomHandler(
         hostDetails: roomData.hostDetails,
         broadcastersDetails: roomData.broadcastersDetails,
         members: Array.from(roomData.members),
+        membersDetails: roomData.membersDetails,
         bannedUsers: Array.from(roomData.bannedUsers),
         brodcasters: Array.from(roomData.brodcasters),
         callRequests: Array.from(roomData.callRequests),
@@ -491,6 +508,13 @@ export async function registerGroupRoomHandler(
         message: "You are already in this room",
       });
     room.members.add(userId);
+    room.membersDetails.push({
+      name: userDetails.name as string,
+      avatar: userDetails.avatar as string,
+      uid: userDetails.uid as string,
+      country: userDetails.country as string,
+      _id: userDetails._id as string,
+    });
     socket.join(roomId);
     const message = {
       name: userDetails.name as string,
@@ -530,6 +554,9 @@ export async function registerGroupRoomHandler(
       });
 
     room.members.delete(userId);
+    room.membersDetails = room.membersDetails.filter(
+      (member) => member._id.toString() !== userId
+    );
     if (room.brodcasters.has(userId)) room.brodcasters.delete(userId);
     const objectToDelete = Array.from(room.callRequests).find(
       (request) => request._id.toString() === userId
@@ -562,6 +589,7 @@ export async function registerGroupRoomHandler(
         broadcastersDetails: roomData.broadcastersDetails,
         hostDetails: roomData.hostDetails,
         members: Array.from(roomData.members),
+        membersDetails: roomData.membersDetails,
         bannedUsers: Array.from(roomData.bannedUsers),
         brodcasters: Array.from(roomData.brodcasters),
         callRequests: Array.from(roomData.callRequests),
