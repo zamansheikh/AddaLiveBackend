@@ -2,7 +2,7 @@ import cloudinary from "../config/cloudaniay_config";
 import { generateFileHash } from "./helper_functions";
 
 
-export const uploadFileToCloudinary = ({ isVideo, folder, file }: { isVideo: boolean, folder: string, file: Express.Multer.File }) => {
+export const uploadFileToCloudinary = ({ isVideo, folder, file, svga = false }: { isVideo: boolean, folder: string, file: Express.Multer.File, svga?: boolean }) => {
 
     const fileHash = generateFileHash(file.buffer);
     const publicId = `user_profiles/${fileHash}`;
@@ -14,7 +14,7 @@ export const uploadFileToCloudinary = ({ isVideo, folder, file }: { isVideo: boo
             {
                 public_id: publicId, // Ensures hash is used
                 folder: folder,
-                resource_type: isVideo ? 'video' : 'image',
+                resource_type: svga ? 'raw' : isVideo ? 'video' : 'image',
                 overwrite: false, // Don't overwrite if already exists
             },
             (error, result) => {

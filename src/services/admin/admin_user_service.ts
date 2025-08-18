@@ -373,9 +373,10 @@ export default class AdminUserService implements IAdminUserService {
       );
     gift.previewImage = previewImageUrl;
     const svgaImageUrl = await uploadFileToCloudinary({
-      isVideo: false,
+      isVideo: true,
       folder: CloudinaryFolder.giftAssets,
       file: gift.svgaImage as Express.Multer.File,
+      svga: true,
     });
     if (!svgaImageUrl)
       throw new AppError(
