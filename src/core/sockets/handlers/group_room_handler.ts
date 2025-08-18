@@ -639,6 +639,7 @@ export async function registerGroupRoomHandler(
 
     room.bannedUsers.add(targetId);
     room.members.delete(targetId);
+    room.membersDetails.filter((member) => member._id.toString() !== targetId);
     if (room.brodcasters.has(targetId)) room.brodcasters.delete(targetId);
     const objectToDelete = Array.from(room.callRequests).find(
       (request) => request._id.toString() === targetId
