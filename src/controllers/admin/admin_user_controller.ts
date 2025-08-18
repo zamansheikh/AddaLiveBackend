@@ -201,7 +201,6 @@ export default class AdminUserController {
   createGift = catchAsync(async (req: Request, res: Response) => {
     const { giftName, category, coinPrice, diamonds } = req.body;
     const files = req.files as unknown as IGiftFile;
-    console.log(files);
     if (!files)
       throw new AppError(StatusCodes.BAD_REQUEST, "Images are required");
     if (!files.previewImage || !files.svgaImage)
