@@ -68,6 +68,8 @@ export enum SocketChannels {
 
   createRoom = "create-room",
   deleteRoom = "delete-room",
+  makeAdmin = "make-admin",
+  muteUser = "mute-user",
   roomList = "room-list",
   joinRoom = "join-room",
   joinCallReq = "join-call-request",

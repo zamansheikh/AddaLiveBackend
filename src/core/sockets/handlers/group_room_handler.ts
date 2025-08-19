@@ -36,6 +36,13 @@ export interface ISerializedRoomData {
     country: string;
     _id: mongoose.Schema.Types.ObjectId | string;
   }[];
+  adminDetails: {
+    name: string;
+    avatar: string;
+    uid: string;
+    country: string;
+    _id: mongoose.Schema.Types.ObjectId | string;
+  } | null;
   callRequests: {
     name: string;
     avatar: string;
@@ -43,6 +50,7 @@ export interface ISerializedRoomData {
     country: string;
     _id: mongoose.Schema.Types.ObjectId | string;
   }[];
+  mutedUsers: string[];
   title: string;
 }
 
@@ -140,7 +148,9 @@ export async function registerGroupRoomHandler(
       ],
       bannedUsers: new Set(),
       brodcasters: new Set([userId]),
+      adminDetails: null,
       callRequests: new Set(),
+      mutedUsers: new Set(),
       title: title,
     };
     socket.join(roomId);
@@ -159,7 +169,9 @@ export async function registerGroupRoomHandler(
         membersDetails: roomData.membersDetails,
         bannedUsers: Array.from(roomData.bannedUsers),
         brodcasters: Array.from(roomData.brodcasters),
+        adminDetails: roomData.adminDetails,
         callRequests: Array.from(roomData.callRequests),
+        mutedUsers: Array.from(roomData.mutedUsers),
         title: roomData.title,
       };
       serializedRoom.push(obj);
@@ -205,6 +217,96 @@ export async function registerGroupRoomHandler(
 
     // ! if unintended users are also getting the event, use io.to(roomId),
     io.to(roomId).emit(SocketChannels.roomList, Object.keys(hostedRooms));
+  });
+
+  socket.on(SocketChannels.makeAdmin, ({ roomId, targetId }) => {
+    if (!roomId || !targetId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Room ID and Target ID are required",
+      });
+    const room = hostedRooms[roomId];
+    if (!room)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "This room does not exists",
+      });
+    if (room.hostId != userId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.UNAUTHORIZED,
+        message: "You are not host of this room",
+      });
+    if (
+      room.adminDetails != null &&
+      room.adminDetails?._id.toString() === targetId
+    )
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.CONTINUE,
+        message: "User is already an admin",
+      });
+    if (room.adminDetails)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.CONTINUE,
+        message: "Room already has an admin",
+      });
+    const broadcaster = room.broadcastersDetails.find(
+      (broadcaster) => broadcaster._id.toString() === targetId
+    );
+    if (!broadcaster)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "User is not a broadcaster",
+      });
+    room.adminDetails = broadcaster;
+    io.to(roomId).emit(SocketChannels.makeAdmin, {
+      adminDetails: room.adminDetails,
+      message: `${broadcaster.name} is now an admin`,
+    });
+  });
+
+  socket.on(SocketChannels.muteUser, ({ roomId, targetId }) => {
+    if (!roomId || !targetId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Room ID and Target ID are required",
+      });
+
+    const room = hostedRooms[roomId];
+    if (!room)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "This room does not exist",
+      });
+
+    if (room.hostId != userId && userId !== room.adminDetails?._id.toString())
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.UNAUTHORIZED,
+        message: "You are not host nor admin of this room",
+      });
+
+    if (!room.brodcasters.has(targetId))
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "User is not in the call",
+      });
+
+    if (room.mutedUsers.has(targetId)) {
+      room.mutedUsers.delete(targetId);
+      return io.to(roomId).emit(SocketChannels.muteUser, {
+        userId: targetId,
+        isMuted: false,
+        mutedUsers: Array.from(room.mutedUsers),
+        message: "User has been unmuted",
+      });
+    } else {
+      room.mutedUsers.add(targetId);
+      return io.to(roomId).emit(SocketChannels.muteUser, {
+        userId: targetId,
+        isMuted: true,
+        mutedUsers: Array.from(room.mutedUsers),
+        message: "User has been muted",
+      });
+    }
   });
 
   socket.on(SocketChannels.joinCallReq, ({ roomId }) => {
@@ -592,7 +694,9 @@ export async function registerGroupRoomHandler(
         membersDetails: roomData.membersDetails,
         bannedUsers: Array.from(roomData.bannedUsers),
         brodcasters: Array.from(roomData.brodcasters),
+        adminDetails: roomData.adminDetails,
         callRequests: Array.from(roomData.callRequests),
+        mutedUsers: Array.from(roomData.mutedUsers),
         title: roomData.title,
       };
       if (!obj.bannedUsers.includes(userId)) {
@@ -616,10 +720,10 @@ export async function registerGroupRoomHandler(
         status: StatusCodes.NOT_FOUND,
         message: "This room does not exists",
       });
-    if (room.hostId != userId)
+    if (room.hostId != userId || userId != room.adminDetails?._id.toString())
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.UNAUTHORIZED,
-        message: "You are not host of this room",
+        message: "You are not host nor admin of this room",
       });
     if (room.hostId == targetId)
       return io.to(socket.id).emit(SocketChannels.error, {
