@@ -39,6 +39,13 @@ export interface RoomData {
   }[];
   bannedUsers: Set<string>;
   brodcasters: Set<string>;
+  adminDetails: {
+    name: string;
+    avatar: string;
+    uid: string;
+    country: string;
+    _id: mongoose.Schema.Types.ObjectId | string;
+  } | null;
   callRequests: Set<{
     name: string;
     avatar: string;
@@ -46,6 +53,7 @@ export interface RoomData {
     country: string;
     _id: mongoose.Schema.Types.ObjectId | string;
   }>;
+  mutedUsers: Set<string>;
   title: string;
 }
 
@@ -110,9 +118,10 @@ export default class SocketServer {
           if (roomData.members.has(userId)) {
             if (roomData.brodcasters.has(userId)) {
               roomData.brodcasters.delete(userId);
-              roomData.broadcastersDetails = roomData.broadcastersDetails.filter(
-                (broadcaster) => broadcaster._id.toString() !== userId
-              );
+              roomData.broadcastersDetails =
+                roomData.broadcastersDetails.filter(
+                  (broadcaster) => broadcaster._id.toString() !== userId
+                );
               this.io
                 .to(roomId)
                 .emit(
