@@ -55,8 +55,14 @@ export default class AuthController {
 
   giftUser = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.user!;
-    const { userId, roomId, giftId } = req.body;
-    const giftedUser = await this.authService.giftUser({targetUserId: userId, myId: id, roomId, giftId});
+    const { userId, roomId, giftId, qty } = req.body;
+    if(!Array.isArray(userId))
+        throw new AppError(StatusCodes.BAD_REQUEST, "userId must be an array");
+    if(isNaN(Number(qty)))
+        throw new AppError(StatusCodes.BAD_REQUEST, "qty must be a number");
+    if(qty < 1)
+        throw new AppError(StatusCodes.BAD_REQUEST, "qty must be greater than 0")
+    const giftedUser = await this.authService.giftUser({targetUserIds: userId, myId: id, roomId, giftId, qty});
     sendResponseEnhanced(res, giftedUser);
   });
 

@@ -29,6 +29,15 @@ export default class UserStatsRepository implements IUserStatsRepository {
     return await this.model.findOne({ userId });
   }
 
+  async updateGiftDiamond(userIds: string[], diamonds: number, session?: ClientSession): Promise<mongoose.UpdateResult> {
+    const result = await this.model.updateMany(
+      { userId: { $in: userIds } },
+      { $inc: { diamonds: diamonds } }
+    ).session(session || null);
+    return result;
+    
+  }
+
   async updateCoins(
     userId: string,
     coins: number,
