@@ -10,7 +10,7 @@ import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary"
 import { IUserEntity } from "../../entities/user_entity_interface";
 import jwt from "jsonwebtoken";
 import IUserStatsRepository from "../../repository/userstats/userstats_repository_interface";
-import { Types } from "mongoose";
+import { Types, UpdateResult } from "mongoose";
 import { IAuthService, IGiftUser } from "./auth_service_interface";
 import { IUserDocument } from "../../models/user/user_model_interface";
 import mongoose from "mongoose";
@@ -222,37 +222,49 @@ export default class AuthService implements IAuthService {
     return this.UserRepository.findUserByIdAndUpdate(id, updatePayload);
   }
 
-  async giftUser(
-    {targetUserId, myId, roomId, giftId}: {targetUserId: string, myId: string, roomId: string, giftId: string}
-  ): Promise<IUserDocument | null> {
+  async giftUser({
+    targetUserIds,
+    myId,
+    roomId,
+    giftId,
+    qty,
+  }: {
+    targetUserIds: string[];
+    myId: string;
+    roomId: string;
+    giftId: string;
+    qty: number;
+  }): Promise<UpdateResult> {
     const myUser = await this.UserRepository.findUserById(myId);
-    const userToGift = await this.UserRepository.findUserById(targetUserId);
+    // const userToGift = await this.UserRepository.findUserById(targetUserId);
     const exisitngGift = await this.GiftRepository.getGiftById(giftId);
     if (!exisitngGift)
       throw new AppError(StatusCodes.NOT_FOUND, "gift not found");
 
-    if (!myUser || !userToGift)
-      throw new AppError(StatusCodes.NOT_FOUND, "user not found");
+    if (!myUser) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
 
     const mystats = await this.UserStatsRepository.getUserStats(myId);
-    const userStats = await this.UserStatsRepository.getUserStats(targetUserId);
 
-    if (!mystats || !userStats)
+    const totalPrice = exisitngGift.coinPrice * targetUserIds.length * qty;
+
+    if (!mystats)
       throw new AppError(
         StatusCodes.INTERNAL_SERVER_ERROR,
-        "user stats not found"
+        "my stats not found"
       );
 
     // starting a new session for safe rollback
+    if (mystats.coins! < totalPrice)
+      throw new AppError(StatusCodes.BAD_REQUEST, "not enough coins");
+
     const session = await mongoose.startSession();
     session.startTransaction();
-
-    if (mystats.coins! < exisitngGift.coinPrice)
-      throw new AppError(StatusCodes.BAD_REQUEST, "insufficient coins");
-    mystats.coins! -= exisitngGift.coinPrice;
-    await mystats.save({ session });
-    userStats.diamonds! += exisitngGift.diamonds;
-    const updatedUserStats = await userStats.save({ session });
+    mystats.coins! -= totalPrice;
+    mystats.save({ session });
+    const updateStats = await this.UserStatsRepository.updateGiftDiamond(
+      targetUserIds,
+      exisitngGift.diamonds * qty
+    );
 
     await session.commitTransaction();
     session.endSession();
@@ -263,20 +275,40 @@ export default class AuthService implements IAuthService {
     ioInstance.to(roomId).emit(SocketChannels.sendGift, {
       avatar: myUser.avatar,
       name: myUser.name,
-      recieverId: userToGift._id,
+      recieverIds: targetUserIds,
       diamonds: exisitngGift.diamonds,
+      qty: qty,
       gift: exisitngGift,
     });
+    const firstRecievedUser = await this.UserRepository.findUserById(
+      targetUserIds[0]
+    );
+    if (!firstRecievedUser)
+      throw new AppError(StatusCodes.NOT_FOUND, "reciever not found");
 
-    if (!updatedUserStats)
+    const message = {
+      name: myUser.name as string,
+      avatar: myUser.avatar as string,
+      uid: myUser.uid as string,
+      country: myUser.country as string,
+      _id: myUser._id as string,
+      text: `has gifted ${qty} ${exisitngGift.name} to ${
+        firstRecievedUser.name
+      } ${
+        targetUserIds.length - 1 == 0
+          ? ""
+          : `and ${targetUserIds.length - 1} more`
+      } `,
+    };
+    ioInstance.to(roomId).emit(SocketChannels.sendMessage, message);
+
+    if (!updateStats)
       throw new AppError(
         StatusCodes.INTERNAL_SERVER_ERROR,
         "updating user stats failed"
       );
 
-    const userWithStats = userToGift.toObject();
-    userWithStats.stats = updatedUserStats;
-    return userWithStats;
+    return updateStats;
   }
 
   async setChatPrivacy(payload: {

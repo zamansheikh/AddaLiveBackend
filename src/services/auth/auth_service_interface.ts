@@ -1,3 +1,4 @@
+import { UpdateResult } from "mongoose";
 import { WhoCanTextMe } from "../../core/Utils/enums";
 import { IUserEntity } from "../../entities/user_entity_interface";
 import { IUserDocument } from "../../models/user/user_model_interface";
@@ -15,7 +16,7 @@ export interface IAuthService {
     deleteMyAccount(id: string): Promise<IUserDocument | null>;
     retrieveUserDetails(id: string, myId: string): Promise<IUserDocument | null>;
     updateProfile({ id, profileData, file }: { id: string, profileData: Partial<Record<string, any>>, file?: Express.Multer.File }): Promise<IUserDocument | null>;
-    giftUser({targetUserId, myId, roomId, giftId}: {targetUserId: string, myId: string, roomId: string, giftId: string}): Promise<IUserDocument | null>;
+    giftUser({targetUserIds, myId, roomId, giftId, qty}: {targetUserIds: string[], myId: string, roomId: string, giftId: string, qty: number}): Promise<UpdateResult>;
     generateToken(info: {channelName: string, uid: string, APP_CERTIFICATE?: string, APP_ID?: string }): Promise<{token: string}>;
     setChatPrivacy(payload: { id: string, whoCanTextMe: WhoCanTextMe, highLevelRequirements: { levelType: string, level: number }[] }): Promise<IUserDocument | null>;
 }
