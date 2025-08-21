@@ -154,9 +154,10 @@ export default class SocketServer {
           // Optionally delete empty rooms
           if (roomData.members.size === 0) {
             delete this.hostedRooms[roomId];
-            this.io
-              .to(roomId)
-              .emit(SocketChannels.roomClosed, Object.keys(this.hostedRooms));
+            this.io.to(roomId).emit(SocketChannels.roomClosed, {
+              roomId,
+              message: "Room has been closed by the host",
+            });
           }
         }
       });

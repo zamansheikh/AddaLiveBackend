@@ -237,11 +237,11 @@ export default class AuthService implements IAuthService {
   }): Promise<UpdateResult> {
     const myUser = await this.UserRepository.findUserById(myId);
     // const userToGift = await this.UserRepository.findUserById(targetUserId);
+    if (!myUser) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
+
     const exisitngGift = await this.GiftRepository.getGiftById(giftId);
     if (!exisitngGift)
       throw new AppError(StatusCodes.NOT_FOUND, "gift not found");
-
-    if (!myUser) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
 
     const mystats = await this.UserStatsRepository.getUserStats(myId);
 
@@ -257,14 +257,28 @@ export default class AuthService implements IAuthService {
     if (mystats.coins! < totalPrice)
       throw new AppError(StatusCodes.BAD_REQUEST, "not enough coins");
 
+    const hasMyId = targetUserIds.filter((id) => id == myId);
+    const otherIds = targetUserIds.filter((id) => id != myId);
+
+    let updateStats = {
+      acknowledged: true,
+      modifiedCount: 1,
+      upsertedId: null,
+      upsertedCount: 0,
+      matchedCount: 1,
+    } as UpdateResult;
+
     const session = await mongoose.startSession();
     session.startTransaction();
     mystats.coins! -= totalPrice;
-    mystats.save({ session });
-    const updateStats = await this.UserStatsRepository.updateGiftDiamond(
-      targetUserIds,
-      exisitngGift.diamonds * qty
-    );
+    if (hasMyId) mystats.diamonds! += exisitngGift.diamonds * qty;
+    await mystats.save({ session });
+
+    if (otherIds)
+      updateStats = await this.UserStatsRepository.updateGiftDiamond(
+        otherIds,
+        exisitngGift.diamonds * qty
+      );
 
     await session.commitTransaction();
     session.endSession();
@@ -307,6 +321,11 @@ export default class AuthService implements IAuthService {
         StatusCodes.INTERNAL_SERVER_ERROR,
         "updating user stats failed"
       );
+
+    if(hasMyId && otherIds){
+      updateStats.matchedCount +=1;
+      updateStats.modifiedCount +=1;
+    }
 
     return updateStats;
   }
