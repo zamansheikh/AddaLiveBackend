@@ -136,15 +136,8 @@ export async function registerGroupRoomHandler(
         },
       ],
       messages: [],
-      members: new Set([userId]),
+      members: new Set(),
       membersDetails: [
-        {
-          name: userDetails.name as string,
-          avatar: userDetails.avatar as string,
-          uid: userDetails.uid as string,
-          country: userDetails.country as string,
-          _id: userDetails._id as string,
-        },
       ],
       bannedUsers: new Set(),
       brodcasters: new Set([userId]),
