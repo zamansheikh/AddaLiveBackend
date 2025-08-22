@@ -8,6 +8,7 @@ import sendResponse, {
 } from "../core/Utils/send_response";
 import AppError from "../core/errors/app_errors";
 import { WhoCanTextMe, WhoCanTextMeLevelTypes } from "../core/Utils/enums";
+import { validateWithdrawBonus } from "../core/Utils/helper_functions";
 
 export default class AuthController {
   authService: IAuthService;
@@ -56,14 +57,51 @@ export default class AuthController {
   giftUser = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.user!;
     const { userId, roomId, giftId, qty } = req.body;
-    if(!Array.isArray(userId))
-        throw new AppError(StatusCodes.BAD_REQUEST, "userId must be an array");
-    if(isNaN(Number(qty)))
-        throw new AppError(StatusCodes.BAD_REQUEST, "qty must be a number");
-    if(qty < 1)
-        throw new AppError(StatusCodes.BAD_REQUEST, "qty must be greater than 0")
-    const giftedUser = await this.authService.giftUser({targetUserIds: userId, myId: id, roomId, giftId, qty});
+    if (!Array.isArray(userId))
+      throw new AppError(StatusCodes.BAD_REQUEST, "userId must be an array");
+    if (isNaN(Number(qty)))
+      throw new AppError(StatusCodes.BAD_REQUEST, "qty must be a number");
+    if (qty < 1)
+      throw new AppError(StatusCodes.BAD_REQUEST, "qty must be greater than 0");
+    const giftedUser = await this.authService.giftUser({
+      targetUserIds: userId,
+      myId: id,
+      roomId,
+      giftId,
+      qty,
+    });
     sendResponseEnhanced(res, giftedUser);
+  });
+
+  addDailtyBonus = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const { totalTime, type } = req.body;
+    if (isNaN(Number(totalTime)))
+      throw new AppError(StatusCodes.BAD_REQUEST, "totalTime must be a number");
+    if (totalTime < 0)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "totalTime must be greater than or equal to 0"
+      );
+    const updatedUser = await this.authService.getDailyBonus(
+      id,
+      totalTime,
+      type
+    );
+    sendResponseEnhanced(res, updatedUser);
+  });
+
+  withdrawBonus = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    validateWithdrawBonus(req.body);
+    const { accountType, accountNumber, totalSalary } = req.body;
+    const updatedUser = await this.authService.withdrawBonus({
+      accountNumber,
+      accountType,
+      hostId: id,
+      totalSalary,
+    });
+    sendResponseEnhanced(res, updatedUser);
   });
 
   generateToken = catchAsync(async (req: Request, res: Response) => {

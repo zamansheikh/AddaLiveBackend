@@ -4,7 +4,9 @@ import {
   CloudinaryFolder,
   GiftTypes,
   SocketChannels,
+  StreamType,
   WhoCanTextMe,
+  WithdrawAccountTypes,
 } from "../../core/Utils/enums";
 import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
 import { IUserEntity } from "../../entities/user_entity_interface";
@@ -27,6 +29,14 @@ import { IReelReactionRepository } from "../../repository/reels/likes/reel_react
 import { IReelCommentRepository } from "../../repository/reels/comments/reel_comments_interface";
 import { IStoryReactionRepository } from "../../repository/stories/likes/story_reaction_repository_interface";
 import { existsSync } from "fs";
+import { IUSerStatsDocument } from "../../entities/userstats/userstats_interface";
+import { IRoomHistory } from "../../models/room/room_history_model";
+import { IRoomHistoryRepository } from "../../repository/room/room_repository";
+import {
+  IWithdrawBonus,
+  IWithdrawBonusDocument,
+} from "../../models/room/withdraw_bonus_model";
+import { IWithdrawBonusRepository } from "../../repository/room/withdraw_bonus_repository";
 
 export default class AuthService implements IAuthService {
   UserRepository: IUserRepository;
@@ -40,6 +50,9 @@ export default class AuthService implements IAuthService {
   ReelsCommentRepository: IReelCommentRepository;
   StoriesRepository: IStoryRepository;
   StoriesReactionRepository: IStoryReactionRepository;
+  RoomHistoryRepository: IRoomHistoryRepository;
+  WithDrawHistoryRepository: IRoomHistoryRepository;
+  BonusRepository: IWithdrawBonusRepository;
 
   constructor(
     UserRepository: IUserRepository,
@@ -52,7 +65,10 @@ export default class AuthService implements IAuthService {
     ReelsReactionReposiory: IReelReactionRepository,
     ReelsCommentRepository: IReelCommentRepository,
     StoriesRepository: IStoryRepository,
-    StoriesReactionRepository: IStoryReactionRepository
+    StoriesReactionRepository: IStoryReactionRepository,
+    RoomHistoryRepository: IRoomHistoryRepository,
+    WithDrawHistoryRepository: IRoomHistoryRepository,
+    BonusRepository: IWithdrawBonusRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
@@ -65,6 +81,9 @@ export default class AuthService implements IAuthService {
     this.ReelsCommentRepository = ReelsCommentRepository;
     this.StoriesRepository = StoriesRepository;
     this.StoriesReactionRepository = StoriesReactionRepository;
+    this.RoomHistoryRepository = RoomHistoryRepository;
+    this.WithDrawHistoryRepository = WithDrawHistoryRepository;
+    this.BonusRepository = BonusRepository;
   }
 
   async registerWithGoogle(UserData: IUserEntity) {
@@ -285,7 +304,10 @@ export default class AuthService implements IAuthService {
 
     // sending the information to the frontend via socket
     const ioInstance = SocketServer.getInstance().getIO();
-    SocketServer.getInstance().updateRoomCoin(roomId, exisitngGift.diamonds * qty );
+    SocketServer.getInstance().updateRoomCoin(
+      roomId,
+      exisitngGift.diamonds * qty
+    );
 
     ioInstance.to(roomId).emit(SocketChannels.sendGift, {
       avatar: myUser.avatar,
@@ -323,12 +345,166 @@ export default class AuthService implements IAuthService {
         "updating user stats failed"
       );
 
-    if(hasMyId && otherIds){
-      updateStats.matchedCount +=1;
-      updateStats.modifiedCount +=1;
+    if (hasMyId && otherIds) {
+      updateStats.matchedCount += 1;
+      updateStats.modifiedCount += 1;
     }
 
     return updateStats;
+  }
+
+  // add
+  async getDailyBonus(
+    id: string,
+    totalTime: number,
+    type: StreamType
+  ): Promise<IUSerStatsDocument> {
+    // erasing all the previous data from yesterday
+    const deleteStatus = await this.RoomHistoryRepository.resetRoomHistory();
+    // checking if the host reached maximum bonus
+    const isDone = await this.RoomHistoryRepository.getIsDone(id);
+
+    // creating withdraw history
+    const withdrawHistory =
+      await this.WithDrawHistoryRepository.createRoomHistory({
+        firstEligible: false,
+        host: id,
+        totalLive: totalTime,
+        isDone: false,
+        type: type,
+      });
+    if (!withdrawHistory)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Creating Withdraw History failed"
+      );
+
+    if (isDone)
+      throw new AppError(
+        StatusCodes.CONFLICT,
+        "You have reached the maximum bonus for today"
+      );
+    // checking the id validaty;
+    const user = await this.UserRepository.findUserById(id);
+    if (!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
+    const isFrist = await this.RoomHistoryRepository.getEligibleRoom(id);
+    if (isFrist) {
+      const totalLiveSum = await this.RoomHistoryRepository.getNextEligible(
+        id,
+        isFrist.createdAt
+      );
+      if (totalLiveSum + totalTime < 50) {
+        const newHistory = await this.RoomHistoryRepository.createRoomHistory({
+          firstEligible: totalTime >= 50,
+          host: id,
+          totalLive: totalTime,
+        });
+        if (!newHistory)
+          throw new AppError(
+            StatusCodes.INTERNAL_SERVER_ERROR,
+            "Creating History failed"
+          );
+        const up = await this.UserStatsRepository.updateDiamonds(id, 0);
+        if (!up)
+          throw new AppError(
+            StatusCodes.INTERNAL_SERVER_ERROR,
+            "updating user stats failed"
+          );
+        return up;
+      } else {
+        const newHistory = await this.RoomHistoryRepository.createRoomHistory({
+          firstEligible: false,
+          host: id,
+          totalLive: totalTime,
+          isDone: true,
+        });
+        if (!newHistory)
+          throw new AppError(
+            StatusCodes.INTERNAL_SERVER_ERROR,
+            "Creating History failed"
+          );
+        const up = await this.UserStatsRepository.updateDiamonds(id, 3000);
+        if (!up)
+          throw new AppError(
+            StatusCodes.INTERNAL_SERVER_ERROR,
+            "updating user stats failed"
+          );
+        return up;
+      }
+    } else {
+      // if the first target is not achieved
+      const newHistory = await this.RoomHistoryRepository.createRoomHistory({
+        firstEligible: totalTime >= 50,
+        host: id,
+        totalLive: totalTime,
+      });
+      if (!newHistory)
+        throw new AppError(
+          StatusCodes.INTERNAL_SERVER_ERROR,
+          "Creating History failed"
+        );
+      const up = await this.UserStatsRepository.updateDiamonds(
+        id,
+        totalTime >= 50 ? 2000 : 0
+      );
+      if (!up)
+        throw new AppError(
+          StatusCodes.INTERNAL_SERVER_ERROR,
+          "updating user stats failed"
+        );
+      return up;
+    }
+  }
+
+  async withdrawBonus(data: {
+    hostId: string;
+    accountType: WithdrawAccountTypes;
+    accountNumber: string;
+    totalSalary: number;
+  }): Promise<IWithdrawBonusDocument> {
+    const { hostId, accountType, accountNumber, totalSalary } = data;
+    const host = await this.UserRepository.findUserById(hostId);
+    if (!host) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
+    const bonus = await this.BonusRepository.getBonusDocument(hostId);
+    if (bonus)
+      throw new AppError(
+        StatusCodes.CONFLICT,
+        "You have already applied for bonus today"
+      );
+    const dayCount = await this.WithDrawHistoryRepository.getDayCount(hostId);
+    const hourCount = await this.WithDrawHistoryRepository.getTimeCount(hostId);
+    const audioTimeCount = await this.WithDrawHistoryRepository.getAudioHour(
+      hostId
+    );
+    const videoTimeCount = await this.WithDrawHistoryRepository.getVideoHour(
+      hostId
+    );
+
+    const bonusObj: IWithdrawBonus = {
+      accountNumber,
+      totalSalary,
+      accountType,
+      agencyId: host.parentCreator as string,
+      hostId,
+      country: host.country || "",
+      name: host.name || "",
+      withdrawDate: new Date(Date.now()),
+      day: dayCount,
+      time: hourCount,
+      audioHour: audioTimeCount,
+      videoHour: videoTimeCount,
+    };
+console.log(bonusObj);
+
+    const newWithdraw = await this.BonusRepository.createWithdrawBonus(
+      bonusObj
+    );
+    if (!newWithdraw)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "creating withdraw bonus failed"
+      );
+    return newWithdraw;
   }
 
   async setChatPrivacy(payload: {

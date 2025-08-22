@@ -31,6 +31,10 @@ import StoriesRepository from "../repository/stories/stories_repository";
 import Story from "../models/stories/stories_model";
 import StoryReactionRepository from "../repository/stories/likes/story_reaction_repository";
 import StoryReaction from "../models/stories/likes/story_reaction_model";
+import RoomHistoryRepository from "../repository/room/room_repository";
+import RoomHistory, { WithdrawRoomHistory } from "../models/room/room_history_model";
+import WithdrawBonusRepository from "../repository/room/withdraw_bonus_repository";
+import WithdrawBonusModel from "../models/room/withdraw_bonus_model";
 
 const router = express.Router();
 
@@ -48,6 +52,10 @@ const reelCommentRepository = new ReelsCommentRepostitory(Comments);
 const storyRepository = new StoriesRepository(Story);
 const storyReactionRepository = new StoryReactionRepository(StoryReaction);
 
+const roomHistoryRepository = new RoomHistoryRepository(RoomHistory);
+const withdrawHistoryRepository = new RoomHistoryRepository(WithdrawRoomHistory);
+const bonusRepository = new WithdrawBonusRepository(WithdrawBonusModel);
+
 const authService = new AuthService(
   userRepository,
   userstatsRepository,
@@ -59,7 +67,10 @@ const authService = new AuthService(
   reelReactionRepository,
   reelCommentRepository,
   storyRepository,
-  storyReactionRepository
+  storyReactionRepository,
+  roomHistoryRepository,
+  withdrawHistoryRepository,
+  bonusRepository,
 );
 const authController = new AuthController(authService);
 
@@ -91,6 +102,9 @@ router.put(
 router
   .route("/user/set-privacy/chats")
   .put(authenticate(), authController.setChatPrivacy);
+
+router.route("/daily-bonus").post(authenticate(), authController.addDailtyBonus);
+router.route("/withdraw-bonus").post(authenticate(), authController.withdrawBonus);
 
 router.post(
   "/generate-token",

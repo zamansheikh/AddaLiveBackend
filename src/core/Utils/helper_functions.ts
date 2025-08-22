@@ -1,7 +1,12 @@
 import crypto from "crypto";
 import AppError from "../errors/app_errors";
 import { StatusCodes } from "http-status-codes";
-import { ActivityZoneState, AdminPowers, UserRoles } from "./enums";
+import {
+  ActivityZoneState,
+  AdminPowers,
+  UserRoles,
+  WithdrawAccountTypes,
+} from "./enums";
 import { IUserDocument } from "../../models/user/user_model_interface";
 import { IAdminDocument } from "../../entities/admin/admin_interface";
 import { IPortalUserDocument } from "../../entities/portal_users/portal_user_interface";
@@ -31,7 +36,7 @@ export function isVideoFile(filename: string): boolean {
 }
 
 export function validatePromoteUserPermission(permissions: string[]): void {
- validatePermissions(permissions);
+  validatePermissions(permissions);
 }
 
 export function canUserUpdate(
@@ -114,4 +119,45 @@ export function validateblockUser(body: any): void {
       StatusCodes.BAD_REQUEST,
       "dateTill is required for temporary block"
     );
+}
+
+export function validateWithdrawBonus(body: Record<string, unknown>) {
+  const { accountType, accountNumber, totalSalary } = body;
+  if (!accountType || !accountNumber || !totalSalary)
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "Host ID, account type, account number, and total salary are required"
+    );
+  if (
+    !Object.values(WithdrawAccountTypes).includes(
+      accountType as WithdrawAccountTypes
+    )
+  )
+    throw new AppError(StatusCodes.BAD_REQUEST, "Invalid account type");
+  // check if host id is a valid mongodbId
+  if (isNaN(Number(totalSalary)))
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "Total salary must be a number"
+    );
+}
+
+export function getWithdrawDateBoundaires(): {gte: Date; lte: Date} {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth(); // 0-indexed
+  const date = today.getDate();
+  const lastDate = new Date(year, month + 1, 0).getDate();
+
+  if (date == 23) {
+    return {
+      gte: new Date(year, month, 1, 0, 0, 0),
+      lte: new Date(year, month, 23, 23, 59, 59),
+    };
+  } else if (date == lastDate) {
+    return {
+      gte: new Date(year, month, 15, 0, 0, 0),
+      lte: new Date(year, month, lastDate, 23, 59, 59),
+    };
+  } else throw new AppError(StatusCodes.BAD_REQUEST, "Invalid date");
 }

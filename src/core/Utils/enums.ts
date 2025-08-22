@@ -28,6 +28,9 @@ export enum DatabaseNames {
   Admin = "admins",
   Gifts = "gifts",
   PortalUsers = "portal_users",
+  RoomHistory = "room-histories",
+  withdrawRoomHistory = "withdraw-room-histories",
+  WithdrawBonus = "withdraw-bonus",
 }
 
 export enum ReelStatus {
@@ -129,8 +132,8 @@ export enum UserRoles {
   User = "user",
   Admin = "admin",
   Merchant = "merchant",
-  Reseller = 're-seller',
-  SubAdmin = 'sub-admin',
+  Reseller = "re-seller",
+  SubAdmin = "sub-admin",
   Agency = "agency",
   Host = "host",
   CountryAdmin = "country-admin",
@@ -144,7 +147,7 @@ export enum AdminPowers {
   BlockUser = "block-user",
   DeviceBan = "device-ban",
   LiveRoomClose = "live-room-close",
-  CreateUserAccount = "create-user-account"
+  CreateUserAccount = "create-user-account",
 }
 
 export enum WhoCanTextMe {
@@ -156,4 +159,22 @@ export enum WhoCanTextMe {
 export enum WhoCanTextMeLevelTypes {
   UserLevel = "user_level",
   talentLevel = "talent_level",
+}
+
+export enum StreamType {
+  Audio = "audio",
+  Video = "video",
+}
+
+export enum WithdrawAccountTypes {
+  Bkash = "bkash",
+  Nagad = "nagad",
+  Bank = "bank",
+}
+
+
+export enum StatusTypes {
+  accepted = "accepted",
+  rejected = "rejected",
+  pending = "pending",
 }

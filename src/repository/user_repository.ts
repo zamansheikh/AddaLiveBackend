@@ -19,6 +19,10 @@ export interface IUserRepository {
     id: string,
     fields: string[]
   ): Promise<IUserDocument>;
+  getPopulatedUserById(
+    id: string,
+    populateFields: string
+  ): Promise<IUserDocument | null>;
   findByUID(uid: string): Promise<IUserDocument | null>;
   findAllUser(
     query: Record<string, any>
@@ -73,10 +77,18 @@ export default class UserRepository implements IUserRepository {
     id: string,
     fields: string[]
   ): Promise<IUserDocument> {
-    const user =  await this.UserModel.findById(id, fields);
-    if(!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+    const user = await this.UserModel.findById(id, fields);
+    if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
     return user;
-  
+  }
+
+  async getPopulatedUserById(
+    id: string,
+    populateFields: string
+  ): Promise<IUserDocument | null> {
+    return await this.UserModel.findById(id)
+      .populate(populateFields)
+      .select("-password");
   }
   async findByUID(uid: string) {
     return await this.UserModel.findOne({ uid }).select("-password");
