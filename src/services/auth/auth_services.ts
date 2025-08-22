@@ -285,6 +285,7 @@ export default class AuthService implements IAuthService {
 
     // sending the information to the frontend via socket
     const ioInstance = SocketServer.getInstance().getIO();
+    SocketServer.getInstance().updateRoomCoin(roomId, exisitngGift.diamonds * qty );
 
     ioInstance.to(roomId).emit(SocketChannels.sendGift, {
       avatar: myUser.avatar,

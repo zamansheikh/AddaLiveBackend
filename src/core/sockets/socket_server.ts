@@ -14,6 +14,7 @@ export interface RoomData {
   hostId: string;
   roomType: RoomTypes;
   hostDetails?: IUserDocument | null;
+  hostCoins: number;
   members: Set<string>;
   membersDetails: {
     name: string;
@@ -175,4 +176,11 @@ export default class SocketServer {
   public getSocketId(userId: string): string | undefined {
     return this.onlineUsers.get(userId);
   }
+
+  public updateRoomCoin(roomId: string, coin: number): void {
+    const room = this.hostedRooms[roomId];
+    if (room) {
+      room.hostCoins += coin;
+    }
+  } 
 }

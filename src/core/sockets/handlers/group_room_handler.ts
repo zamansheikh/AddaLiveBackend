@@ -11,6 +11,7 @@ export interface ISerializedRoomData {
   hostId: string;
   roomType: RoomTypes;
   hostDetails?: IUserDocument | null;
+  hostCoins: number;
   members: string[];
   membersDetails: {
     name: string;
@@ -126,6 +127,7 @@ export async function registerGroupRoomHandler(
       hostId: userId,
       roomType: roomType,
       hostDetails: userDetails,
+      hostCoins: 0,
       broadcastersDetails: [
         {
           name: userDetails.name as string,
@@ -157,6 +159,7 @@ export async function registerGroupRoomHandler(
         roomId: room,
         messages: roomData.messages,
         hostDetails: roomData.hostDetails,
+        hostCoins: roomData.hostCoins,
         broadcastersDetails: roomData.broadcastersDetails,
         members: Array.from(roomData.members),
         membersDetails: roomData.membersDetails,
@@ -683,6 +686,7 @@ export async function registerGroupRoomHandler(
         messages: roomData.messages,
         broadcastersDetails: roomData.broadcastersDetails,
         hostDetails: roomData.hostDetails,
+        hostCoins: roomData.hostCoins,
         members: Array.from(roomData.members),
         membersDetails: roomData.membersDetails,
         bannedUsers: Array.from(roomData.bannedUsers),
