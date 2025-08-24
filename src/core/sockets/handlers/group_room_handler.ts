@@ -139,8 +139,7 @@ export async function registerGroupRoomHandler(
       ],
       messages: [],
       members: new Set(),
-      membersDetails: [
-      ],
+      membersDetails: [],
       bannedUsers: new Set(),
       brodcasters: new Set([userId]),
       adminDetails: null,
@@ -254,13 +253,22 @@ export async function registerGroupRoomHandler(
         message: "User is not a broadcaster",
       });
     room.adminDetails = broadcaster;
+    const message = {
+      name: broadcaster.name as string,
+      avatar: broadcaster.avatar as string,
+      uid: broadcaster.uid as string,
+      country: broadcaster.country as string,
+      _id: broadcaster._id as string,
+      text: `Has been made an admin`,
+    };
+    io.to(roomId).emit(SocketChannels.sendMessage, message);
     io.to(roomId).emit(SocketChannels.makeAdmin, {
       adminDetails: room.adminDetails,
       message: `${broadcaster.name} is now an admin`,
     });
   });
 
-  socket.on(SocketChannels.muteUser, ({ roomId, targetId }) => {
+  socket.on(SocketChannels.muteUser, async ({ roomId, targetId }) => {
     if (!roomId || !targetId)
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.BAD_REQUEST,
@@ -286,8 +294,23 @@ export async function registerGroupRoomHandler(
         message: "User is not in the call",
       });
 
+    const targetIdDetails = await userRepository.getUserDetailsSelectedField(
+      targetId,
+      ["name", "avatar", "uid", "country"]
+    );
+    let message = {
+      name: targetIdDetails.name as string,
+      avatar: targetIdDetails.avatar as string,
+      uid: targetIdDetails.uid as string,
+      country: targetIdDetails.country as string,
+      _id: targetIdDetails._id as string,
+      text: `left the room`,
+    };
+
     if (room.mutedUsers.has(targetId)) {
       room.mutedUsers.delete(targetId);
+      message.text = "User has been unmuted";
+      io.to(roomId).emit(SocketChannels.sendMessage, message);
       return io.to(roomId).emit(SocketChannels.muteUser, {
         userId: targetId,
         isMuted: false,
@@ -296,6 +319,8 @@ export async function registerGroupRoomHandler(
       });
     } else {
       room.mutedUsers.add(targetId);
+      message.text = "User has been muted";
+      io.to(roomId).emit(SocketChannels.sendMessage, message);
       return io.to(roomId).emit(SocketChannels.muteUser, {
         userId: targetId,
         isMuted: true,
@@ -350,6 +375,16 @@ export async function registerGroupRoomHandler(
         status: StatusCodes.CONTINUE,
         message: "You have already sent request to join the call",
       });
+
+    const message = {
+      name: userDetails.name as string,
+      avatar: userDetails.avatar as string,
+      uid: userDetails.uid as string,
+      country: userDetails.country as string,
+      _id: userDetails._id as string,
+      text: `Has requested to join the call`,
+    };
+    io.to(roomId).emit(SocketChannels.sendMessage, message);
 
     room.callRequests.add({
       name: userDetails.name as string,
@@ -463,6 +498,21 @@ export async function registerGroupRoomHandler(
       _id: targetUser._id as string,
     });
 
+    const targetIdDetails = await userRepository.getUserDetailsSelectedField(
+      targetId,
+      ["name", "avatar", "uid", "country"]
+    );
+
+    const message = {
+      name: targetIdDetails.name as string,
+      avatar: targetIdDetails.avatar as string,
+      uid: targetIdDetails.uid as string,
+      country: targetIdDetails.country as string,
+      _id: targetIdDetails._id as string,
+      text: `Has joined the call`,
+    };
+    io.to(roomId).emit(SocketChannels.sendMessage, message);
+
     const targetSocketId = onlineUsers.get(targetId);
 
     if (targetSocketId) {
@@ -518,7 +568,7 @@ export async function registerGroupRoomHandler(
     );
   });
 
-  socket.on(SocketChannels.removeBroadCaster, ({ roomId, targetId }) => {
+  socket.on(SocketChannels.removeBroadCaster, async ({ roomId, targetId }) => {
     if (!roomId || !targetId)
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.BAD_REQUEST,
@@ -564,6 +614,20 @@ export async function registerGroupRoomHandler(
       (broadcaster) => broadcaster._id.toString() !== targetId
     );
 
+    const targetIdDetails = await userRepository.getUserDetailsSelectedField(
+      targetId,
+      ["name", "avatar", "uid", "country"]
+    );
+
+    const message = {
+      name: targetIdDetails.name as string,
+      avatar: targetIdDetails.avatar as string,
+      uid: targetIdDetails.uid as string,
+      country: targetIdDetails.country as string,
+      _id: targetIdDetails._id as string,
+      text: `Has been removed from call`,
+    };
+    io.to(roomId).emit(SocketChannels.sendMessage, message);
     const targetSocketId = onlineUsers.get(targetId);
     if (targetSocketId) {
       io.to(targetSocketId).emit(SocketChannels.removeBroadCaster, {
@@ -705,7 +769,7 @@ export async function registerGroupRoomHandler(
   });
 
   // host only
-  socket.on(SocketChannels.banUser, ({ roomId, targetId }) => {
+  socket.on(SocketChannels.banUser, async ({ roomId, targetId }) => {
     if (!roomId)
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.BAD_REQUEST,
@@ -753,6 +817,21 @@ export async function registerGroupRoomHandler(
 
     const targetSocketId = onlineUsers.get(targetId);
     console.log(targetSocketId);
+
+    const targetIdDetails = await userRepository.getUserDetailsSelectedField(
+      targetId,
+      ["name", "avatar", "uid", "country"]
+    );
+    
+    const message = {
+      name: targetIdDetails.name as string,
+      avatar: targetIdDetails.avatar as string,
+      uid: targetIdDetails.uid as string,
+      country: targetIdDetails.country as string,
+      _id: targetIdDetails._id as string,
+      text: `Has been banned from this room`,
+    };
+    io.to(roomId).emit(SocketChannels.sendMessage, message);
 
     if (targetSocketId) {
       io.to(targetSocketId).emit(SocketChannels.banUser, {
