@@ -37,7 +37,7 @@ const adminUserService = new AdminUserService(
   adminRepository,
   giftRepository,
   portalUserRepository,
-  bonusRepository,
+  bonusRepository
 );
 const adminUserController = new AdminUserController(adminUserService);
 
@@ -48,7 +48,9 @@ router
   .delete(authenticate([UserRoles.Admin]), adminUserController.deleteAdmin)
   .get(authenticate([UserRoles.Admin]), adminUserController.getAdminProfile);
 
-router.route("/auth/assign-coin").put(authenticate([UserRoles.Admin]), adminUserController.assignCoinToAdmin );
+router
+  .route("/auth/assign-coin")
+  .put(authenticate([UserRoles.Admin]), adminUserController.assignCoinToAdmin);
 
 router.route("/login").post(adminUserController.loginAdmin);
 
@@ -66,7 +68,6 @@ router
 router
   .route("/users/moderators")
   .get(authenticate([UserRoles.Admin]), adminUserController.getAllModerators);
-
 
 router.put(
   "/users/activity-zone",
@@ -130,12 +131,25 @@ router
 router
   .route("/role/permissions/remove/:roleId")
   .put(
-    authenticate([UserRoles.Admin]), adminUserController.removeRolePermissions );
+    authenticate([UserRoles.Admin]),
+    adminUserController.removeRolePermissions
+  );
 
-router.route("/role/activity-zone").put(authenticate([UserRoles.Admin]), adminUserController.blockPortalUser);
+router
+  .route("/role/activity-zone")
+  .put(authenticate([UserRoles.Admin]), adminUserController.blockPortalUser);
 
-router.route('/withdraw-requests').get(authenticate([UserRoles.Admin]), adminUserController.getWithdrawRequests);
-
-
+router
+  .route("/withdraw-requests")
+  .get(
+    authenticate([UserRoles.Admin]),
+    adminUserController.getWithdrawRequests
+  );
+router
+  .route("/withdraw-requests/:bonusId")
+  .put(
+    authenticate([UserRoles.Admin]),
+    adminUserController.updateWithdrawBonusStatus
+  );
 
 export default router;

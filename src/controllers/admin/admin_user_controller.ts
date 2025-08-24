@@ -10,6 +10,7 @@ import { log } from "console";
 import {
   ActivityZoneState,
   AdminPowers,
+  StatusTypes,
   UserRoles,
 } from "../../core/Utils/enums";
 import {
@@ -413,6 +414,26 @@ export default class AdminUserController {
       message: "Withdraw requests retrieved successfully",
     });
   });
+
+  updateWithdrawBonusStatus = catchAsync(async (req: Request, res: Response) => {
+    const { bonusId } = req.params;
+    const { status } = req.body;
+    if (!status)
+      throw new AppError(StatusCodes.BAD_REQUEST, "Status is required");
+    if(!Object.values(StatusTypes).includes(status as StatusTypes))
+      throw new AppError(StatusCodes.BAD_REQUEST, `invalid status -> ${status}`);
+    const updatedRequest = await this.AdminUserService.updateWithdrawBonusStatus(
+      bonusId,
+      status
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: updatedRequest,
+      message: "Withdraw request status updated successfully",
+    });
+  });
+  
 }
 
 export interface IGiftFile {

@@ -15,6 +15,7 @@ import {
   AdminPowers,
   UserRoles,
   ActivityZoneState,
+  StatusTypes,
 } from "../../core/Utils/enums";
 import { IPagination } from "../../core/Utils/query_builder";
 import { IUserRepository } from "../../repository/user_repository";
@@ -95,6 +96,7 @@ export interface IAdminUserService {
     dateTill: string
   ): Promise<IPortalUserDocument>;
   getWithdrawRequests(query: Record<string, unknown>): Promise<{pagination: IPagination, data: IWithdrawBonusDocument[] }>
+  updateWithdrawBonusStatus(bonusId: string, status: StatusTypes): Promise<IWithdrawBonusDocument>;
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -653,5 +655,29 @@ export default class AdminUserService implements IAdminUserService {
       await this.WithdrawBonusRepository.getWithDrawBonus(query);
     return withdrawRequests;
   }
+
+  async updateWithdrawBonusStatus(
+    bonusId: string,
+    status: StatusTypes
+  ): Promise<IWithdrawBonusDocument> {
+    const withdrawBonus =
+      await this.WithdrawBonusRepository.getBonusWithId(bonusId);
+    if (!withdrawBonus) {
+      throw new AppError(StatusCodes.NOT_FOUND, "Withdraw bonus not found");
+    }
+
+    const updatedWithdrawBonus =
+      await this.WithdrawBonusRepository.updateWithdrawBonus(bonusId, {
+        status: status,
+      });
+    if (!updatedWithdrawBonus) {
+      throw new AppError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to update withdraw bonus status"
+      );
+    }
+    return updatedWithdrawBonus;
+  }
+  
   
 }
