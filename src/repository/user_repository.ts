@@ -98,7 +98,23 @@ export default class UserRepository implements IUserRepository {
     query: Record<string, any>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] }> {
     const qb = new QueryBuilder(this.UserModel, query);
-    const res = qb.aggregate([
+    console.log(query);
+
+    const pipeline = [];
+
+    // only push $match if searchTerm is provided
+    if (query.searchTerm && query.searchTerm.trim() !== "") {
+      pipeline.push({
+        $match: {
+          $or: [
+            { name: { $regex: query.searchTerm, $options: "i" } },
+            { email: { $regex: query.searchTerm, $options: "i" } },
+          ],
+        },
+      });
+    }
+
+    pipeline.push(
       {
         $lookup: {
           from: DatabaseNames.userStats,
@@ -107,21 +123,22 @@ export default class UserRepository implements IUserRepository {
           as: "stats",
         },
       },
-
       {
         $unwind: {
           path: "$stats",
           preserveNullAndEmptyArrays: true,
         },
       },
-
       {
         $project: {
           password: 0,
           "stats._id": 0,
         },
-      },
-    ]);
+      }
+    );
+
+    const res =  qb.aggregate(pipeline);
+
     const users = res.paginate().sort();
     const pagination = await res.countTotal();
     const data = await res.exec();
