@@ -494,7 +494,6 @@ export default class AuthService implements IAuthService {
       audioHour: audioTimeCount,
       videoHour: videoTimeCount,
     };
-console.log(bonusObj);
 
     const newWithdraw = await this.BonusRepository.createWithdrawBonus(
       bonusObj

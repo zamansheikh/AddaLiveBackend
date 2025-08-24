@@ -149,10 +149,10 @@ export function getWithdrawDateBoundaires(): {gte: Date; lte: Date} {
   const date = today.getDate();
   const lastDate = new Date(year, month + 1, 0).getDate();
 
-  if (date == 23) {
+  if (date == 15) {
     return {
       gte: new Date(year, month, 1, 0, 0, 0),
-      lte: new Date(year, month, 23, 23, 59, 59),
+      lte: new Date(year, month, 15, 23, 59, 59),
     };
   } else if (date == lastDate) {
     return {

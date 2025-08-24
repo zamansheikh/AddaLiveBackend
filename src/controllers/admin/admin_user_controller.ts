@@ -170,8 +170,6 @@ export default class AdminUserController {
     });
   });
 
-
-
   updateActivityZone = catchAsync(async (req: Request, res: Response) => {
     const { id, zone, date_till } = req.body;
     const result = await this.AdminUserService.updateActivityZone({
@@ -401,6 +399,19 @@ export default class AdminUserController {
       date_till
     );
     sendResponseEnhanced(res, result);
+  });
+
+  getWithdrawRequests = catchAsync(async (req: Request, res: Response) => {
+    log(req.query);
+    const withdrawRequests = await this.AdminUserService.getWithdrawRequests(
+      req.query as Record<string, unknown>
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: withdrawRequests,
+      message: "Withdraw requests retrieved successfully",
+    });
   });
 }
 

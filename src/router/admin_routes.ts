@@ -19,6 +19,8 @@ import { GiftRepository } from "../repository/gifts/gifts_repositories";
 import Gifts from "../models/gifts/gifts_model";
 import PortalUser from "../models/portal_users/protal_user_model";
 import PortalUserRepository from "../repository/portal_user/portal_user_repository";
+import WithdrawBonusRepository from "../repository/room/withdraw_bonus_repository";
+import WithdrawBonusModel from "../models/room/withdraw_bonus_model";
 
 const router = express.Router();
 
@@ -27,13 +29,15 @@ const userStatsRepository = new UserStatsRepository(UserStats);
 const adminRepository = new AdminRepository(Admin);
 const giftRepository = new GiftRepository(Gifts);
 const portalUserRepository = new PortalUserRepository(PortalUser);
+const bonusRepository = new WithdrawBonusRepository(WithdrawBonusModel);
 
 const adminUserService = new AdminUserService(
   userRepository,
   userStatsRepository,
   adminRepository,
   giftRepository,
-  portalUserRepository
+  portalUserRepository,
+  bonusRepository,
 );
 const adminUserController = new AdminUserController(adminUserService);
 
@@ -129,5 +133,9 @@ router
     authenticate([UserRoles.Admin]), adminUserController.removeRolePermissions );
 
 router.route("/role/activity-zone").put(authenticate([UserRoles.Admin]), adminUserController.blockPortalUser);
+
+router.route('/withdraw-requests').get(authenticate([UserRoles.Admin]), adminUserController.getWithdrawRequests);
+
+
 
 export default router;

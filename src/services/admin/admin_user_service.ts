@@ -31,6 +31,8 @@ import {
 } from "../../entities/portal_users/portal_user_interface";
 import { IPortalUserRepository } from "../../repository/portal_user/portal_user_repository";
 import PortalUser from "../../models/portal_users/protal_user_model";
+import { IWithdrawBonusRepository } from "../../repository/room/withdraw_bonus_repository";
+import { IWithdrawBonusDocument } from "../../models/room/withdraw_bonus_model";
 
 export interface IAdminUserService {
   loginAdmin(credentials: {
@@ -92,6 +94,7 @@ export interface IAdminUserService {
     zone: ActivityZoneState,
     dateTill: string
   ): Promise<IPortalUserDocument>;
+  getWithdrawRequests(query: Record<string, unknown>): Promise<{pagination: IPagination, data: IWithdrawBonusDocument[] }>
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -100,18 +103,21 @@ export default class AdminUserService implements IAdminUserService {
   AdminRepository: IAdminRepository;
   GiftRepository: IGiftRepository;
   PortalUserRepository: IPortalUserRepository;
+  WithdrawBonusRepository: IWithdrawBonusRepository;
   constructor(
     UserRepository: IUserRepository,
     UserStatsRepository: IUserStatsRepository,
     AdminRepository: IAdminRepository,
     giftRepository: IGiftRepository,
-    PortalUserRepository: IPortalUserRepository
+    PortalUserRepository: IPortalUserRepository,
+    WithdrawBonusRepository: IWithdrawBonusRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
     this.AdminRepository = AdminRepository;
     this.GiftRepository = giftRepository;
     this.PortalUserRepository = PortalUserRepository;
+    this.WithdrawBonusRepository = WithdrawBonusRepository;
   }
 
   async loginAdmin(credentials: {
@@ -639,4 +645,13 @@ export default class AdminUserService implements IAdminUserService {
     }
     return updatedPortalUser;
   }
+
+  async getWithdrawRequests(
+    query: Record<string, unknown>
+  ):Promise<{pagination: IPagination, data: IWithdrawBonusDocument[]}> {
+    const withdrawRequests =
+      await this.WithdrawBonusRepository.getWithDrawBonus(query);
+    return withdrawRequests;
+  }
+  
 }
