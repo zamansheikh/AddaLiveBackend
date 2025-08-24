@@ -717,7 +717,7 @@ export async function registerGroupRoomHandler(
         status: StatusCodes.NOT_FOUND,
         message: "This room does not exists",
       });
-    if (room.hostId != userId || userId != room.adminDetails?._id.toString())
+    if (room.hostId != userId && userId != room.adminDetails?._id.toString())
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.UNAUTHORIZED,
         message: "You are not host nor admin of this room",
