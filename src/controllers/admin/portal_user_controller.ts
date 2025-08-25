@@ -27,7 +27,7 @@ export class PortalUserControllers {
     );
 
     sendResponse(res, {
-      statusCode: StatusCodes.BAD_GATEWAY,
+      statusCode: StatusCodes.ACCEPTED,
       success: true,
       result: user,
       access_token: token,
