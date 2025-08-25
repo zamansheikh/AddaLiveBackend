@@ -69,6 +69,17 @@ export class PortalUserControllers {
     });
   });
 
+  getMyProfile = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const profile = await this.Service.getMyProfile(id);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: profile,
+      message: "profile retrieved succesfully",
+    });
+  });
+
   searchUsersByEmail = catchAsync(async (req: Request, res: Response) => {
     const { email } = req.query;
     if (!email)

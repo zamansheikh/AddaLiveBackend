@@ -42,6 +42,17 @@ router
     ]),
     upload.single("avatar"),
     portalUserControllers.updateMyProfile
+  )
+  .get(
+    authenticate([
+      UserRoles.SubAdmin,
+      UserRoles.Merchant,
+      UserRoles.Reseller,
+      UserRoles.countrySubAdmin,
+      UserRoles.CountryAdmin,
+      UserRoles.Agency,
+    ]),
+    portalUserControllers.getMyProfile
   );
 
 router

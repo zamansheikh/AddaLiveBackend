@@ -28,6 +28,7 @@ export interface ISharedPowerService {
     id: string,
     user: Partial<IPortalUserDocument>
   ): Promise<IPortalUserDocument | null>;
+  getMyProfile(id: string): Promise<IPortalUserDocument | null>;
   searchUserEmail(
     email: string,
     query: Record<string, unknown>
@@ -134,6 +135,8 @@ export default class SharedPowerService implements ISharedPowerService {
         isVideo: false,
       });
     }
+
+    
     const updatedUser = await this.PortalUserRepository.updatePortalUser(
       id,
       user
@@ -141,6 +144,12 @@ export default class SharedPowerService implements ISharedPowerService {
     if (!updatedUser)
       throw new AppError(StatusCodes.NOT_FOUND, "User not found");
     return updatedUser;
+  }
+
+  async getMyProfile(id: string): Promise<IPortalUserDocument | null> {
+    const user = await this.PortalUserRepository.getPortalUserById(id);
+    if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+    return user;
   }
 
   async searchUserEmail(
