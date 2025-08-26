@@ -7,8 +7,13 @@ import sendResponse, {
   sendResponseEnhanced,
 } from "../core/Utils/send_response";
 import AppError from "../core/errors/app_errors";
-import { WhoCanTextMe, WhoCanTextMeLevelTypes } from "../core/Utils/enums";
+import {
+  StreamType,
+  WhoCanTextMe,
+  WhoCanTextMeLevelTypes,
+} from "../core/Utils/enums";
 import { validateWithdrawBonus } from "../core/Utils/helper_functions";
+import Stream from "stream";
 
 export default class AuthController {
   authService: IAuthService;
@@ -76,6 +81,16 @@ export default class AuthController {
   addDailtyBonus = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.user!;
     const { totalTime, type } = req.body;
+    if (type == StreamType.Audio)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Audio stream type is not supported for daily bonus"
+      );
+    if (!Object.values(StreamType).includes(type))
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `${type} is not a valid stream type`
+      );
     if (isNaN(Number(totalTime)))
       throw new AppError(StatusCodes.BAD_REQUEST, "totalTime must be a number");
     if (totalTime < 0)
