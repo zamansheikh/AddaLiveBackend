@@ -471,6 +471,19 @@ export default class AuthService implements IAuthService {
         StatusCodes.CONFLICT,
         "You have already applied for bonus today"
       );
+    const userstats = await this.UserStatsRepository.getUserStats(hostId);
+    if (!userstats)
+      throw new AppError(StatusCodes.NOT_FOUND, "user stats not found");
+    if (userstats.diamonds! < totalSalary)
+      throw new AppError(StatusCodes.BAD_REQUEST, "not enough diamonds");
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    await this.UserStatsRepository.updateDiamonds(
+      hostId,
+      -totalSalary,
+      session
+    );
     const dayCount = await this.WithDrawHistoryRepository.getDayCount(hostId);
     const hourCount = await this.WithDrawHistoryRepository.getTimeCount(hostId);
     const audioTimeCount = await this.WithDrawHistoryRepository.getAudioHour(
@@ -496,8 +509,13 @@ export default class AuthService implements IAuthService {
     };
 
     const newWithdraw = await this.BonusRepository.createWithdrawBonus(
-      bonusObj
+      bonusObj,
+      session
     );
+
+    await session.commitTransaction();
+    session.endSession();
+
     if (!newWithdraw)
       throw new AppError(
         StatusCodes.INTERNAL_SERVER_ERROR,

@@ -21,6 +21,8 @@ import PortalUser from "../models/portal_users/protal_user_model";
 import PortalUserRepository from "../repository/portal_user/portal_user_repository";
 import WithdrawBonusRepository from "../repository/room/withdraw_bonus_repository";
 import WithdrawBonusModel from "../models/room/withdraw_bonus_model";
+import SalaryRepository from "../repository/salary/salary_repository";
+import SalaryModel from "../models/salary/salaryModel";
 
 const router = express.Router();
 
@@ -30,6 +32,7 @@ const adminRepository = new AdminRepository(Admin);
 const giftRepository = new GiftRepository(Gifts);
 const portalUserRepository = new PortalUserRepository(PortalUser);
 const bonusRepository = new WithdrawBonusRepository(WithdrawBonusModel);
+const salaryRepository = new SalaryRepository(SalaryModel);
 
 const adminUserService = new AdminUserService(
   userRepository,
@@ -37,7 +40,8 @@ const adminUserService = new AdminUserService(
   adminRepository,
   giftRepository,
   portalUserRepository,
-  bonusRepository
+  bonusRepository,
+  salaryRepository
 );
 const adminUserController = new AdminUserController(adminUserService);
 
@@ -152,7 +156,17 @@ router
     adminUserController.updateWithdrawBonusStatus
   );
 
-router.route("/salaries")
-router.route("/salaries/:id")
+router
+  .route("/salaries")
+  .post(authenticate([UserRoles.Admin]), adminUserController.createSalary)
+  .get(authenticate(), adminUserController.getSalaries);
+
+router
+  .route("/salaries/:salaryId")
+  .get(adminUserController.getSalaryDetails)
+  .put(authenticate([UserRoles.Admin]), adminUserController.updateSalary)
+  .delete(authenticate([UserRoles.Admin]), adminUserController.deleteSalary);
+
+  router.route("/agency-commission-distribute").post(authenticate([UserRoles.Admin]), adminUserController.agencyCommissionDistribute);
 
 export default router;

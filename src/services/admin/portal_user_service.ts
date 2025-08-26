@@ -63,6 +63,10 @@ export interface ISharedPowerService {
     parentId: string,
     query: Record<string, any>
   ): Promise<{ pagination: IPagination; data: IPortalUserDocument[] }>;
+  getHosts(
+    parentId: string,
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; users: IUserDocument[] }>;
 }
 
 export default class SharedPowerService implements ISharedPowerService {
@@ -136,7 +140,6 @@ export default class SharedPowerService implements ISharedPowerService {
       });
     }
 
-    
     const updatedUser = await this.PortalUserRepository.updatePortalUser(
       id,
       user
@@ -365,6 +368,14 @@ export default class SharedPowerService implements ISharedPowerService {
       parentId,
       query
     );
+    return users;
+  }
+
+  async getHosts(
+    parentId: string,
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; users: IUserDocument[] }> {
+    const users = await this.UserRepository.getHosts(parentId, query);
     return users;
   }
 }

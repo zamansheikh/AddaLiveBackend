@@ -48,7 +48,7 @@ router
       UserRoles.SubAdmin,
       UserRoles.Merchant,
       UserRoles.Reseller,
-      UserRoles.countrySubAdmin, 
+      UserRoles.countrySubAdmin,
       UserRoles.CountryAdmin,
       UserRoles.Agency,
     ]),
@@ -99,10 +99,15 @@ router
 router
   .route("/portal/:userRole")
   .get(authenticate(), portalUserControllers.getPortalUsers);
+
 // for mid management exp: agency, re-seller, sub country admin
 router
   .route("/portal/mid/:userRole/:parentId")
   .get(authenticate(), portalUserControllers.getPortalUsersByParent);
+
 // for lower management exp: host
+router
+  .route("/portal/lower/:parentId")
+  .get(authenticate(), portalUserControllers.getHosts);
 
 export default router;

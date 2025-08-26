@@ -20,7 +20,7 @@ import {
 import { IPagination } from "../../core/Utils/query_builder";
 import { IUserRepository } from "../../repository/user_repository";
 import { canUserUpdate, isVideoFile } from "../../core/Utils/helper_functions";
-import mongoose from "mongoose";
+import mongoose, { UpdateResult } from "mongoose";
 import { appendFile } from "fs";
 import { IGift, IGiftDocument } from "../../entities/admin/gift_interface";
 import { IGiftRepository } from "../../repository/gifts/gifts_repositories";
@@ -34,6 +34,8 @@ import { IPortalUserRepository } from "../../repository/portal_user/portal_user_
 import PortalUser from "../../models/portal_users/protal_user_model";
 import { IWithdrawBonusRepository } from "../../repository/room/withdraw_bonus_repository";
 import { IWithdrawBonusDocument } from "../../models/room/withdraw_bonus_model";
+import { ISalary, ISalaryDocument } from "../../models/salary/salaryModelInterface";
+import { ISalaryRepository } from "../../repository/salary/salary_repository";
 
 export interface IAdminUserService {
   loginAdmin(credentials: {
@@ -97,6 +99,12 @@ export interface IAdminUserService {
   ): Promise<IPortalUserDocument>;
   getWithdrawRequests(query: Record<string, unknown>): Promise<{pagination: IPagination, data: IWithdrawBonusDocument[] }>
   updateWithdrawBonusStatus(bonusId: string, status: StatusTypes): Promise<IWithdrawBonusDocument>;
+  createSalary(salary: ISalary): Promise<ISalaryDocument >;
+  getSalaries(): Promise<ISalaryDocument[]>;
+  getSalaryById(id: string): Promise<ISalaryDocument>;
+  updateSalary(id: string, salary: Partial<ISalary>): Promise<ISalaryDocument>;
+  deleteSalary(id: string): Promise<ISalaryDocument>;
+  autoDistributeBonusToAgency(): Promise<UpdateResult>;
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -106,13 +114,15 @@ export default class AdminUserService implements IAdminUserService {
   GiftRepository: IGiftRepository;
   PortalUserRepository: IPortalUserRepository;
   WithdrawBonusRepository: IWithdrawBonusRepository;
+  SalaryRepository: ISalaryRepository;
   constructor(
     UserRepository: IUserRepository,
     UserStatsRepository: IUserStatsRepository,
     AdminRepository: IAdminRepository,
     giftRepository: IGiftRepository,
     PortalUserRepository: IPortalUserRepository,
-    WithdrawBonusRepository: IWithdrawBonusRepository
+    WithdrawBonusRepository: IWithdrawBonusRepository,
+    SalaryRepository: ISalaryRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
@@ -120,6 +130,7 @@ export default class AdminUserService implements IAdminUserService {
     this.GiftRepository = giftRepository;
     this.PortalUserRepository = PortalUserRepository;
     this.WithdrawBonusRepository = WithdrawBonusRepository;
+    this.SalaryRepository = SalaryRepository;
   }
 
   async loginAdmin(credentials: {
@@ -678,6 +689,39 @@ export default class AdminUserService implements IAdminUserService {
     }
     return updatedWithdrawBonus;
   }
+
+  async createSalary(salary: ISalary): Promise<ISalaryDocument> {
+    const newSalary = await this.SalaryRepository.createSalary(salary);
+    return newSalary;
+  }
+
+  async getSalaries(): Promise<ISalaryDocument[]> {
+    const salaries = await this.SalaryRepository.getAllSalaries();
+    return salaries;
+  }
+  async getSalaryById(id: string): Promise<ISalaryDocument> {
+    const salary = await this.SalaryRepository.getSalaryById(id);
+    
+    if (!salary) {
+      throw new AppError(StatusCodes.NOT_FOUND, "Salary not found");
+    }
+    return salary;
+  }
+  async updateSalary(
+    id: string,
+    salary: Partial<ISalary>
+  ): Promise<ISalaryDocument> {
+    const updatedSalary = await this.SalaryRepository.updateSalary(id, salary);
+    return updatedSalary;
+  }
+
+  async deleteSalary(id: string): Promise<ISalaryDocument> {
+    const deletedSalary = await this.SalaryRepository.deleteSalary(id);
+    return deletedSalary;
+  }
   
+  async autoDistributeBonusToAgency(): Promise<UpdateResult> {
+    
+  }
   
 }

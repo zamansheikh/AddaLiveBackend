@@ -19,6 +19,7 @@ import {
   validatePermissions,
   validatePromoteUserPermission,
 } from "../../core/Utils/helper_functions";
+import { validateCreateSalary } from "../../dtos/salary/valodate_salary";
 
 export default class AdminUserController {
   AdminUserService: IAdminUserService;
@@ -415,34 +416,100 @@ export default class AdminUserController {
     });
   });
 
-  updateWithdrawBonusStatus = catchAsync(async (req: Request, res: Response) => {
-    const { bonusId } = req.params;
-    const { status } = req.body;
-    if (!status)
-      throw new AppError(StatusCodes.BAD_REQUEST, "Status is required");
-    if(!Object.values(StatusTypes).includes(status as StatusTypes))
-      throw new AppError(StatusCodes.BAD_REQUEST, `invalid status -> ${status}`);
-    const updatedRequest = await this.AdminUserService.updateWithdrawBonusStatus(
-      bonusId,
-      status
-    );
+  updateWithdrawBonusStatus = catchAsync(
+    async (req: Request, res: Response) => {
+      const { bonusId } = req.params;
+      const { status } = req.body;
+      if (!status)
+        throw new AppError(StatusCodes.BAD_REQUEST, "Status is required");
+      if (!Object.values(StatusTypes).includes(status as StatusTypes))
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          `invalid status -> ${status}`
+        );
+      const updatedRequest =
+        await this.AdminUserService.updateWithdrawBonusStatus(bonusId, status);
+      sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        result: updatedRequest,
+        message: "Withdraw request status updated successfully",
+      });
+    }
+  );
+  createSalary = catchAsync(async (req: Request, res: Response) => {
+    const { diamondCount, moneyCount, country } = req.body;
+    validateCreateSalary(req.body);
+    const newSalary = await this.AdminUserService.createSalary({
+      diamondCount,
+      moneyCount,
+      country,
+    });
+    sendResponse(res, {
+      statusCode: StatusCodes.CREATED,
+      success: true,
+      result: newSalary,
+      message: "Salary created successfully",
+    });
+  });
+
+  getSalaries = catchAsync(async (req: Request, res: Response) => {
+    const salaries = await this.AdminUserService.getSalaries();
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
-      result: updatedRequest,
-      message: "Withdraw request status updated successfully",
+      result: salaries,
+      message: "Salaries retrieved successfully",
     });
   });
-  createSalary = catchAsync(async (req: Request, res: Response) => {});
 
-  getSalaries = catchAsync(async (req: Request, res: Response) => {});
+  getSalaryDetails = catchAsync(async (req: Request, res: Response) => {
+    const { salaryId } = req.params;
+    const salary = await this.AdminUserService.getSalaryById(salaryId);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: salary,
+      message: "Salary details retrieved successfully",
+    });
+  });
 
-  updateSalary = catchAsync(async (req: Request, res: Response) => {});
+  updateSalary = catchAsync(async (req: Request, res: Response) => {
+    const { salaryId } = req.params;
+    const { diamondCount, moneyCount, country } = req.body;
+    if (!diamondCount && !moneyCount && !country) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "At least one field (diamondCount, moneyCount, or country) is required for update"
+      );
+    }
+    const updatedSalary = await this.AdminUserService.updateSalary(salaryId, {
+      diamondCount,
+      moneyCount,
+      country,
+    });
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: updatedSalary,
+      message: "Salary updated successfully",
+    });
+  });
 
-  deleteSalary = catchAsync(async (req: Request, res: Response) => {});
+  deleteSalary = catchAsync(async (req: Request, res: Response) => {
+    const { salaryId } = req.params;
+    const deletedSalary = await this.AdminUserService.deleteSalary(salaryId);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: deletedSalary,
+      message: "Salary deleted successfully",
+    });
+  });
+  agencyCommissionDistribute = catchAsync(async (req: Request, res: Response) => {
+    
+  });
 
-
-  
 }
 
 export interface IGiftFile {

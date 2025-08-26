@@ -56,6 +56,10 @@ export interface IUserRepository {
     payload: ITextPrivacy
   ): Promise<IUserDocument | null>;
   deleteUserById(id: string): Promise<IUserDocument | null>;
+  getHosts(
+    parentId: string,
+    query: Record<string, unknown>
+  ): Promise<{ pagination: IPagination; users: IUserDocument[] }>;
 }
 
 export default class UserRepository implements IUserRepository {
@@ -137,7 +141,7 @@ export default class UserRepository implements IUserRepository {
       }
     );
 
-    const res =  qb.aggregate(pipeline);
+    const res = qb.aggregate(pipeline);
 
     const users = res.paginate().sort();
     const pagination = await res.countTotal();
@@ -342,5 +346,16 @@ export default class UserRepository implements IUserRepository {
 
   async deleteUserById(id: string): Promise<IUserDocument | null> {
     return await this.UserModel.findByIdAndDelete(id);
+  }
+
+  async getHosts(
+    parentId: string,
+    query: Record<string, unknown>
+  ): Promise<{ pagination: IPagination; users: IUserDocument[] }> {
+    const qb = new QueryBuilder(this.UserModel, query);
+    const res = qb.find({ parentCreator: parentId });
+    const users = await res.paginate().sort().exec();
+    const pagination = await res.countTotal();
+    return { users, pagination };
   }
 }

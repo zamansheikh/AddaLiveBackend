@@ -31,6 +31,7 @@ export enum DatabaseNames {
   RoomHistory = "room-histories",
   withdrawRoomHistory = "withdraw-room-histories",
   WithdrawBonus = "withdraw-bonus",
+  Salaries = "salaries", 
 }
 
 export enum ReelStatus {

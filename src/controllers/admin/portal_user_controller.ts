@@ -215,4 +215,20 @@ export class PortalUserControllers {
     });
   });
   
+  getHosts = catchAsync(async (req: Request, res: Response) => {
+    const { parentId} = req.params;
+    const { id, role } = req.user!;
+    if(!parentId) throw new AppError(StatusCodes.BAD_REQUEST, "Parent ID is required");
+    const users = await this.Service.getHosts(
+      parentId,
+      req.query,
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: users,
+      message: "Hosts retrieved successfully",
+    });
+
+  })
 }
