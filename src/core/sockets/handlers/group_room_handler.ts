@@ -806,6 +806,9 @@ export async function registerGroupRoomHandler(
     room.members.delete(targetId);
     room.membersDetails.filter((member) => member._id.toString() !== targetId);
     if (room.brodcasters.has(targetId)) room.brodcasters.delete(targetId);
+    room.broadcastersDetails = room.broadcastersDetails.filter(
+      (broadcaster) => broadcaster._id.toString() !== targetId
+    );
     const objectToDelete = Array.from(room.callRequests).find(
       (request) => request._id.toString() === targetId
     );
@@ -822,7 +825,7 @@ export async function registerGroupRoomHandler(
       targetId,
       ["name", "avatar", "uid", "country"]
     );
-    
+
     const message = {
       name: targetIdDetails.name as string,
       avatar: targetIdDetails.avatar as string,
@@ -831,16 +834,18 @@ export async function registerGroupRoomHandler(
       _id: targetIdDetails._id as string,
       text: `Has been banned from this room`,
     };
+
     io.to(roomId).emit(SocketChannels.sendMessage, message);
 
     if (targetSocketId) {
-      io.to(targetSocketId).emit(SocketChannels.banUser, {
-        roomId,
-        targetId,
-        message: "You have been banned from this room",
-      });
       io.sockets.sockets.get(targetSocketId)?.leave(roomId);
     }
+
+    io.to(roomId).emit(SocketChannels.banUser, {
+      roomId,
+      targetId,
+      message: "You have been banned from this room",
+    });
   });
 
   socket.on(SocketChannels.bannedList, ({ roomId }) => {

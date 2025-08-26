@@ -152,4 +152,7 @@ router
     adminUserController.updateWithdrawBonusStatus
   );
 
+router.route("/salaries")
+router.route("/salaries/:id")
+
 export default router;

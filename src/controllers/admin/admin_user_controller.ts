@@ -433,6 +433,15 @@ export default class AdminUserController {
       message: "Withdraw request status updated successfully",
     });
   });
+  createSalary = catchAsync(async (req: Request, res: Response) => {});
+
+  getSalaries = catchAsync(async (req: Request, res: Response) => {});
+
+  updateSalary = catchAsync(async (req: Request, res: Response) => {});
+
+  deleteSalary = catchAsync(async (req: Request, res: Response) => {});
+
+
   
 }
 
