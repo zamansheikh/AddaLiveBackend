@@ -844,7 +844,7 @@ export async function registerGroupRoomHandler(
     io.to(roomId).emit(SocketChannels.banUser, {
       roomId,
       targetId,
-      message: "You have been banned from this room",
+      message: `${targetIdDetails.name} has been banned from this room`,
     });
   });
 
