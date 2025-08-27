@@ -837,15 +837,16 @@ export async function registerGroupRoomHandler(
 
     io.to(roomId).emit(SocketChannels.sendMessage, message);
 
-    if (targetSocketId) {
-      io.sockets.sockets.get(targetSocketId)?.leave(roomId);
-    }
-
     io.to(roomId).emit(SocketChannels.banUser, {
       roomId,
       targetId,
       message: `${targetIdDetails.name} has been banned from this room`,
     });
+    io.to(roomId).emit(SocketChannels.bannedList, Array.from(room.bannedUsers));
+
+    if (targetSocketId) {
+      io.sockets.sockets.get(targetSocketId)?.leave(roomId);
+    }
   });
 
   socket.on(SocketChannels.bannedList, ({ roomId }) => {
