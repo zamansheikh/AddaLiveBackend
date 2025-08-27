@@ -21,6 +21,7 @@ export interface IWithdrawBonusRepository {
     id: string,
     data: Record<string, unknown>
   ): Promise<IWithdrawBonusDocument | null>;
+  getAgencyPerformance(): Promise<{agencyId: string, totalSalarySum: number, totalHost: number}[]>;
 }
 
 export default class WithdrawBonusRepository
@@ -62,9 +63,40 @@ export default class WithdrawBonusRepository
     query: Record<string, unknown>
   ): Promise<{ pagination: IPagination; data: IWithdrawBonusDocument[] }> {
     const qb = new QueryBuilder(this.Model, query);
-    const res = qb.sort().find({ status: StatusTypes.pending }).paginate();
+    const res = qb
+      .sort()
+      .find({ status: StatusTypes.pending })
+      .populateField("agencyId hostId", "name userId avatar")
+      .paginate();
     const data = await res.exec();
     const pagination = await qb.countTotal();
     return { pagination, data };
+  }
+
+  async getAgencyPerformance(): Promise<{agencyId: string, totalSalarySum: number, totalHost: number}[]> {
+    const result = await this.Model.aggregate([
+      {
+        $match: {
+          status: StatusTypes.pending,
+        },
+      },
+      {
+        $group: {
+          _id: "$agencyId",
+          totalSalarySum: { $sum: "$totalSalary" },
+          totalHost: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          agencyId: "$_id",
+          totalSalarySum: 1,
+          totalHost: 1,
+        },
+      },
+    ]);
+
+    return result;
   }
 }

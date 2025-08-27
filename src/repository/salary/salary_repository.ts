@@ -5,6 +5,7 @@ import {
   ISalaryDocument,
   ISalaryModel,
 } from "../../models/salary/salaryModelInterface";
+import { StreamType } from "../../core/Utils/enums";
 
 export interface ISalaryRepository {
   createSalary(salary: ISalary): Promise<ISalaryDocument>;
@@ -12,6 +13,7 @@ export interface ISalaryRepository {
   getSalaryById(id: string): Promise<ISalaryDocument | null>;
   updateSalary(id: string, salary: Partial<ISalary>): Promise<ISalaryDocument>;
   deleteSalary(id: string): Promise<ISalaryDocument>;
+  getSalaryByAmount(amount: number): Promise<ISalaryDocument[]>;
 }
 
 export default class SalaryRepository implements ISalaryRepository {
@@ -26,11 +28,10 @@ export default class SalaryRepository implements ISalaryRepository {
   }
 
   async getAllSalaries(): Promise<ISalaryDocument[]> {
-    return await this.Model.find({});
+    return await this.Model.find({ type: StreamType.Audio });
   }
 
   async getSalaryById(id: string): Promise<ISalaryDocument | null> {
-    
     return await this.Model.findById(id);
   }
 
@@ -38,15 +39,26 @@ export default class SalaryRepository implements ISalaryRepository {
     id: string,
     salary: Partial<ISalary>
   ): Promise<ISalaryDocument> {
-    const updated = await this.Model.findByIdAndUpdate(id, salary, { new: true });
-    if(!updated) throw new AppError(StatusCodes.NOT_FOUND, "Salary not found");
+    const updated = await this.Model.findByIdAndUpdate(id, salary, {
+      new: true,
+    });
+    if (!updated) throw new AppError(StatusCodes.NOT_FOUND, "Salary not found");
     return updated;
   }
 
-  async deleteSalary(id: string): Promise<ISalaryDocument > {
+  async deleteSalary(id: string): Promise<ISalaryDocument> {
+    const deleted = await this.Model.findByIdAndDelete(id);
+    if (!deleted) throw new AppError(StatusCodes.NOT_FOUND, "Salary not found");
+    return deleted;
+  }
 
-     const deleted = await this.Model.findByIdAndDelete(id);
-     if(!deleted) throw new AppError(StatusCodes.NOT_FOUND, "Salary not found");
-     return deleted;
+  async getSalaryByAmount(amount: number): Promise<ISalaryDocument[]> {
+    const salary = await this.Model.find({ diamondCount: amount });
+    if (!salary || salary.length === 0)
+      throw new AppError(
+        StatusCodes.NOT_FOUND,
+        `Salary with diamond count ${amount} not found`
+      );
+    return salary;
   }
 }

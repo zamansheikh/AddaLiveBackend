@@ -19,7 +19,11 @@ import {
 } from "../../core/Utils/enums";
 import { IPagination } from "../../core/Utils/query_builder";
 import { IUserRepository } from "../../repository/user_repository";
-import { canUserUpdate, isVideoFile } from "../../core/Utils/helper_functions";
+import {
+  canUserUpdate,
+  getPercentageFromHostCount,
+  isVideoFile,
+} from "../../core/Utils/helper_functions";
 import mongoose, { UpdateResult } from "mongoose";
 import { appendFile } from "fs";
 import { IGift, IGiftDocument } from "../../entities/admin/gift_interface";
@@ -34,7 +38,10 @@ import { IPortalUserRepository } from "../../repository/portal_user/portal_user_
 import PortalUser from "../../models/portal_users/protal_user_model";
 import { IWithdrawBonusRepository } from "../../repository/room/withdraw_bonus_repository";
 import { IWithdrawBonusDocument } from "../../models/room/withdraw_bonus_model";
-import { ISalary, ISalaryDocument } from "../../models/salary/salaryModelInterface";
+import {
+  ISalary,
+  ISalaryDocument,
+} from "../../models/salary/salaryModelInterface";
 import { ISalaryRepository } from "../../repository/salary/salary_repository";
 
 export interface IAdminUserService {
@@ -97,14 +104,23 @@ export interface IAdminUserService {
     zone: ActivityZoneState,
     dateTill: string
   ): Promise<IPortalUserDocument>;
-  getWithdrawRequests(query: Record<string, unknown>): Promise<{pagination: IPagination, data: IWithdrawBonusDocument[] }>
-  updateWithdrawBonusStatus(bonusId: string, status: StatusTypes): Promise<IWithdrawBonusDocument>;
-  createSalary(salary: ISalary): Promise<ISalaryDocument >;
+  getWithdrawRequests(
+    query: Record<string, unknown>
+  ): Promise<{ pagination: IPagination; data: IWithdrawBonusDocument[] }>;
+  updateWithdrawBonusStatus(
+    bonusId: string,
+    status: StatusTypes
+  ): Promise<IWithdrawBonusDocument>;
+  createSalary(salary: ISalary): Promise<ISalaryDocument>;
   getSalaries(): Promise<ISalaryDocument[]>;
   getSalaryById(id: string): Promise<ISalaryDocument>;
   updateSalary(id: string, salary: Partial<ISalary>): Promise<ISalaryDocument>;
   deleteSalary(id: string): Promise<ISalaryDocument>;
-  // autoDistributeBonusToAgency(): Promise<UpdateResult>;
+  autoDistributeBonusToAgency(): Promise<{
+    total: number;
+    paid: number;
+    successRate: number;
+  }>;
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -214,7 +230,6 @@ export default class AdminUserService implements IAdminUserService {
       );
     return updateCoin;
   }
-
 
   async updateActivityZone({
     id,
@@ -661,7 +676,7 @@ export default class AdminUserService implements IAdminUserService {
 
   async getWithdrawRequests(
     query: Record<string, unknown>
-  ):Promise<{pagination: IPagination, data: IWithdrawBonusDocument[]}> {
+  ): Promise<{ pagination: IPagination; data: IWithdrawBonusDocument[] }> {
     const withdrawRequests =
       await this.WithdrawBonusRepository.getWithDrawBonus(query);
     return withdrawRequests;
@@ -671,8 +686,9 @@ export default class AdminUserService implements IAdminUserService {
     bonusId: string,
     status: StatusTypes
   ): Promise<IWithdrawBonusDocument> {
-    const withdrawBonus =
-      await this.WithdrawBonusRepository.getBonusWithId(bonusId);
+    const withdrawBonus = await this.WithdrawBonusRepository.getBonusWithId(
+      bonusId
+    );
     if (!withdrawBonus) {
       throw new AppError(StatusCodes.NOT_FOUND, "Withdraw bonus not found");
     }
@@ -683,7 +699,7 @@ export default class AdminUserService implements IAdminUserService {
       });
     if (!updatedWithdrawBonus) {
       throw new AppError(
-      StatusCodes.INTERNAL_SERVER_ERROR,
+        StatusCodes.INTERNAL_SERVER_ERROR,
         "Failed to update withdraw bonus status"
       );
     }
@@ -701,7 +717,7 @@ export default class AdminUserService implements IAdminUserService {
   }
   async getSalaryById(id: string): Promise<ISalaryDocument> {
     const salary = await this.SalaryRepository.getSalaryById(id);
-    
+
     if (!salary) {
       throw new AppError(StatusCodes.NOT_FOUND, "Salary not found");
     }
@@ -719,9 +735,49 @@ export default class AdminUserService implements IAdminUserService {
     const deletedSalary = await this.SalaryRepository.deleteSalary(id);
     return deletedSalary;
   }
-  
-  // async autoDistributeBonusToAgency(): Promise<UpdateResult> {
+
+  async autoDistributeBonusToAgency(): Promise<{
+    total: number;
+    paid: number;
+    successRate: number;
+  }> {
+    const today = new Date();
+    const date = today.getDate();
+    if (date != 16 && date != 1)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `${date} is not salary day, 16th or the 1st day of the next month is`
+      );
     
-  // }
-  
+    const agencyArray =
+      await this.WithdrawBonusRepository.getAgencyPerformance();
+
+    let total = 0;
+    let paid = 0;
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    for (let i = 0; i < agencyArray.length; i++) {
+      const agency = agencyArray[i];
+      const moneyShare =
+        agency.totalSalarySum * getPercentageFromHostCount(agency.totalHost);
+      const diamondBonus = (100000 / 1200) * moneyShare;
+      if (diamondBonus != 0) {
+        const agencyAcc = await this.PortalUserRepository.getPortalUserById(agency.agencyId);
+        if(agencyAcc?.updatedAt.getDate() == 16 || agencyAcc?.updatedAt.getDate() == 1)
+          throw new AppError(StatusCodes.BAD_REQUEST, "agencies already been paid");
+        if(!agencyAcc) throw new AppError(StatusCodes.NOT_FOUND, "Agency not found");
+        agencyAcc.diamonds += diamondBonus;
+        await agencyAcc.save({ session });
+        paid += 1;
+        total += 1;
+      }
+      total += 1;
+    }
+    await session.commitTransaction();
+    session.endSession();
+
+    return { total, paid, successRate: (paid / total) * 100 };
+  }
 }

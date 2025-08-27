@@ -37,6 +37,7 @@ import {
   IWithdrawBonusDocument,
 } from "../../models/room/withdraw_bonus_model";
 import { IWithdrawBonusRepository } from "../../repository/room/withdraw_bonus_repository";
+import { ISalaryRepository } from "../../repository/salary/salary_repository";
 
 export default class AuthService implements IAuthService {
   UserRepository: IUserRepository;
@@ -53,6 +54,7 @@ export default class AuthService implements IAuthService {
   RoomHistoryRepository: IRoomHistoryRepository;
   WithDrawHistoryRepository: IRoomHistoryRepository;
   BonusRepository: IWithdrawBonusRepository;
+  SalaryRepository: ISalaryRepository;
 
   constructor(
     UserRepository: IUserRepository,
@@ -68,7 +70,8 @@ export default class AuthService implements IAuthService {
     StoriesReactionRepository: IStoryReactionRepository,
     RoomHistoryRepository: IRoomHistoryRepository,
     WithDrawHistoryRepository: IRoomHistoryRepository,
-    BonusRepository: IWithdrawBonusRepository
+    BonusRepository: IWithdrawBonusRepository,
+    SalaryRepository: ISalaryRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
@@ -84,6 +87,7 @@ export default class AuthService implements IAuthService {
     this.RoomHistoryRepository = RoomHistoryRepository;
     this.WithDrawHistoryRepository = WithDrawHistoryRepository;
     this.BonusRepository = BonusRepository;
+    this.SalaryRepository = SalaryRepository;
   }
 
   async registerWithGoogle(UserData: IUserEntity) {
@@ -462,11 +466,22 @@ export default class AuthService implements IAuthService {
     accountNumber: string;
     totalSalary: number;
   }): Promise<IWithdrawBonusDocument> {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth(); // 0-indexed
+    const date = today.getDate();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    if (date != 28 && date != lastDate)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `${date} is not salary day, 15th or the last day of the month`
+      );
+
     const { hostId, accountType, accountNumber, totalSalary } = data;
     const host = await this.UserRepository.findUserById(hostId);
     if (!host) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
     const bonus = await this.BonusRepository.getBonusDocument(hostId);
-    if (bonus)
+    if (bonus && bonus.createdAt.getDate() == date)
       throw new AppError(
         StatusCodes.CONFLICT,
         "You have already applied for bonus today"
@@ -476,14 +491,7 @@ export default class AuthService implements IAuthService {
       throw new AppError(StatusCodes.NOT_FOUND, "user stats not found");
     if (userstats.diamonds! < totalSalary)
       throw new AppError(StatusCodes.BAD_REQUEST, "not enough diamonds");
-    const session = await mongoose.startSession();
-    session.startTransaction();
 
-    await this.UserStatsRepository.updateDiamonds(
-      hostId,
-      -totalSalary,
-      session
-    );
     const dayCount = await this.WithDrawHistoryRepository.getDayCount(hostId);
     const hourCount = await this.WithDrawHistoryRepository.getTimeCount(hostId);
     const audioTimeCount = await this.WithDrawHistoryRepository.getAudioHour(
@@ -493,9 +501,33 @@ export default class AuthService implements IAuthService {
       hostId
     );
 
+    let salary = await this.SalaryRepository.getSalaryByAmount(totalSalary);
+
+    if (dayCount >= 6 && videoTimeCount >= 12) {
+      salary = salary.filter((s) => s.type == StreamType.Video);
+    } else {
+      salary = salary.filter((s) => s.type == StreamType.Audio);
+    }
+
+    if (salary.length == 0)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        `${totalSalary} does not have both video and audio type`
+      );
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    await this.UserStatsRepository.updateDiamonds(
+      hostId,
+      -totalSalary,
+      session
+    );
+
     const bonusObj: IWithdrawBonus = {
       accountNumber,
-      totalSalary,
+      totalDiamond: salary[0].diamondCount,
+      totalSalary: salary[0].moneyCount,
       accountType,
       agencyId: host.parentCreator as string,
       hostId,

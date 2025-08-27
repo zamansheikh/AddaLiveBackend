@@ -438,12 +438,13 @@ export default class AdminUserController {
     }
   );
   createSalary = catchAsync(async (req: Request, res: Response) => {
-    const { diamondCount, moneyCount, country } = req.body;
+    const { diamondCount, moneyCount, country, type } = req.body;
     validateCreateSalary(req.body);
     const newSalary = await this.AdminUserService.createSalary({
       diamondCount,
       moneyCount,
       country,
+      type,
     });
     sendResponse(res, {
       statusCode: StatusCodes.CREATED,
@@ -507,7 +508,9 @@ export default class AdminUserController {
     });
   });
   agencyCommissionDistribute = catchAsync(async (req: Request, res: Response) => {
-    
+    const result = await this.AdminUserService.autoDistributeBonusToAgency();
+    sendResponseEnhanced(res, result);
+
   });
 
 }

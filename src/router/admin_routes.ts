@@ -167,6 +167,6 @@ router
   .put(authenticate([UserRoles.Admin]), adminUserController.updateSalary)
   .delete(authenticate([UserRoles.Admin]), adminUserController.deleteSalary);
 
-  router.route("/agency-commission-distribute").post(authenticate([UserRoles.Admin]), adminUserController.agencyCommissionDistribute);
+  router.route("/agency-commission-distribute").put(authenticate([UserRoles.Admin]), adminUserController.agencyCommissionDistribute);
 
 export default router;

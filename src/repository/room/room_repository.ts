@@ -6,6 +6,7 @@ import {
 } from "../../models/room/room_history_model";
 import { start } from "repl";
 import { getWithdrawDateBoundaires } from "../../core/Utils/helper_functions";
+import { StreamType } from "../../core/Utils/enums";
 
 export interface IRoomHistoryRepository {
   resetRoomHistory(): Promise<DeleteResult>;
@@ -72,6 +73,8 @@ export default class RoomHistoryRepository implements IRoomHistoryRepository {
       {
         $match: {
           host: new mongoose.Types.ObjectId(id),
+          totalLive: { $gte: 50 },
+          type: StreamType.Video,
           createdAt: { $gte: gte, $lte: lte },
         },
       },

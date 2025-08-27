@@ -98,6 +98,7 @@ export default class AuthController {
         StatusCodes.BAD_REQUEST,
         "totalTime must be greater than or equal to 0"
       );
+      
     const updatedUser = await this.authService.getDailyBonus(
       id,
       totalTime,

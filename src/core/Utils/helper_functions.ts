@@ -142,7 +142,7 @@ export function validateWithdrawBonus(body: Record<string, unknown>) {
     );
 }
 
-export function getWithdrawDateBoundaires(): {gte: Date; lte: Date} {
+export function getWithdrawDateBoundaires(): { gte: Date; lte: Date } {
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth(); // 0-indexed
@@ -159,5 +159,14 @@ export function getWithdrawDateBoundaires(): {gte: Date; lte: Date} {
       gte: new Date(year, month, 15, 0, 0, 0),
       lte: new Date(year, month, lastDate, 23, 59, 59),
     };
-  } else throw new AppError(StatusCodes.BAD_REQUEST, "Invalid date");
+  } else
+    throw new AppError(StatusCodes.BAD_REQUEST, "today is not salary date");
+}
+
+export function getPercentageFromHostCount(hostCount: number) {
+  if (hostCount >= 5 && hostCount < 10) return 0.1;
+  else if (hostCount >= 10 && hostCount < 20) return 0.12;
+  else if (hostCount >= 20 && hostCount < 30) return 0.15;
+  else if (hostCount >= 30 ) return 0.17;
+  else return 0;
 }

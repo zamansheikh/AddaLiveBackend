@@ -13,6 +13,7 @@ export interface IWithdrawBonus {
   audioHour: number;
   videoHour: number;
   country: string;
+  totalDiamond: number;
   totalSalary: number;
   status?: StatusTypes;
 }
@@ -30,7 +31,7 @@ export interface IWithdrawBonusModel
 const WithdrawBonusSchema = new mongoose.Schema<IWithdrawBonusDocument>(
   {
     name: { type: String, required: true },
-    hostId: { type: String, required: true },
+    hostId: { type: String, required: true, ref: DatabaseNames.User },
     accountNumber: { type: String, required: true },
     accountType: {
       type: String,
@@ -43,6 +44,7 @@ const WithdrawBonusSchema = new mongoose.Schema<IWithdrawBonusDocument>(
     audioHour: { type: Number, required: true },
     videoHour: { type: Number, required: true },
     country: { type: String },
+    totalDiamond: { type: Number, required: true },
     totalSalary: { type: Number, required: true },
     status: {
       type: String,
@@ -50,7 +52,7 @@ const WithdrawBonusSchema = new mongoose.Schema<IWithdrawBonusDocument>(
       enum: StatusTypes,
       default: StatusTypes.pending,
     },
-    agencyId: { type: String, required: true },
+    agencyId: { type: String, required: true, ref: DatabaseNames.PortalUsers },
     
   },
   { timestamps: true }

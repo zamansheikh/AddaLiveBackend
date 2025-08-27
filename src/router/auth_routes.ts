@@ -35,6 +35,8 @@ import RoomHistoryRepository from "../repository/room/room_repository";
 import RoomHistory, { WithdrawRoomHistory } from "../models/room/room_history_model";
 import WithdrawBonusRepository from "../repository/room/withdraw_bonus_repository";
 import WithdrawBonusModel from "../models/room/withdraw_bonus_model";
+import SalaryRepository from "../repository/salary/salary_repository";
+import SalaryModel from "../models/salary/salaryModel";
 
 const router = express.Router();
 
@@ -55,6 +57,7 @@ const storyReactionRepository = new StoryReactionRepository(StoryReaction);
 const roomHistoryRepository = new RoomHistoryRepository(RoomHistory);
 const withdrawHistoryRepository = new RoomHistoryRepository(WithdrawRoomHistory);
 const bonusRepository = new WithdrawBonusRepository(WithdrawBonusModel);
+const salaryRepository = new SalaryRepository(SalaryModel);
 
 const authService = new AuthService(
   userRepository,
@@ -71,6 +74,7 @@ const authService = new AuthService(
   roomHistoryRepository,
   withdrawHistoryRepository,
   bonusRepository,
+  salaryRepository
 );
 const authController = new AuthController(authService);
 

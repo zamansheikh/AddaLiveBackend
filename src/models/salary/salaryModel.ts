@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { ISalaryDocument } from "./salaryModelInterface";
-import { DatabaseNames } from "../../core/Utils/enums";
+import { DatabaseNames, StreamType } from "../../core/Utils/enums";
+import Stream from "stream";
 
 const salarySchema = new mongoose.Schema<ISalaryDocument>({
     diamondCount: {
@@ -10,6 +11,11 @@ const salarySchema = new mongoose.Schema<ISalaryDocument>({
     moneyCount: {
         type: Number,
         required: true,
+    },
+    type: {
+        type: String,
+        enum: StreamType,
+        default: StreamType.Audio
     },
     country: {
         type: String,
