@@ -104,7 +104,7 @@ export interface IAdminUserService {
   getSalaryById(id: string): Promise<ISalaryDocument>;
   updateSalary(id: string, salary: Partial<ISalary>): Promise<ISalaryDocument>;
   deleteSalary(id: string): Promise<ISalaryDocument>;
-  autoDistributeBonusToAgency(): Promise<UpdateResult>;
+  // autoDistributeBonusToAgency(): Promise<UpdateResult>;
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -720,8 +720,8 @@ export default class AdminUserService implements IAdminUserService {
     return deletedSalary;
   }
   
-  async autoDistributeBonusToAgency(): Promise<UpdateResult> {
+  // async autoDistributeBonusToAgency(): Promise<UpdateResult> {
     
-  }
+  // }
   
 }
