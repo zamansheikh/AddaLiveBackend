@@ -121,6 +121,11 @@ export interface IAdminUserService {
     paid: number;
     successRate: number;
   }>;
+  assignRoleToUser(userId: string, role: UserRoles): Promise<IUserDocument>;
+  getUsersBasedOnRole(role: UserRoles, query: Record<string, unknown>): Promise<{
+    pagination: IPagination;
+    users: IUserDocument[];
+  }>;
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -748,7 +753,7 @@ export default class AdminUserService implements IAdminUserService {
         StatusCodes.BAD_REQUEST,
         `${date} is not salary day, 16th or the 1st day of the next month is`
       );
-    
+
     const agencyArray =
       await this.WithdrawBonusRepository.getAgencyPerformance();
 
@@ -764,10 +769,19 @@ export default class AdminUserService implements IAdminUserService {
         agency.totalSalarySum * getPercentageFromHostCount(agency.totalHost);
       const diamondBonus = (100000 / 1200) * moneyShare;
       if (diamondBonus != 0) {
-        const agencyAcc = await this.PortalUserRepository.getPortalUserById(agency.agencyId);
-        if(agencyAcc?.updatedAt.getDate() == 16 || agencyAcc?.updatedAt.getDate() == 1)
-          throw new AppError(StatusCodes.BAD_REQUEST, "agencies already been paid");
-        if(!agencyAcc) throw new AppError(StatusCodes.NOT_FOUND, "Agency not found");
+        const agencyAcc = await this.PortalUserRepository.getPortalUserById(
+          agency.agencyId
+        );
+        if (
+          agencyAcc?.updatedAt.getDate() == 16 ||
+          agencyAcc?.updatedAt.getDate() == 1
+        )
+          throw new AppError(
+            StatusCodes.BAD_REQUEST,
+            "agencies already been paid"
+          );
+        if (!agencyAcc)
+          throw new AppError(StatusCodes.NOT_FOUND, "Agency not found");
         agencyAcc.diamonds += diamondBonus;
         await agencyAcc.save({ session });
         paid += 1;
@@ -779,5 +793,35 @@ export default class AdminUserService implements IAdminUserService {
     session.endSession();
 
     return { total, paid, successRate: (paid / total) * 100 };
+  }
+
+  async assignRoleToUser(
+    userId: string,
+    role: UserRoles
+  ): Promise<IUserDocument> {
+    const user = await this.UserRepository.findUserById(userId);
+    if (!user) {
+      throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+    }
+
+    const updatedUser = await this.UserRepository.findUserByIdAndUpdate(
+      userId,
+      { userRole: role }
+    );
+    if (!updatedUser) {
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to assign role to user"
+      );
+    }
+    return updatedUser;
+  }
+
+  async getUsersBasedOnRole(role: UserRoles, query: Record<string, unknown>): Promise<{
+    pagination: IPagination;
+    users: IUserDocument[];
+  }> {
+    const users = await this.UserRepository.getUserByRole(role, query);
+    return users;
   }
 }

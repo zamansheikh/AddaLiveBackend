@@ -32,10 +32,14 @@ export default class AuthController {
 
   updateProfile = catchAsync(async (req: Request, res: Response) => {
     const userId = req.user!.id;
+    const avatar = req.files && (req.files as any)["avatar"]?.[0];
+    const coverPicture = req.files && (req.files as any)["coverPicture"]?.[0];
+
     const updatedUser = await this.authService.updateProfile({
       id: userId,
       profileData: req.body,
-      file: req.file,
+      avatar,
+      coverPicture
     });
     sendResponseEnhanced(res, updatedUser);
   });
@@ -98,7 +102,7 @@ export default class AuthController {
         StatusCodes.BAD_REQUEST,
         "totalTime must be greater than or equal to 0"
       );
-      
+
     const updatedUser = await this.authService.getDailyBonus(
       id,
       totalTime,

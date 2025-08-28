@@ -26,11 +26,13 @@ export interface IAuthService {
   updateProfile({
     id,
     profileData,
-    file,
+    avatar,
+    coverPicture
   }: {
     id: string;
     profileData: Partial<Record<string, any>>;
-    file?: Express.Multer.File;
+    avatar?: Express.Multer.File;
+    coverPicture?: Express.Multer.File;
   }): Promise<IUserDocument | null>;
   giftUser({
     targetUserIds,

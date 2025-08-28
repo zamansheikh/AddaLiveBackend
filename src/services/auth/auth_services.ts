@@ -215,23 +215,33 @@ export default class AuthService implements IAuthService {
   async updateProfile({
     id,
     profileData,
-    file,
+    avatar,
+    coverPicture
   }: {
     id: string;
     profileData: Partial<Record<string, any>>;
-    file?: Express.Multer.File;
+    avatar?: Express.Multer.File;
+    coverPicture?: Express.Multer.File;
   }) {
     const user = await this.UserRepository.findUserById(id);
     if (!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
     const updatePayload: Record<string, any> = {};
     let profilePicUrl;
-    if (file) {
+    if (avatar) {
       profilePicUrl = await uploadFileToCloudinary({
         isVideo: false,
         folder: CloudinaryFolder.UserPRofile,
-        file: file,
+        file: avatar,
       });
       updatePayload["avatar"] = profilePicUrl;
+    }
+    if (coverPicture) {
+      const cover = await uploadFileToCloudinary({
+        isVideo: false,
+        folder: CloudinaryFolder.UserPRofile,
+        file: coverPicture,
+      });
+      updatePayload["coverPicture"] = cover;
     }
     // Filter and add only valid keys from profileData
     for (const [key, value] of Object.entries(profileData)) {

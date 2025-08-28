@@ -32,7 +32,9 @@ import Story from "../models/stories/stories_model";
 import StoryReactionRepository from "../repository/stories/likes/story_reaction_repository";
 import StoryReaction from "../models/stories/likes/story_reaction_model";
 import RoomHistoryRepository from "../repository/room/room_repository";
-import RoomHistory, { WithdrawRoomHistory } from "../models/room/room_history_model";
+import RoomHistory, {
+  WithdrawRoomHistory,
+} from "../models/room/room_history_model";
 import WithdrawBonusRepository from "../repository/room/withdraw_bonus_repository";
 import WithdrawBonusModel from "../models/room/withdraw_bonus_model";
 import SalaryRepository from "../repository/salary/salary_repository";
@@ -55,7 +57,9 @@ const storyRepository = new StoriesRepository(Story);
 const storyReactionRepository = new StoryReactionRepository(StoryReaction);
 
 const roomHistoryRepository = new RoomHistoryRepository(RoomHistory);
-const withdrawHistoryRepository = new RoomHistoryRepository(WithdrawRoomHistory);
+const withdrawHistoryRepository = new RoomHistoryRepository(
+  WithdrawRoomHistory
+);
 const bonusRepository = new WithdrawBonusRepository(WithdrawBonusModel);
 const salaryRepository = new SalaryRepository(SalaryModel);
 
@@ -86,7 +90,10 @@ router.post(
 router.put(
   "/update-profile",
   authenticate(),
-  upload.single("avatar"),
+  upload.fields([
+    { name: "avatar", maxCount: 1 },
+    { name: "coverPicture", maxCount: 1 },
+  ]),
   validateRequest(ProfileUpdateDto),
   authController.updateProfile
 );
@@ -95,7 +102,7 @@ router
   .route("/my-profile")
   .get(authenticate(), authController.getMyDetails)
   .delete(authenticate(), authController.deleteMyAccount);
-  
+
 router.put(
   "/user/gift",
   authenticate(),
@@ -107,8 +114,12 @@ router
   .route("/user/set-privacy/chats")
   .put(authenticate(), authController.setChatPrivacy);
 
-router.route("/daily-bonus").post(authenticate(), authController.addDailtyBonus);
-router.route("/withdraw-bonus").post(authenticate(), authController.withdrawBonus);
+router
+  .route("/daily-bonus")
+  .post(authenticate(), authController.addDailtyBonus);
+router
+  .route("/withdraw-bonus")
+  .post(authenticate(), authController.withdrawBonus);
 
 router.post(
   "/generate-token",

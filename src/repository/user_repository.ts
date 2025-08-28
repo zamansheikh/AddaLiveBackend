@@ -60,6 +60,13 @@ export interface IUserRepository {
     parentId: string,
     query: Record<string, unknown>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] }>;
+  getUserByRole(
+    role: UserRoles,
+    query: Record<string, unknown>
+  ): Promise<{
+    pagination: IPagination;
+    users: IUserDocument[];
+  }>;
 }
 
 export default class UserRepository implements IUserRepository {
@@ -354,6 +361,17 @@ export default class UserRepository implements IUserRepository {
   ): Promise<{ pagination: IPagination; users: IUserDocument[] }> {
     const qb = new QueryBuilder(this.UserModel, query);
     const res = qb.find({ parentCreator: parentId });
+    const users = await res.paginate().sort().exec();
+    const pagination = await res.countTotal();
+    return { users, pagination };
+  }
+
+  async getUserByRole(
+    role: UserRoles,
+    query: Record<string, unknown>
+  ): Promise<{ pagination: IPagination; users: IUserDocument[] }> {
+    const qb = new QueryBuilder(this.UserModel, query);
+    const res = qb.find({ userRole: role });
     const users = await res.paginate().sort().exec();
     const pagination = await res.countTotal();
     return { users, pagination };

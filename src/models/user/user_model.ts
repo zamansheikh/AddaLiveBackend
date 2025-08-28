@@ -23,6 +23,7 @@ const userSchema = new mongoose.Schema<IUserDocument>(
     userPermissions: [{ type: String }],
     level: { type: Number, default: 0 },
     avatar: { type: String },
+    coverPicture: { type: String },
     name: String,
     firstName: String,
     lastName: String,

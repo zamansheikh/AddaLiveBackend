@@ -510,8 +510,33 @@ export default class AdminUserController {
   agencyCommissionDistribute = catchAsync(async (req: Request, res: Response) => {
     const result = await this.AdminUserService.autoDistributeBonusToAgency();
     sendResponseEnhanced(res, result);
-
   });
+
+  assignRoleToUser = catchAsync(async (req: Request, res: Response) => {
+    const {userId} = req.body;
+    const {role} = req.params;
+    if(!userId || !role) throw new AppError(StatusCodes.BAD_REQUEST, "userId and role are required");
+    if(!Object.values(UserRoles).includes(role as UserRoles)) throw new AppError(StatusCodes.BAD_REQUEST, `invalid role -> ${role}`);
+    const updatedUser = await this.AdminUserService.assignRoleToUser(userId, role as UserRoles);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: updatedUser,
+      message: "User role updated successfully",
+    });
+  })
+  getUsersBasedOnRole = catchAsync(async (req: Request, res: Response) => {
+    const {role} = req.params;
+    if(!role) throw new AppError(StatusCodes.BAD_REQUEST, "role is required");
+    if(!Object.values(UserRoles).includes(role as UserRoles)) throw new AppError(StatusCodes.BAD_REQUEST, `invalid role -> ${role}`);
+    const users = await this.AdminUserService.getUsersBasedOnRole(role as UserRoles, req.query as Record<string, unknown>);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: users,
+      message: `${role}s retrieved successfully`,
+    });
+  })
 
 }
 

@@ -12,6 +12,7 @@ export interface UserData {
     userStateInApp?: UserActiveStatus;
     userPermissions: string[];
     avatar?: string;
+    coverPicture: string;
     name?: string;
     firstName?: string;
     lastName?: string;
