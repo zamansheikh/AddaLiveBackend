@@ -87,6 +87,7 @@ router.post(
   validateRequest(RegisterUserDto),
   authController.registerWithGoogle
 );
+
 router.put(
   "/update-profile",
   authenticate(),

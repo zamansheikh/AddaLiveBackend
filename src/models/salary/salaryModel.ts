@@ -4,8 +4,7 @@ import { DatabaseNames, StreamType } from "../../core/Utils/enums";
 import Stream from "stream";
 
 const salarySchema = new mongoose.Schema<ISalaryDocument>({
-    diamondCount: {
-        type: Number,
+    diamondCount: {type: Number,
         required: true,
     },
     moneyCount: {

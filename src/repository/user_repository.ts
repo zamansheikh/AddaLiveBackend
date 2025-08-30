@@ -67,6 +67,8 @@ export interface IUserRepository {
     pagination: IPagination;
     users: IUserDocument[];
   }>;
+
+  getUserCounts(role: UserRoles): Promise<number>;
 }
 
 export default class UserRepository implements IUserRepository {
@@ -375,5 +377,9 @@ export default class UserRepository implements IUserRepository {
     const users = await res.paginate().sort().exec();
     const pagination = await res.countTotal();
     return { users, pagination };
+  }
+
+  async getUserCounts(role: UserRoles): Promise<number> {
+    return await this.UserModel.countDocuments({ userRole: role });
   }
 }

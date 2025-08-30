@@ -538,6 +538,16 @@ export default class AdminUserController {
     });
   })
 
+  getDashboardStats = catchAsync(async (req: Request, res: Response) => {
+      const result = await this.AdminUserService.getDashboardStats();
+      sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        result: result,
+        message: "Dashboard stats retrieved successfully",
+      });
+  })
+
 }
 
 export interface IGiftFile {

@@ -12,6 +12,10 @@ import PortalUser from "../models/portal_users/protal_user_model";
 import SharedPowerService from "../services/admin/portal_user_service";
 import { PortalUserControllers } from "../controllers/admin/portal_user_controller";
 import { upload } from "../core/middlewares/multer";
+import AgencyWithdrawModel from "../models/room/agency_withdraw_model";
+import AgencyWithdrawRepository from "../repository/room/agency_withdraw_repository";
+import SalaryRepository from "../repository/salary/salary_repository";
+import SalaryModel from "../models/salary/salaryModel";
 
 const router = express.Router();
 
@@ -19,12 +23,17 @@ const userRepository = new UserRepository(User);
 const userStatsRepository = new UserStatsRepository(UserStats);
 const adminRepository = new AdminRepository(Admin);
 const portalUserRepository = new PortalUserRepository(PortalUser);
+const agencyWithdrawRepository = new AgencyWithdrawRepository(AgencyWithdrawModel);
+const salaryRepository = new SalaryRepository(SalaryModel); 
+
 
 const sharedPowerService = new SharedPowerService(
   userRepository,
   userStatsRepository,
   adminRepository,
-  portalUserRepository
+  portalUserRepository,
+  agencyWithdrawRepository,
+  salaryRepository,
 );
 const portalUserControllers = new PortalUserControllers(sharedPowerService);
 
@@ -109,5 +118,7 @@ router
 router
   .route("/portal/lower/:parentId")
   .get(authenticate(), portalUserControllers.getHosts);
+
+router.route("/agency/withdraw").post(authenticate([UserRoles.Agency]), portalUserControllers.withdrawAgency);
 
 export default router;

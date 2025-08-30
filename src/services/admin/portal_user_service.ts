@@ -2,7 +2,9 @@ import { StatusCodes } from "http-status-codes";
 import {
   ActivityZoneState,
   AdminPowers,
+  StatusTypes,
   UserRoles,
+  WithdrawAccountTypes,
 } from "../../core/Utils/enums";
 import { IPagination } from "../../core/Utils/query_builder";
 import { IUSerStatsDocument } from "../../entities/userstats/userstats_interface";
@@ -18,6 +20,9 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { IPortalUserDocument } from "../../entities/portal_users/portal_user_interface";
 import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
+import { IAgencyWithdrawRepository } from "../../repository/room/agency_withdraw_repository";
+import { IAgencyWithdrawDocument } from "../../models/room/agency_withdraw_model";
+import { ISalaryRepository } from "../../repository/salary/salary_repository";
 
 export interface ISharedPowerService {
   loginPortalUser(
@@ -67,6 +72,15 @@ export interface ISharedPowerService {
     parentId: string,
     query: Record<string, any>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] }>;
+
+  agencyWithdraw(
+    id: string,
+    {
+      accountNumber,
+      accountType,
+      totalSalary,
+    }: { accountNumber: string; accountType: string; totalSalary: number }
+  ): Promise<IAgencyWithdrawDocument>;
 }
 
 export default class SharedPowerService implements ISharedPowerService {
@@ -74,16 +88,23 @@ export default class SharedPowerService implements ISharedPowerService {
   UserStatsRepository: IUserStatsRepository;
   AdminRepository: IAdminRepository;
   PortalUserRepository: IPortalUserRepository;
+  AgencyWithdrawRepository: IAgencyWithdrawRepository;
+  SalaryRepository: ISalaryRepository;
+
   constructor(
     UserRepository: IUserRepository,
     UserStatsRepository: IUserStatsRepository,
     AdminRepository: IAdminRepository,
-    PortalUserRepository: IPortalUserRepository
+    PortalUserRepository: IPortalUserRepository,
+    AgencyWithdrawRepository: IAgencyWithdrawRepository,
+    SalaryRepository: ISalaryRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
     this.AdminRepository = AdminRepository;
     this.PortalUserRepository = PortalUserRepository;
+    this.AgencyWithdrawRepository = AgencyWithdrawRepository;
+    this.SalaryRepository = SalaryRepository;
   }
 
   async loginPortalUser(
@@ -377,5 +398,70 @@ export default class SharedPowerService implements ISharedPowerService {
   ): Promise<{ pagination: IPagination; users: IUserDocument[] }> {
     const users = await this.UserRepository.getHosts(parentId, query);
     return users;
+  }
+
+  async agencyWithdraw(
+    id: string,
+    {
+      accountNumber,
+      accountType,
+      totalSalary,
+    }: { accountNumber: string; accountType: string; totalSalary: number }
+  ): Promise<IAgencyWithdrawDocument> {
+    // checking for previous withdraw
+    const existingWithdraw =
+      await this.AgencyWithdrawRepository.getWithdrawWithStatus(
+        id,
+        StatusTypes.pending
+      );
+    if (existingWithdraw)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "You have already applied for withdraw"
+      );
+    await this.SalaryRepository.getSalaryByAmount(totalSalary);
+    // getting my profile info
+    const myProfile = await this.PortalUserRepository.getPortalUserById(id);
+    // checking eligibiility for withdraw
+    if (myProfile?.diamonds! < totalSalary)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `your exisitng fund ${myProfile?.diamonds} is not sufficient for ${totalSalary} to withdraw`
+      );
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    const update = await this.PortalUserRepository.updateDiamonds(
+      id,
+      -totalSalary,
+      session
+    );
+    if (!update)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to update diamonds"
+      );
+    const withdraw = await this.AgencyWithdrawRepository.createWithdraw(
+      {
+        accountType: accountType as WithdrawAccountTypes,
+        accoutNumber: accountNumber,
+        agencyId: id,
+        expireAt: new Date(),
+        status: StatusTypes.pending,
+        totalSalary,
+        name: myProfile?.name as string,
+        withdrawDate: new Date(),
+      },
+      session
+    );
+    if (!withdraw)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to create withdraw"
+      );
+    await session.commitTransaction();
+    session.endSession();
+    return withdraw;
   }
 }

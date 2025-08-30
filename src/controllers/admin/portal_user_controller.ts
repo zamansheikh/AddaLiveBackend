@@ -4,7 +4,7 @@ import catchAsync from "../../core/Utils/catch_async";
 import { ISharedPowerService } from "../../services/admin/portal_user_service";
 import { StatusCodes } from "http-status-codes";
 import sendResponse from "../../core/Utils/send_response";
-import { UserRoles } from "../../core/Utils/enums";
+import { UserRoles, WithdrawAccountTypes } from "../../core/Utils/enums";
 import { validatePromoteUserPermission } from "../../core/Utils/helper_functions";
 
 export class PortalUserControllers {
@@ -189,7 +189,7 @@ export class PortalUserControllers {
   getPortalUsersByParent = catchAsync(async (req: Request, res: Response) => {
     const { userRole, parentId } = req.params;
     const { id, role } = req.user!;
-    
+
     if (
       !(
         userRole == UserRoles.Reseller ||
@@ -214,21 +214,43 @@ export class PortalUserControllers {
       message: "Portal users retrieved successfully",
     });
   });
-  
+
   getHosts = catchAsync(async (req: Request, res: Response) => {
-    const { parentId} = req.params;
+    const { parentId } = req.params;
     const { id, role } = req.user!;
-    if(!parentId) throw new AppError(StatusCodes.BAD_REQUEST, "Parent ID is required");
-    const users = await this.Service.getHosts(
-      parentId,
-      req.query,
-    );
+    if (!parentId)
+      throw new AppError(StatusCodes.BAD_REQUEST, "Parent ID is required");
+    const users = await this.Service.getHosts(parentId, req.query);
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
       result: users,
       message: "Hosts retrieved successfully",
     });
+  });
 
-  })
+  withdrawAgency = catchAsync(async (req: Request, res: Response) => {
+    const { accountType, accountNumber, totalSalary } = req.body;
+    const { id, role } = req.user!;
+    if (!accountType || !accountNumber || !totalSalary)
+      throw new AppError(StatusCodes.BAD_REQUEST, "All fields are required");
+    if (!Object.values(WithdrawAccountTypes).includes(accountType))
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `Invalid account type: ${accountType}`
+      );
+
+    const result = await this.Service.agencyWithdraw(id, {
+      accountType,
+      accountNumber,
+      totalSalary,
+    });
+
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Withdrawal request submitted successfully",
+    });
+  });
 }

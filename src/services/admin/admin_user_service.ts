@@ -122,9 +122,19 @@ export interface IAdminUserService {
     successRate: number;
   }>;
   assignRoleToUser(userId: string, role: UserRoles): Promise<IUserDocument>;
-  getUsersBasedOnRole(role: UserRoles, query: Record<string, unknown>): Promise<{
+  getUsersBasedOnRole(
+    role: UserRoles,
+    query: Record<string, unknown>
+  ): Promise<{
     pagination: IPagination;
     users: IUserDocument[];
+  }>;
+
+  getDashboardStats(): Promise<{
+    users: number;
+    subAdmins: number;
+    merchants: number;
+    countryAdmins: number;
   }>;
 }
 
@@ -817,11 +827,33 @@ export default class AdminUserService implements IAdminUserService {
     return updatedUser;
   }
 
-  async getUsersBasedOnRole(role: UserRoles, query: Record<string, unknown>): Promise<{
+  async getUsersBasedOnRole(
+    role: UserRoles,
+    query: Record<string, unknown>
+  ): Promise<{
     pagination: IPagination;
     users: IUserDocument[];
   }> {
     const users = await this.UserRepository.getUserByRole(role, query);
     return users;
+  }
+
+  async getDashboardStats(): Promise<{
+    users: number;
+    subAdmins: number;
+    merchants: number;
+    countryAdmins: number;
+  }> {
+    const users = await this.UserRepository.getUserCounts(UserRoles.User);
+    const subAdmins = await this.PortalUserRepository.getPortalUserCount(
+      UserRoles.SubAdmin
+    );
+    const merchant = await this.PortalUserRepository.getPortalUserCount(
+      UserRoles.Merchant
+    );
+    const countryAdmins = await this.PortalUserRepository.getPortalUserCount(
+      UserRoles.CountryAdmin
+    );
+    return { users, subAdmins, merchants: merchant, countryAdmins };
   }
 }

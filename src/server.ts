@@ -50,6 +50,8 @@ app.use(
       "http://147.93.103.135:8000",
       "http://147.93.103.135:8080",
       "http://147.93.103.135",
+      "http://dlstarliveplan1.com:8080/",
+      "http://31.97.222.97:8080/",
     ], 
     credentials: true,
   })

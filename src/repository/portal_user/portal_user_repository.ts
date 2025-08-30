@@ -35,6 +35,7 @@ export interface IPortalUserRepository {
     parentId: string,
     query: Record<string, any>
   ): Promise<{ pagination: IPagination; data: IPortalUserDocument[] }>;
+  getPortalUserCount(role: UserRoles): Promise<number>;
 }
 
 export default class PortalUserRepository implements IPortalUserRepository {
@@ -114,7 +115,7 @@ export default class PortalUserRepository implements IPortalUserRepository {
     query: Record<string, any>
   ): Promise<{ pagination: IPagination; data: IPortalUserDocument[] }> {
     const qb = new QueryBuilder(this.Model, query);
-    const res =  qb
+    const res = qb
       .find({ userRole, parentCreator: parentId })
       .search(["name", "userId"])
       .paginate()
@@ -122,5 +123,8 @@ export default class PortalUserRepository implements IPortalUserRepository {
     const data = await res.exec();
     const pagination = await res.countTotal();
     return { data, pagination };
+  }
+  async getPortalUserCount(role: UserRoles): Promise<number> {
+    return await this.Model.countDocuments({ userRole: role });
   }
 }

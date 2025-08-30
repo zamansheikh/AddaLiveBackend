@@ -173,4 +173,6 @@ router.route("/user/asign-role/:role")
   .put(authenticate([UserRoles.Admin]), adminUserController.assignRoleToUser)
   .get(authenticate(), adminUserController.getUsersBasedOnRole);  
 
+router.route("/dashboard/stats").get(authenticate([UserRoles.Admin]), adminUserController.getDashboardStats);
+
 export default router;
