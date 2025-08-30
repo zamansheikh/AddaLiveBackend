@@ -279,7 +279,7 @@ export default class AuthService implements IAuthService {
     // to determine the hot gifts
     exisitngGift.sendCount! += qty;
     await exisitngGift.save();
-
+    
 
     const mystats = await this.UserStatsRepository.getUserStats(myId);
 

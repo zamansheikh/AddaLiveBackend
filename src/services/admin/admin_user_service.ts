@@ -84,7 +84,7 @@ export interface IAdminUserService {
   //   permissions: string[]
   // ): Promise<IUserDocument | null>;
   createGift(gift: IGift): Promise<IGiftDocument>;
-  getGifts(): Promise<IGiftDocument[]>;
+  getGifts(query: Record<string, unknown>): Promise<IGiftDocument[]>;
   updateGift(id: string, gift: Partial<IGift>): Promise<IGiftDocument>;
   deleteGift(id: string): Promise<IGiftDocument>;
   getGiftCategories(query: Record<string, string>): Promise<string[]>;
@@ -438,8 +438,8 @@ export default class AdminUserService implements IAdminUserService {
     return newGift;
   }
 
-  async getGifts(): Promise<IGiftDocument[]> {
-    const gifts = await this.GiftRepository.getGifts();
+  async getGifts(query: Record<string, unknown>): Promise<IGiftDocument[]> {
+    const gifts = await this.GiftRepository.getGifts(query);
     return gifts;
   }
 

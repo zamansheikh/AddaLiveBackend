@@ -249,7 +249,7 @@ export default class AdminUserController {
   });
 
   getGifts = catchAsync(async (req: Request, res: Response) => {
-    const gifts = await this.AdminUserService.getGifts();
+    const gifts = await this.AdminUserService.getGifts(req.query);
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
