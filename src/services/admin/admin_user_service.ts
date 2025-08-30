@@ -486,7 +486,8 @@ export default class AdminUserService implements IAdminUserService {
   async getGiftCategories(query: Record<string, string>): Promise<string[]> {
     const categories = await this.GiftRepository.getGiftCategories(query);
     const values = categories.map((category) => category.category);
-    return values;
+    const uniqueValues = new Set(values);
+    return Array.from(uniqueValues);
   }
 
   async createPortalUser(user: IPortalUser): Promise<IPortalUser> {
