@@ -10,6 +10,7 @@ export interface IGiftRepository {
     updateGift(id: string, gift: Partial<IGift>): Promise<IGiftDocument>;
     deleteGift(id: string): Promise<IGiftDocument>;
     getGiftCategories(query: Record<string, string>): Promise<{category: string}[]>;
+    updateGiftSendCount(id: string): Promise<IGiftDocument>;
 }
 
 export class GiftRepository implements IGiftRepository {
@@ -54,4 +55,15 @@ export class GiftRepository implements IGiftRepository {
         const data = await res.exec();
         return data;
     }
+
+    async updateGiftSendCount(id: string): Promise<IGiftDocument> {
+        const updatedGift = await this.Model.findByIdAndUpdate(
+            id,
+            { $inc: { sendCount: 1 } },
+            { new: true }
+        );
+        if (!updatedGift) throw new AppError(StatusCodes.NOT_FOUND, "Gift not found");
+        return updatedGift;
+    }
+    
 }

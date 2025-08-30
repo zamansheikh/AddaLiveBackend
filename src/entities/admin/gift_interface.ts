@@ -1,8 +1,9 @@
-import { Model } from "mongoose";
+import { Document, Model } from "mongoose";
 
 export interface IGift {
     name: string;
     category: string;
+    sendCount: number;
     diamonds: number;
     coinPrice: number;
     previewImage: string | Express.Multer.File;

@@ -276,6 +276,11 @@ export default class AuthService implements IAuthService {
     if (!exisitngGift)
       throw new AppError(StatusCodes.NOT_FOUND, "gift not found");
 
+    // to determine the hot gifts
+    exisitngGift.sendCount! += qty;
+    await exisitngGift.save();
+
+
     const mystats = await this.UserStatsRepository.getUserStats(myId);
 
     const totalPrice = exisitngGift.coinPrice * targetUserIds.length * qty;
@@ -303,6 +308,7 @@ export default class AuthService implements IAuthService {
 
     const session = await mongoose.startSession();
     session.startTransaction();
+
     mystats.coins! -= totalPrice;
     if (hasMyId) mystats.diamonds! += exisitngGift.diamonds * qty;
     await mystats.save({ session });
