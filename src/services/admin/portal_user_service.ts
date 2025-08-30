@@ -447,7 +447,6 @@ export default class SharedPowerService implements ISharedPowerService {
         accountType: accountType as WithdrawAccountTypes,
         accoutNumber: accountNumber,
         agencyId: id,
-        expireAt: new Date(),
         status: StatusTypes.pending,
         totalSalary,
         name: myProfile?.name as string,

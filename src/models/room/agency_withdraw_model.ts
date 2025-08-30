@@ -13,7 +13,7 @@ export interface IAgencyWithdraw {
   totalSalary: number;
   status: StatusTypes;
   agencyId: mongoose.Schema.Types.ObjectId | string;
-  expireAt: Date;
+  expireAt?: Date;
 }
 
 export interface IAgencyWithdrawDocument
@@ -69,8 +69,6 @@ const AgencyWithdrawSchema = new mongoose.Schema<IAgencyWithdrawDocument>(
     timestamps: true,
   }
 );
-
-AgencyWithdrawSchema.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
 
 const AgencyWithdrawModel = mongoose.model<
   IAgencyWithdrawDocument,
