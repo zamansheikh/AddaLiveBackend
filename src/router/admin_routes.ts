@@ -205,4 +205,7 @@ router
   )
   .delete(authenticate([UserRoles.Admin]), adminUserController.deleteBanner);
 
+
+  router.route("/banners/docs").get(authenticate([UserRoles.Admin]), adminUserController.getBannerDoc);
+
 export default router;

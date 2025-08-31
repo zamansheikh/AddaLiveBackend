@@ -590,7 +590,8 @@ export default class AdminUserController {
     const { id } = req.params;
     const { alt } = req.body;
     const file = req.file as Express.Multer.File;
-    if (!alt && !file) throw new AppError(StatusCodes.BAD_REQUEST, "Data is required");
+    if (!alt && !file)
+      throw new AppError(StatusCodes.BAD_REQUEST, "Data is required");
     const result = await this.AdminUserService.updateBanner(id, alt, file);
     sendResponse(res, {
       statusCode: StatusCodes.OK,
@@ -603,10 +604,21 @@ export default class AdminUserController {
   deleteBanner = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
     const result = await this.AdminUserService.deleteBanner(id);
-    sendResponse(res, {      statusCode: StatusCodes.OK,
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
       success: true,
       result: result,
       message: "Banner deleted successfully",
+    });
+  });
+
+  getBannerDoc = catchAsync(async (req: Request, res: Response) => {
+    const banners = await this.AdminUserService.getBannerDocs();
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: banners,
+      message: "Banners retrieved successfully",
     });
   });
 }

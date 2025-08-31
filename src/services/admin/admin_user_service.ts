@@ -28,7 +28,10 @@ import mongoose, { UpdateResult } from "mongoose";
 import { appendFile } from "fs";
 import { IGift, IGiftDocument } from "../../entities/admin/gift_interface";
 import { IGiftRepository } from "../../repository/gifts/gifts_repositories";
-import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
+import {
+  deleteFileFromCloudinary,
+  uploadFileToCloudinary,
+} from "../../core/Utils/upload_file_cloudinary";
 import { Transaction } from "mongodb";
 import {
   IPortalUser,
@@ -140,6 +143,7 @@ export interface IAdminUserService {
   }>;
 
   getBanners(): Promise<String[]>;
+  getBannerDocs(): Promise<IBannerDocument[]>;
   createBanner(
     alt: string,
     file: Express.Multer.File
@@ -881,6 +885,11 @@ export default class AdminUserService implements IAdminUserService {
     return bannersArray;
   }
 
+  async getBannerDocs(): Promise<IBannerDocument[]> {
+    const banners = await this.BannerRepository.getBanners();
+    return banners;
+  }
+
   async createBanner(
     alt: string,
     file: Express.Multer.File
@@ -924,6 +933,28 @@ export default class AdminUserService implements IAdminUserService {
   }
 
   async deleteBanner(id: string): Promise<IBannerDocument> {
+    const banner = await this.BannerRepository.getBannerById(id);
+    
+    if (!banner) {
+      throw new AppError(StatusCodes.NOT_FOUND, "Banner not found");
+    }
+
+    const parts = new URL(banner.url).pathname.split("/");
+    const fileName = parts[parts.length - 1];
+    const folderName = parts[parts.length - 2];
+    const fileHash = fileName.substring(0, fileName.lastIndexOf("."));
+    const publicId = `${folderName}/${folderName}/${fileHash}`;
+    console.log(publicId);
+    
+    const deleteFile = await deleteFileFromCloudinary({
+      isVideo: false,
+      publicId: publicId,
+    });
+    if (!deleteFile)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to delete image from cloudinary"
+      );
     const deletedBanner = await this.BannerRepository.deleteBanner(id);
     return deletedBanner;
   }
