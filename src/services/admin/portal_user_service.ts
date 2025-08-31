@@ -23,6 +23,10 @@ import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary"
 import { IAgencyWithdrawRepository } from "../../repository/room/agency_withdraw_repository";
 import { IAgencyWithdrawDocument } from "../../models/room/agency_withdraw_model";
 import { ISalaryRepository } from "../../repository/salary/salary_repository";
+import { ICoinHistoryRepository } from "../../repository/coins/coinHistoryRepository";
+import { ICoinHistory } from "../../models/coins/coinHistoryModel";
+import { IHistory } from "../../entities/history/history_interface";
+import { appendFile } from "fs";
 
 export interface ISharedPowerService {
   loginPortalUser(
@@ -90,6 +94,7 @@ export default class SharedPowerService implements ISharedPowerService {
   PortalUserRepository: IPortalUserRepository;
   AgencyWithdrawRepository: IAgencyWithdrawRepository;
   SalaryRepository: ISalaryRepository;
+  CoinHistoryRepository: ICoinHistoryRepository;
 
   constructor(
     UserRepository: IUserRepository,
@@ -97,7 +102,8 @@ export default class SharedPowerService implements ISharedPowerService {
     AdminRepository: IAdminRepository,
     PortalUserRepository: IPortalUserRepository,
     AgencyWithdrawRepository: IAgencyWithdrawRepository,
-    SalaryRepository: ISalaryRepository
+    SalaryRepository: ISalaryRepository,
+    CoinHistoryRepository: ICoinHistoryRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
@@ -105,6 +111,7 @@ export default class SharedPowerService implements ISharedPowerService {
     this.PortalUserRepository = PortalUserRepository;
     this.AgencyWithdrawRepository = AgencyWithdrawRepository;
     this.SalaryRepository = SalaryRepository;
+    this.CoinHistoryRepository = CoinHistoryRepository;
   }
 
   async loginPortalUser(
@@ -317,6 +324,22 @@ export default class SharedPowerService implements ISharedPowerService {
         StatusCodes.INTERNAL_SERVER_ERROR,
         "Failed to assign coins to user"
       );
+
+    // creating a transaction history
+      const historyObj: ICoinHistory = {
+        senderRole: role,
+        senderId: myId,
+        receiverRole: userRole,
+        receiverId: userId,
+        amount: coins
+      }
+      const newHistory = await this.CoinHistoryRepository.createHistory(historyObj, session);
+      if (!newHistory)
+        throw new AppError(
+          StatusCodes.INTERNAL_SERVER_ERROR,
+          "Failed to create history"
+        );
+
     // commiting the transaction
     await session.commitTransaction();
     session.endSession();

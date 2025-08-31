@@ -48,6 +48,8 @@ import {
 import { ISalaryRepository } from "../../repository/salary/salary_repository";
 import { IBannerRepository } from "../../repository/banners/bannerRepository";
 import { IBanner, IBannerDocument } from "../../models/banner/bannerModel";
+import { ICoinHistoryRepository } from "../../repository/coins/coinHistoryRepository";
+import { ICoinHistoryDocument } from "../../models/coins/coinHistoryModel";
 
 export interface IAdminUserService {
   loginAdmin(credentials: {
@@ -154,6 +156,11 @@ export interface IAdminUserService {
     file?: Express.Multer.File
   ): Promise<IBannerDocument>;
   deleteBanner(id: string): Promise<IBannerDocument>;
+  getCoinHistory(
+    senderRole: UserRoles,
+    senderId: string | null,
+    query: Record<string, unknown>
+  ): Promise<{ pagination: IPagination; data: ICoinHistoryDocument[] }>;
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -165,6 +172,8 @@ export default class AdminUserService implements IAdminUserService {
   WithdrawBonusRepository: IWithdrawBonusRepository;
   SalaryRepository: ISalaryRepository;
   BannerRepository: IBannerRepository;
+  CoinHistoryRepository: ICoinHistoryRepository;
+
   constructor(
     UserRepository: IUserRepository,
     UserStatsRepository: IUserStatsRepository,
@@ -173,7 +182,8 @@ export default class AdminUserService implements IAdminUserService {
     PortalUserRepository: IPortalUserRepository,
     WithdrawBonusRepository: IWithdrawBonusRepository,
     SalaryRepository: ISalaryRepository,
-    BannerRepository: IBannerRepository
+    BannerRepository: IBannerRepository,
+    CoinHistoryRepository: ICoinHistoryRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
@@ -183,6 +193,7 @@ export default class AdminUserService implements IAdminUserService {
     this.WithdrawBonusRepository = WithdrawBonusRepository;
     this.SalaryRepository = SalaryRepository;
     this.BannerRepository = BannerRepository;
+    this.CoinHistoryRepository = CoinHistoryRepository;
   }
 
   async loginAdmin(credentials: {
@@ -934,7 +945,7 @@ export default class AdminUserService implements IAdminUserService {
 
   async deleteBanner(id: string): Promise<IBannerDocument> {
     const banner = await this.BannerRepository.getBannerById(id);
-    
+
     if (!banner) {
       throw new AppError(StatusCodes.NOT_FOUND, "Banner not found");
     }
@@ -945,7 +956,7 @@ export default class AdminUserService implements IAdminUserService {
     const fileHash = fileName.substring(0, fileName.lastIndexOf("."));
     const publicId = `${folderName}/${folderName}/${fileHash}`;
     console.log(publicId);
-    
+
     const deleteFile = await deleteFileFromCloudinary({
       isVideo: false,
       publicId: publicId,
@@ -957,5 +968,25 @@ export default class AdminUserService implements IAdminUserService {
       );
     const deletedBanner = await this.BannerRepository.deleteBanner(id);
     return deletedBanner;
+  }
+
+  async getCoinHistory(
+    senderRole: UserRoles,
+    senderId: string | null,
+    query: Record<string, unknown>
+  ): Promise<{ pagination: IPagination; data: ICoinHistoryDocument[] }> {
+    let history = {
+      data: [] as ICoinHistoryDocument[],
+      pagination: {
+        total: 0,
+        limit: 0,
+        page: 0,
+        totalPage: 0,
+      },
+    };
+    if (senderRole == UserRoles.Admin) {
+       history = await this.CoinHistoryRepository.getAdminHistories(query);
+    }
+    return history;
   }
 }

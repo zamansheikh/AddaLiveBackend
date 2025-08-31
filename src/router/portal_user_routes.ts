@@ -16,6 +16,8 @@ import AgencyWithdrawModel from "../models/room/agency_withdraw_model";
 import AgencyWithdrawRepository from "../repository/room/agency_withdraw_repository";
 import SalaryRepository from "../repository/salary/salary_repository";
 import SalaryModel from "../models/salary/salaryModel";
+import CoinHistoryRepository from "../repository/coins/coinHistoryRepository";
+import CoinHistoryModel from "../models/coins/coinHistoryModel";
 
 const router = express.Router();
 
@@ -25,6 +27,7 @@ const adminRepository = new AdminRepository(Admin);
 const portalUserRepository = new PortalUserRepository(PortalUser);
 const agencyWithdrawRepository = new AgencyWithdrawRepository(AgencyWithdrawModel);
 const salaryRepository = new SalaryRepository(SalaryModel); 
+const coinHistoryRepository = new CoinHistoryRepository(CoinHistoryModel);
 
 
 const sharedPowerService = new SharedPowerService(
@@ -34,6 +37,7 @@ const sharedPowerService = new SharedPowerService(
   portalUserRepository,
   agencyWithdrawRepository,
   salaryRepository,
+  coinHistoryRepository
 );
 const portalUserControllers = new PortalUserControllers(sharedPowerService);
 

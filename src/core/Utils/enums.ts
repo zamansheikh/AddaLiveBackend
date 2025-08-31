@@ -34,6 +34,7 @@ export enum DatabaseNames {
   Salaries = "salaries", 
   AgencyWithdraw = "agency-withdraw",
   Banners= 'banners',
+  CoinHistory = "coin_histories",
 }
 
 export enum ReelStatus {

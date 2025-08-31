@@ -621,6 +621,16 @@ export default class AdminUserController {
       message: "Banners retrieved successfully",
     });
   });
+
+  getAdminCoinHistory = catchAsync(async (req: Request, res: Response) =>{
+    const result = await this.AdminUserService.getCoinHistory(UserRoles.Admin, null, req.query);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "transaction history retrieved successfully",
+    });
+  })
 }
 
 export interface IGiftFile {

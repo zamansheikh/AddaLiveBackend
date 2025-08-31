@@ -25,6 +25,8 @@ import SalaryRepository from "../repository/salary/salary_repository";
 import SalaryModel from "../models/salary/salaryModel";
 import BannerRepository from "../repository/banners/bannerRepository";
 import BannerModel from "../models/banner/bannerModel";
+import CoinHistoryRepository from "../repository/coins/coinHistoryRepository";
+import CoinHistoryModel from "../models/coins/coinHistoryModel";
 
 const router = express.Router();
 
@@ -36,6 +38,7 @@ const portalUserRepository = new PortalUserRepository(PortalUser);
 const bonusRepository = new WithdrawBonusRepository(WithdrawBonusModel);
 const salaryRepository = new SalaryRepository(SalaryModel);
 const bannerRepository = new BannerRepository(BannerModel);
+const coinHistoryRepository = new CoinHistoryRepository(CoinHistoryModel);
 
 const adminUserService = new AdminUserService(
   userRepository,
@@ -45,7 +48,8 @@ const adminUserService = new AdminUserService(
   portalUserRepository,
   bonusRepository,
   salaryRepository,
-  bannerRepository
+  bannerRepository,
+  coinHistoryRepository
 );
 const adminUserController = new AdminUserController(adminUserService);
 
@@ -204,6 +208,8 @@ router
     adminUserController.updateBanner
   )
   .delete(authenticate([UserRoles.Admin]), adminUserController.deleteBanner);
+
+  router.route("/transaction-admin").get(authenticate([UserRoles.Admin]), adminUserController.getAdminCoinHistory)
 
 
   router.route("/banners/docs").get(authenticate([UserRoles.Admin]), adminUserController.getBannerDoc);
