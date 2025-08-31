@@ -43,6 +43,8 @@ import {
   ISalaryDocument,
 } from "../../models/salary/salaryModelInterface";
 import { ISalaryRepository } from "../../repository/salary/salary_repository";
+import { IBannerRepository } from "../../repository/banners/bannerRepository";
+import { IBanner, IBannerDocument } from "../../models/banner/bannerModel";
 
 export interface IAdminUserService {
   loginAdmin(credentials: {
@@ -136,6 +138,18 @@ export interface IAdminUserService {
     merchants: number;
     countryAdmins: number;
   }>;
+
+  getBanners(): Promise<String[]>;
+  createBanner(
+    alt: string,
+    file: Express.Multer.File
+  ): Promise<IBannerDocument>;
+  updateBanner(
+    id: string,
+    alt?: string,
+    file?: Express.Multer.File
+  ): Promise<IBannerDocument>;
+  deleteBanner(id: string): Promise<IBannerDocument>;
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -146,6 +160,7 @@ export default class AdminUserService implements IAdminUserService {
   PortalUserRepository: IPortalUserRepository;
   WithdrawBonusRepository: IWithdrawBonusRepository;
   SalaryRepository: ISalaryRepository;
+  BannerRepository: IBannerRepository;
   constructor(
     UserRepository: IUserRepository,
     UserStatsRepository: IUserStatsRepository,
@@ -153,7 +168,8 @@ export default class AdminUserService implements IAdminUserService {
     giftRepository: IGiftRepository,
     PortalUserRepository: IPortalUserRepository,
     WithdrawBonusRepository: IWithdrawBonusRepository,
-    SalaryRepository: ISalaryRepository
+    SalaryRepository: ISalaryRepository,
+    BannerRepository: IBannerRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
@@ -162,6 +178,7 @@ export default class AdminUserService implements IAdminUserService {
     this.PortalUserRepository = PortalUserRepository;
     this.WithdrawBonusRepository = WithdrawBonusRepository;
     this.SalaryRepository = SalaryRepository;
+    this.BannerRepository = BannerRepository;
   }
 
   async loginAdmin(credentials: {
@@ -856,5 +873,58 @@ export default class AdminUserService implements IAdminUserService {
       UserRoles.CountryAdmin
     );
     return { users, subAdmins, merchants: merchant, countryAdmins };
+  }
+
+  async getBanners(): Promise<String[]> {
+    const banners = await this.BannerRepository.getBanners();
+    const bannersArray = banners.map((banner) => banner.url);
+    return bannersArray;
+  }
+
+  async createBanner(
+    alt: string,
+    file: Express.Multer.File
+  ): Promise<IBannerDocument> {
+    const bannerUrl = await uploadFileToCloudinary({
+      isVideo: false,
+      folder: CloudinaryFolder.BannerAssets,
+      file: file,
+    });
+
+    const newBanner = await this.BannerRepository.createBanner({
+      url: bannerUrl,
+      alt: alt,
+    });
+    return newBanner;
+  }
+
+  async updateBanner(
+    id: string,
+    alt?: string,
+    file?: Express.Multer.File
+  ): Promise<IBannerDocument> {
+    let url;
+    if (file) {
+      url = await uploadFileToCloudinary({
+        isVideo: false,
+        folder: CloudinaryFolder.BannerAssets,
+        file: file,
+      });
+    }
+    let updateObj: Partial<IBanner> = {};
+
+    if (url) updateObj["url"] = url as string;
+    if (alt) updateObj["alt"] = alt;
+
+    const updatedBanner = await this.BannerRepository.updateBanner(
+      id,
+      updateObj
+    );
+    return updatedBanner;
+  }
+
+  async deleteBanner(id: string): Promise<IBannerDocument> {
+    const deletedBanner = await this.BannerRepository.deleteBanner(id);
+    return deletedBanner;
   }
 }

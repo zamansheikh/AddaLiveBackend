@@ -33,6 +33,7 @@ export enum DatabaseNames {
   WithdrawBonus = "withdraw-bonus",
   Salaries = "salaries", 
   AgencyWithdraw = "agency-withdraw",
+  Banners= 'banners',
 }
 
 export enum ReelStatus {
@@ -54,6 +55,7 @@ export enum CloudinaryFolder {
   messageImages = "message_photos",
   messageVideos = "message_videos",
   giftAssets = "gift_assets",
+  BannerAssets = "banner_assets",
 }
 
 export enum FriendshipStatus {

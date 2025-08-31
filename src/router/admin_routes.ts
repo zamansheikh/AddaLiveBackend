@@ -23,6 +23,8 @@ import WithdrawBonusRepository from "../repository/room/withdraw_bonus_repositor
 import WithdrawBonusModel from "../models/room/withdraw_bonus_model";
 import SalaryRepository from "../repository/salary/salary_repository";
 import SalaryModel from "../models/salary/salaryModel";
+import BannerRepository from "../repository/banners/bannerRepository";
+import BannerModel from "../models/banner/bannerModel";
 
 const router = express.Router();
 
@@ -33,6 +35,7 @@ const giftRepository = new GiftRepository(Gifts);
 const portalUserRepository = new PortalUserRepository(PortalUser);
 const bonusRepository = new WithdrawBonusRepository(WithdrawBonusModel);
 const salaryRepository = new SalaryRepository(SalaryModel);
+const bannerRepository = new BannerRepository(BannerModel);
 
 const adminUserService = new AdminUserService(
   userRepository,
@@ -41,7 +44,8 @@ const adminUserService = new AdminUserService(
   giftRepository,
   portalUserRepository,
   bonusRepository,
-  salaryRepository
+  salaryRepository,
+  bannerRepository
 );
 const adminUserController = new AdminUserController(adminUserService);
 
@@ -167,12 +171,38 @@ router
   .put(authenticate([UserRoles.Admin]), adminUserController.updateSalary)
   .delete(authenticate([UserRoles.Admin]), adminUserController.deleteSalary);
 
-router.route("/agency-commission-distribute").put(authenticate([UserRoles.Admin]), adminUserController.agencyCommissionDistribute);
+router
+  .route("/agency-commission-distribute")
+  .put(
+    authenticate([UserRoles.Admin]),
+    adminUserController.agencyCommissionDistribute
+  );
 
-router.route("/user/asign-role/:role")
+router
+  .route("/user/asign-role/:role")
   .put(authenticate([UserRoles.Admin]), adminUserController.assignRoleToUser)
-  .get(authenticate(), adminUserController.getUsersBasedOnRole);  
+  .get(authenticate(), adminUserController.getUsersBasedOnRole);
 
-router.route("/dashboard/stats").get(authenticate([UserRoles.Admin]), adminUserController.getDashboardStats);
+router
+  .route("/dashboard/stats")
+  .get(authenticate([UserRoles.Admin]), adminUserController.getDashboardStats);
+
+router
+  .route("/banners")
+  .post(
+    authenticate([UserRoles.Admin]),
+    upload.single("image"),
+    adminUserController.createBanner
+  )
+  .get(authenticate(), adminUserController.getBanners);
+
+router
+  .route("/banners/:id")
+  .put(
+    authenticate([UserRoles.Admin]),
+    upload.single("image"),
+    adminUserController.updateBanner
+  )
+  .delete(authenticate([UserRoles.Admin]), adminUserController.deleteBanner);
 
 export default router;

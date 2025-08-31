@@ -507,47 +507,108 @@ export default class AdminUserController {
       message: "Salary deleted successfully",
     });
   });
-  agencyCommissionDistribute = catchAsync(async (req: Request, res: Response) => {
-    const result = await this.AdminUserService.autoDistributeBonusToAgency();
-    sendResponseEnhanced(res, result);
-  });
+  agencyCommissionDistribute = catchAsync(
+    async (req: Request, res: Response) => {
+      const result = await this.AdminUserService.autoDistributeBonusToAgency();
+      sendResponseEnhanced(res, result);
+    }
+  );
 
   assignRoleToUser = catchAsync(async (req: Request, res: Response) => {
-    const {userId} = req.body;
-    const {role} = req.params;
-    if(!userId || !role) throw new AppError(StatusCodes.BAD_REQUEST, "userId and role are required");
-    if(!Object.values(UserRoles).includes(role as UserRoles)) throw new AppError(StatusCodes.BAD_REQUEST, `invalid role -> ${role}`);
-    const updatedUser = await this.AdminUserService.assignRoleToUser(userId, role as UserRoles);
+    const { userId } = req.body;
+    const { role } = req.params;
+    if (!userId || !role)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "userId and role are required"
+      );
+    if (!Object.values(UserRoles).includes(role as UserRoles))
+      throw new AppError(StatusCodes.BAD_REQUEST, `invalid role -> ${role}`);
+    const updatedUser = await this.AdminUserService.assignRoleToUser(
+      userId,
+      role as UserRoles
+    );
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
       result: updatedUser,
       message: "User role updated successfully",
     });
-  })
+  });
   getUsersBasedOnRole = catchAsync(async (req: Request, res: Response) => {
-    const {role} = req.params;
-    if(!role) throw new AppError(StatusCodes.BAD_REQUEST, "role is required");
-    if(!Object.values(UserRoles).includes(role as UserRoles)) throw new AppError(StatusCodes.BAD_REQUEST, `invalid role -> ${role}`);
-    const users = await this.AdminUserService.getUsersBasedOnRole(role as UserRoles, req.query as Record<string, unknown>);
+    const { role } = req.params;
+    if (!role) throw new AppError(StatusCodes.BAD_REQUEST, "role is required");
+    if (!Object.values(UserRoles).includes(role as UserRoles))
+      throw new AppError(StatusCodes.BAD_REQUEST, `invalid role -> ${role}`);
+    const users = await this.AdminUserService.getUsersBasedOnRole(
+      role as UserRoles,
+      req.query as Record<string, unknown>
+    );
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
       result: users,
       message: `${role}s retrieved successfully`,
     });
-  })
+  });
 
   getDashboardStats = catchAsync(async (req: Request, res: Response) => {
-      const result = await this.AdminUserService.getDashboardStats();
-      sendResponse(res, {
-        statusCode: StatusCodes.OK,
-        success: true,
-        result: result,
-        message: "Dashboard stats retrieved successfully",
-      });
-  })
+    const result = await this.AdminUserService.getDashboardStats();
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Dashboard stats retrieved successfully",
+    });
+  });
 
+  createBanner = catchAsync(async (req: Request, res: Response) => {
+    const { alt } = req.body;
+    const file = req.file as Express.Multer.File;
+    if (!file) throw new AppError(StatusCodes.BAD_REQUEST, "Image is required");
+    if (!alt) throw new AppError(StatusCodes.BAD_REQUEST, "Alt is required");
+    const result = await this.AdminUserService.createBanner(alt, file);
+    sendResponse(res, {
+      statusCode: StatusCodes.CREATED,
+      success: true,
+      result: result,
+      message: "Banner created successfully",
+    });
+  });
+
+  getBanners = catchAsync(async (req: Request, res: Response) => {
+    const banners = await this.AdminUserService.getBanners();
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: banners,
+      message: "Banners retrieved successfully",
+    });
+  });
+
+  updateBanner = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { alt } = req.body;
+    const file = req.file as Express.Multer.File;
+    if (!alt && !file) throw new AppError(StatusCodes.BAD_REQUEST, "Data is required");
+    const result = await this.AdminUserService.updateBanner(id, alt, file);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Banner updated successfully",
+    });
+  });
+
+  deleteBanner = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const result = await this.AdminUserService.deleteBanner(id);
+    sendResponse(res, {      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Banner deleted successfully",
+    });
+  });
 }
 
 export interface IGiftFile {
