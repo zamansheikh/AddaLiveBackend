@@ -1,5 +1,5 @@
 // src/server.ts
-import express, { Application } from "express";
+import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import morgan from "morgan";
 import dotenv from "dotenv";
@@ -79,6 +79,16 @@ app.use("/api/chats", ChatRouter);
 app.use("/api/games", GameRouter);
 app.use("/api/followers", FollowerRouter);
 app.use("/api/power-shared", PowerSharedRoutes);
+
+app.get("/release/latest", async (req: Request, res: Response) => {
+  res.send({
+    Version: "1.0.0",
+    Release_note:
+      "Initial stable release. Includes core features, bug fixes from beta testing, and performance improvements. This version provides a solid foundation for future updates.",
+    DownloadURL:
+      "https://drive.google.com/drive/folders/12W5gMuBzXt98CLQYbPvmnOTifk5G2RnZ?usp=sharing",
+  });
+});
 
 app.use(globalErrorHandler);
 
