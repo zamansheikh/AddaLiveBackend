@@ -50,6 +50,8 @@ import { IBannerRepository } from "../../repository/banners/bannerRepository";
 import { IBanner, IBannerDocument } from "../../models/banner/bannerModel";
 import { ICoinHistoryRepository } from "../../repository/coins/coinHistoryRepository";
 import { ICoinHistoryDocument } from "../../models/coins/coinHistoryModel";
+import { IAgencyWithdrawDocument } from "../../models/room/agency_withdraw_model";
+import { IAgencyWithdrawRepository } from "../../repository/room/agency_withdraw_repository";
 
 export interface IAdminUserService {
   loginAdmin(credentials: {
@@ -161,6 +163,14 @@ export interface IAdminUserService {
     senderId: string | null,
     query: Record<string, unknown>
   ): Promise<{ pagination: IPagination; data: ICoinHistoryDocument[] }>;
+  getAgencyWithdrawList(query: Record<string, unknown>): Promise<{
+    pagination: IPagination;
+    data: IAgencyWithdrawDocument[];
+  }>;
+  updateAgencyWithdrawStatus(
+    id: string,
+    status: StatusTypes
+  ): Promise<IAgencyWithdrawDocument>;
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -173,6 +183,7 @@ export default class AdminUserService implements IAdminUserService {
   SalaryRepository: ISalaryRepository;
   BannerRepository: IBannerRepository;
   CoinHistoryRepository: ICoinHistoryRepository;
+  AgencyWithdrawRepository: IAgencyWithdrawRepository;
 
   constructor(
     UserRepository: IUserRepository,
@@ -183,7 +194,8 @@ export default class AdminUserService implements IAdminUserService {
     WithdrawBonusRepository: IWithdrawBonusRepository,
     SalaryRepository: ISalaryRepository,
     BannerRepository: IBannerRepository,
-    CoinHistoryRepository: ICoinHistoryRepository
+    CoinHistoryRepository: ICoinHistoryRepository,
+    AgencyWithdrawRepository: IAgencyWithdrawRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
@@ -194,6 +206,7 @@ export default class AdminUserService implements IAdminUserService {
     this.SalaryRepository = SalaryRepository;
     this.BannerRepository = BannerRepository;
     this.CoinHistoryRepository = CoinHistoryRepository;
+    this.AgencyWithdrawRepository = AgencyWithdrawRepository;
   }
 
   async loginAdmin(credentials: {
@@ -985,8 +998,16 @@ export default class AdminUserService implements IAdminUserService {
       },
     };
     if (senderRole == UserRoles.Admin) {
-       history = await this.CoinHistoryRepository.getAdminHistories(query);
+      history = await this.CoinHistoryRepository.getAdminHistories(query);
     }
     return history;
+  }
+
+  async getAgencyWithdrawList(query: Record<string, unknown>): Promise<{ pagination: IPagination; data: IAgencyWithdrawDocument[]; }> {
+    return await this.AgencyWithdrawRepository.getAgencyWithdrawlist(query);
+  }
+
+  async updateAgencyWithdrawStatus(id: string, status: StatusTypes): Promise<IAgencyWithdrawDocument> {
+    return await this.AgencyWithdrawRepository.updateWithdraw(id, {status: status});
   }
 }

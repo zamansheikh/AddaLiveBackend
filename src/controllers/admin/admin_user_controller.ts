@@ -630,7 +630,43 @@ export default class AdminUserController {
       result: result,
       message: "transaction history retrieved successfully",
     });
-  })
+  });
+
+  getAgencyWithdrawList = catchAsync(async (req: Request, res: Response) => {
+    const result = await this.AdminUserService.getAgencyWithdrawList(req.query);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Agency withdraw list retrieved successfully",
+    });
+  });
+
+  updateAgencyWithdrawStatus = catchAsync(
+    async (req: Request, res: Response) => {
+      const { withdrawId } = req.params;
+      const { status } = req.body;
+      if (!status)
+        throw new AppError(StatusCodes.BAD_REQUEST, "Status is required");
+      if (!Object.values(StatusTypes).includes(status as StatusTypes))
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          `invalid status -> ${status}`
+        );
+      const updatedRequest =
+        await this.AdminUserService.updateAgencyWithdrawStatus(
+          withdrawId,
+          status
+        );
+      sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        result: updatedRequest,
+        message: "Agency withdraw status updated successfully",
+      });
+    }
+  );
+  
 }
 
 export interface IGiftFile {

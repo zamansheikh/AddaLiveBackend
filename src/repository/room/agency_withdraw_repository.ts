@@ -9,6 +9,7 @@ import { StatusTypes } from "../../core/Utils/enums";
 import AppError from "../../core/errors/app_errors";
 import { StatusCodes } from "http-status-codes";
 import { ClientSession } from "mongoose";
+import { IPagination, QueryBuilder } from "../../core/Utils/query_builder";
 
 export interface IAgencyWithdrawRepository {
   createWithdraw(
@@ -24,6 +25,8 @@ export interface IAgencyWithdrawRepository {
     id: string,
     data: Partial<IAgencyWithdraw>
   ): Promise<IAgencyWithdrawDocument>;
+
+  getAgencyWithdrawlist(query: Record<string, unknown>): Promise<{pagination: IPagination, data: IAgencyWithdrawDocument[]}>;
 }
 
 export default class AgencyWithdrawRepository
@@ -66,5 +69,13 @@ export default class AgencyWithdrawRepository
       );
     }
     return updated;
+  }
+
+  async getAgencyWithdrawlist(query: Record<string, unknown>): Promise<{ pagination: IPagination; data: IAgencyWithdrawDocument[]; }> {
+    const qb = new QueryBuilder(this.Model, query);
+    const res = qb.find({status: StatusTypes.pending}).sort();
+    const data = await res.exec();
+    const pagination = await res.countTotal();
+    return { pagination, data };
   }
 }

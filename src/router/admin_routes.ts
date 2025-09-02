@@ -27,6 +27,8 @@ import BannerRepository from "../repository/banners/bannerRepository";
 import BannerModel from "../models/banner/bannerModel";
 import CoinHistoryRepository from "../repository/coins/coinHistoryRepository";
 import CoinHistoryModel from "../models/coins/coinHistoryModel";
+import AgencyWithdrawRepository from "../repository/room/agency_withdraw_repository";
+import AgencyWithdrawModel from "../models/room/agency_withdraw_model";
 
 const router = express.Router();
 
@@ -39,6 +41,7 @@ const bonusRepository = new WithdrawBonusRepository(WithdrawBonusModel);
 const salaryRepository = new SalaryRepository(SalaryModel);
 const bannerRepository = new BannerRepository(BannerModel);
 const coinHistoryRepository = new CoinHistoryRepository(CoinHistoryModel);
+const agencyWithdrawRepository = new AgencyWithdrawRepository(AgencyWithdrawModel);
 
 const adminUserService = new AdminUserService(
   userRepository,
@@ -49,7 +52,8 @@ const adminUserService = new AdminUserService(
   bonusRepository,
   salaryRepository,
   bannerRepository,
-  coinHistoryRepository
+  coinHistoryRepository,
+  agencyWithdrawRepository
 );
 const adminUserController = new AdminUserController(adminUserService);
 
@@ -165,6 +169,19 @@ router
   );
 
 router
+  .route("/agency-withdraw")
+  .get(
+    authenticate([UserRoles.Admin]),
+    adminUserController.getAgencyWithdrawList
+  );
+router
+  .route("/agency-withdraw/:withdrawId")
+  .put(
+    authenticate([UserRoles.Admin]),
+    adminUserController.updateAgencyWithdrawStatus
+  );
+
+router
   .route("/salaries")
   .post(authenticate([UserRoles.Admin]), adminUserController.createSalary)
   .get(authenticate(), adminUserController.getSalaries);
@@ -209,9 +226,15 @@ router
   )
   .delete(authenticate([UserRoles.Admin]), adminUserController.deleteBanner);
 
-  router.route("/transaction-admin").get(authenticate([UserRoles.Admin]), adminUserController.getAdminCoinHistory)
+router
+  .route("/transaction-dmin")
+  .get(
+    authenticate([UserRoles.Admin]),
+    adminUserController.getAdminCoinHistory
+  );
 
-
-  router.route("/banners/docs").get(authenticate([UserRoles.Admin]), adminUserController.getBannerDoc);
+router
+  .route("/banners/docs")
+  .get(authenticate([UserRoles.Admin]), adminUserController.getBannerDoc);
 
 export default router;
