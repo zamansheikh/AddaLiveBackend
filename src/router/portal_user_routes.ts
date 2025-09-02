@@ -125,4 +125,6 @@ router
 
 router.route("/agency/withdraw").post(authenticate([UserRoles.Agency]), portalUserControllers.withdrawAgency);
 
+router.route("/agency-all").get(authenticate(), portalUserControllers.getAllAgencyList);
+
 export default router;

@@ -20,6 +20,7 @@ import ChatRouter from "./router/chat_router";
 import GameRouter from "./router/game_router";
 import FollowerRouter from "./router/follower_routes";
 import PowerSharedRoutes from "./router/portal_user_routes";
+import AppVersionRoutes from "./router/app_version_routes";
 
 // error handlers
 import globalErrorHandler from "./core/errors/global_error_handlar";
@@ -83,16 +84,17 @@ app.use("/api/chats", ChatRouter);
 app.use("/api/games", GameRouter);
 app.use("/api/followers", FollowerRouter);
 app.use("/api/power-shared", PowerSharedRoutes);
+app.use("/release", AppVersionRoutes);
 
-app.get("/release/latest", async (req: Request, res: Response) => {
-  res.send({
-    Version: "1.0.0",
-    Release_note:
-      "Initial stable release. Includes core features, bug fixes from beta testing, and performance improvements. This version provides a solid foundation for future updates.",
-    DownloadURL:
-      "https://drive.google.com/drive/folders/12W5gMuBzXt98CLQYbPvmnOTifk5G2RnZ?usp=sharing",
-  });
-});
+// app.get("/release/latest", async (req: Request, res: Response) => {
+//   res.send({
+//     Version: "1.0.0",
+//     Release_note:
+//       "Initial stable release. Includes core features, bug fixes from beta testing, and performance improvements. This version provides a solid foundation for future updates.",
+//     DownloadURL:
+//       "https://drive.google.com/drive/folders/12W5gMuBzXt98CLQYbPvmnOTifk5G2RnZ?usp=sharing",
+//   });
+// });
 
 app.use(globalErrorHandler);
 

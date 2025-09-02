@@ -85,6 +85,8 @@ export interface ISharedPowerService {
       totalSalary,
     }: { accountNumber: string; accountType: string; totalSalary: number }
   ): Promise<IAgencyWithdrawDocument>;
+
+  getAllAgencyList(query: Record<string, any>): Promise<{pagination: IPagination, data: IPortalUserDocument[]}>;
 }
 
 export default class SharedPowerService implements ISharedPowerService {
@@ -485,5 +487,10 @@ export default class SharedPowerService implements ISharedPowerService {
     await session.commitTransaction();
     session.endSession();
     return withdraw;
+  }
+
+  async getAllAgencyList(query: Record<string, any>): Promise<{ pagination: IPagination; data: IPortalUserDocument[]; }> {
+    const res = await this.PortalUserRepository.getAllAgency(query);
+    return res;
   }
 }

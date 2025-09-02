@@ -138,7 +138,7 @@ export async function registerGroupRoomHandler(
         },
       ],
       messages: [],
-      members: new Set(),
+      members: new Set([userId]),
       membersDetails: [],
       bannedUsers: new Set(),
       brodcasters: new Set([userId]),
@@ -720,6 +720,9 @@ export async function registerGroupRoomHandler(
       (member) => member._id.toString() !== userId
     );
     if (room.brodcasters.has(userId)) room.brodcasters.delete(userId);
+    room.broadcastersDetails = room.broadcastersDetails.filter(
+      (broadcaster) => broadcaster._id.toString() !== userId
+    );
     const objectToDelete = Array.from(room.callRequests).find(
       (request) => request._id.toString() === userId
     );

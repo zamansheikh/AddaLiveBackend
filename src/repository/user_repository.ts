@@ -379,7 +379,7 @@ export default class UserRepository implements IUserRepository {
     return { users, pagination };
   }
 
-  async getUserCounts(role: UserRoles): Promise<number> {
+  async getUserCounts(role: UserRoles): Promise<number> { 
     return await this.UserModel.countDocuments({ userRole: role });
   }
 }

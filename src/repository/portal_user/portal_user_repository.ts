@@ -36,6 +36,7 @@ export interface IPortalUserRepository {
     query: Record<string, any>
   ): Promise<{ pagination: IPagination; data: IPortalUserDocument[] }>;
   getPortalUserCount(role: UserRoles): Promise<number>;
+  getAllAgency(query: Record<string, any>): Promise<{pagination: IPagination; data: IPortalUserDocument[]}>
 }
 
 export default class PortalUserRepository implements IPortalUserRepository {
@@ -126,5 +127,13 @@ export default class PortalUserRepository implements IPortalUserRepository {
   }
   async getPortalUserCount(role: UserRoles): Promise<number> {
     return await this.Model.countDocuments({ userRole: role });
+  }
+
+  async getAllAgency(query: Record<string, any>): Promise<{pagination: IPagination; data: IPortalUserDocument[]}> {
+    const qb = new QueryBuilder(this.Model, query);
+    const res = qb.find({userRole: UserRoles.Agency}).sort().paginate().search(["name", "userId"])
+    const data = await res.exec()
+    const pagination = await res.countTotal()
+    return {data, pagination}
   }
 }
