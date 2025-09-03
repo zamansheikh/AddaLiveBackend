@@ -263,4 +263,19 @@ export class PortalUserControllers {
       message: "Agency list retrieved successfully",
     });
   });
+
+  deleteAgency = catchAsync(async (req: Request, res: Response) => {
+    const { agencyId } = req.params;
+    if (!agencyId) {
+      throw new AppError(StatusCodes.BAD_REQUEST, "Agency ID is required");
+    }
+    const result = await this.Service.deleteAgency(agencyId);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Agency deleted successfully",
+    });
+  });
+  
 }

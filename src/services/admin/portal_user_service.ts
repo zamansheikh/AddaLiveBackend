@@ -87,6 +87,7 @@ export interface ISharedPowerService {
   ): Promise<IAgencyWithdrawDocument>;
 
   getAllAgencyList(query: Record<string, any>): Promise<{pagination: IPagination, data: IPortalUserDocument[]}>;
+  deleteAgency(agencyId: string):Promise<IPortalUserDocument>;
 }
 
 export default class SharedPowerService implements ISharedPowerService {
@@ -492,5 +493,14 @@ export default class SharedPowerService implements ISharedPowerService {
   async getAllAgencyList(query: Record<string, any>): Promise<{ pagination: IPagination; data: IPortalUserDocument[]; }> {
     const res = await this.PortalUserRepository.getAllAgency(query);
     return res;
+  }
+  async deleteAgency(agencyId: string): Promise<IPortalUserDocument> {
+    const profile = await this.PortalUserRepository.getPortalUserById(agencyId);
+    if(!profile) throw new AppError(StatusCodes.BAD_REQUEST, `id -> ${agencyId} does not exist`);
+    if(profile.userRole != UserRoles.Agency) throw new AppError(StatusCodes.BAD_REQUEST, `${agencyId} belongs to ${profile.userRole} not to an agency`);
+    const hostCount = await this.UserRepository.getHostCounts(agencyId);
+    if(hostCount != 0) throw new AppError(StatusCodes.CONFLICT, `${profile.name} has ${hostCount} hosts, so cannot be deleted untill host count is 0`);
+    const deletedAgency = await this.PortalUserRepository.deletePortalUser(agencyId);
+    return deletedAgency;
   }
 }

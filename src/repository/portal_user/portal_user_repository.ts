@@ -6,6 +6,8 @@ import {
   IPortalUserModel,
 } from "../../entities/portal_users/portal_user_interface";
 import { UserRoles } from "../../core/Utils/enums";
+import AppError from "../../core/errors/app_errors";
+import { StatusCodes } from "http-status-codes";
 
 export interface IPortalUserRepository {
   createPortalUser(portalUser: IPortalUser): Promise<IPortalUserDocument>;
@@ -13,7 +15,7 @@ export interface IPortalUserRepository {
     id: string,
     portalUser: Partial<IPortalUser>
   ): Promise<IPortalUserDocument | null>;
-  deletePortalUser(id: string): Promise<IPortalUserDocument | null>;
+  deletePortalUser(id: string): Promise<IPortalUserDocument >;
   getPortalUserById(id: string): Promise<IPortalUserDocument | null>;
   getPortalUserByUserId(username: string): Promise<IPortalUserDocument | null>;
   getPortalUsers(
@@ -36,7 +38,9 @@ export interface IPortalUserRepository {
     query: Record<string, any>
   ): Promise<{ pagination: IPagination; data: IPortalUserDocument[] }>;
   getPortalUserCount(role: UserRoles): Promise<number>;
-  getAllAgency(query: Record<string, any>): Promise<{pagination: IPagination; data: IPortalUserDocument[]}>
+  getAllAgency(
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; data: IPortalUserDocument[] }>;
 }
 
 export default class PortalUserRepository implements IPortalUserRepository {
@@ -59,8 +63,14 @@ export default class PortalUserRepository implements IPortalUserRepository {
     return await this.Model.findByIdAndUpdate(id, portalUser, { new: true });
   }
 
-  async deletePortalUser(id: string): Promise<IPortalUserDocument | null> {
-    return await this.Model.findByIdAndDelete(id);
+  async deletePortalUser(id: string): Promise<IPortalUserDocument > {
+    const deleted = await this.Model.findByIdAndDelete(id);
+    if (!deleted)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        `deletion failed of the id -> ${id}`
+      );
+    return deleted;
   }
 
   async getPortalUserById(id: string): Promise<IPortalUserDocument | null> {
@@ -129,11 +139,17 @@ export default class PortalUserRepository implements IPortalUserRepository {
     return await this.Model.countDocuments({ userRole: role });
   }
 
-  async getAllAgency(query: Record<string, any>): Promise<{pagination: IPagination; data: IPortalUserDocument[]}> {
+  async getAllAgency(
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; data: IPortalUserDocument[] }> {
     const qb = new QueryBuilder(this.Model, query);
-    const res = qb.find({userRole: UserRoles.Agency}).sort().paginate().search(["name", "userId"])
-    const data = await res.exec()
-    const pagination = await res.countTotal()
-    return {data, pagination}
+    const res = qb
+      .find({ userRole: UserRoles.Agency })
+      .sort()
+      .paginate()
+      .search(["name", "userId"]);
+    const data = await res.exec();
+    const pagination = await res.countTotal();
+    return { data, pagination };
   }
 }

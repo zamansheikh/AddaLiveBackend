@@ -127,4 +127,6 @@ router.route("/agency/withdraw").post(authenticate([UserRoles.Agency]), portalUs
 
 router.route("/agency-all").get(authenticate(), portalUserControllers.getAllAgencyList);
 
+router.route("/portal-user/agency/:agencyId").delete(authenticate([UserRoles.Admin, UserRoles.SubAdmin]), portalUserControllers.deleteAgency);
+
 export default router;

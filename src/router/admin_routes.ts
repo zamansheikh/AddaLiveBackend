@@ -134,7 +134,7 @@ router
 
 router
   .route("/create-role")
-  .post(authenticate([UserRoles.Admin]), adminUserController.createPortalUser);
+  .post(authenticate([UserRoles.Admin, UserRoles.SubAdmin]), adminUserController.createPortalUser);
 
 router
   .route("/role/:roleId")

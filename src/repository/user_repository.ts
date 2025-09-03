@@ -69,6 +69,7 @@ export interface IUserRepository {
   }>;
 
   getUserCounts(role: UserRoles): Promise<number>;
+  getHostCounts(parentCreator: string): Promise<number>;
 }
 
 export default class UserRepository implements IUserRepository {
@@ -381,5 +382,9 @@ export default class UserRepository implements IUserRepository {
 
   async getUserCounts(role: UserRoles): Promise<number> { 
     return await this.UserModel.countDocuments({ userRole: role });
+  }
+
+  async getHostCounts(parentCreator: string): Promise<number> {
+    return await this.UserModel.countDocuments({ parentCreator: parentCreator });
   }
 }
