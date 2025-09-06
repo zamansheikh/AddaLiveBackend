@@ -5,7 +5,7 @@ import { ISharedPowerService } from "../../services/admin/portal_user_service";
 import { StatusCodes } from "http-status-codes";
 import sendResponse from "../../core/Utils/send_response";
 import { UserRoles, WithdrawAccountTypes } from "../../core/Utils/enums";
-import { validatePromoteUserPermission } from "../../core/Utils/helper_functions";
+import { validatePromoteUserPermission, validateStatus } from "../../core/Utils/helper_functions";
 
 export class PortalUserControllers {
   Service: ISharedPowerService;
@@ -278,4 +278,30 @@ export class PortalUserControllers {
     });
   });
   
+  updateJoinRequestStatus = catchAsync(async (req: Request, res: Response) => {
+    const { reqId } = req.params;
+    const { status } = req.body;
+    if (!reqId) {
+      throw new AppError(StatusCodes.BAD_REQUEST, "Request ID is required");
+    } 
+    validateStatus(status);
+    const result = await this.Service.updateJoinRequestStatus(reqId, status);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: `Join request status updated to ${status} successfully`,
+    });
+  });
+
+  getAllJoinRequest = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const result = await this.Service.getAllJoinRequest(id, req.query);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Join request list retrieved successfully",
+    });
+  });
 }

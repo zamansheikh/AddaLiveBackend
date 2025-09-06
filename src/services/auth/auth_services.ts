@@ -1,10 +1,12 @@
 import { StatusCodes } from "http-status-codes";
 import AppError from "../../core/errors/app_errors";
 import {
+  AgencyJoinStatus,
   CloudinaryFolder,
-  GiftTypes,
   SocketChannels,
+  StatusTypes,
   StreamType,
+  UserRoles,
   WhoCanTextMe,
   WithdrawAccountTypes,
 } from "../../core/Utils/enums";
@@ -38,6 +40,12 @@ import {
 } from "../../models/room/withdraw_bonus_model";
 import { IWithdrawBonusRepository } from "../../repository/room/withdraw_bonus_repository";
 import { ISalaryRepository } from "../../repository/salary/salary_repository";
+import {
+  IAgencyJoinRequest,
+  IAgencyJoinRequestDocument,
+} from "../../models/request/agencyJoinRequset";
+import { IAgencyJoinRequestRepository } from "../../repository/request/AgencyJoinRequestRepository";
+import { IPortalUserRepository } from "../../repository/portal_user/portal_user_repository";
 
 export default class AuthService implements IAuthService {
   UserRepository: IUserRepository;
@@ -55,6 +63,8 @@ export default class AuthService implements IAuthService {
   WithDrawHistoryRepository: IRoomHistoryRepository;
   BonusRepository: IWithdrawBonusRepository;
   SalaryRepository: ISalaryRepository;
+  AgencyJoinRequestRepository: IAgencyJoinRequestRepository;
+  PortalUserRepository: IPortalUserRepository;
 
   constructor(
     UserRepository: IUserRepository,
@@ -71,7 +81,9 @@ export default class AuthService implements IAuthService {
     RoomHistoryRepository: IRoomHistoryRepository,
     WithDrawHistoryRepository: IRoomHistoryRepository,
     BonusRepository: IWithdrawBonusRepository,
-    SalaryRepository: ISalaryRepository
+    SalaryRepository: ISalaryRepository,
+    AgencyJoinRequestRepository: IAgencyJoinRequestRepository,
+    PortalUserRepository: IPortalUserRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
@@ -88,6 +100,8 @@ export default class AuthService implements IAuthService {
     this.WithDrawHistoryRepository = WithDrawHistoryRepository;
     this.BonusRepository = BonusRepository;
     this.SalaryRepository = SalaryRepository;
+    this.AgencyJoinRequestRepository = AgencyJoinRequestRepository;
+    this.PortalUserRepository = PortalUserRepository;
   }
 
   async registerWithGoogle(UserData: IUserEntity) {
@@ -216,7 +230,7 @@ export default class AuthService implements IAuthService {
     id,
     profileData,
     avatar,
-    coverPicture
+    coverPicture,
   }: {
     id: string;
     profileData: Partial<Record<string, any>>;
@@ -279,7 +293,6 @@ export default class AuthService implements IAuthService {
     // to determine the hot gifts
     exisitngGift.sendCount! += qty;
     await exisitngGift.save();
-    
 
     const mystats = await this.UserStatsRepository.getUserStats(myId);
 
@@ -380,7 +393,7 @@ export default class AuthService implements IAuthService {
     type: StreamType
   ): Promise<IUSerStatsDocument> {
     // erasing all the previous data from yesterday
-    const deleteStatus = await this.RoomHistoryRepository.resetRoomHistory();
+     await this.RoomHistoryRepository.resetRoomHistory();
     // checking if the host reached maximum bonus
     const isDone = await this.RoomHistoryRepository.getIsDone(id);
 
@@ -616,5 +629,105 @@ export default class AuthService implements IAuthService {
       privilegeExpiredTs
     );
     return { token: token };
+  }
+
+  async agencyJoinRequest(
+    data: IAgencyJoinRequest
+  ): Promise<IAgencyJoinRequestDocument> {
+    const user = await this.UserRepository.findUserById(data.userId as string);
+    if (!user) throw new AppError(StatusCodes.NOT_FOUND, `user not found`);
+    if(user.userRole != UserRoles.User)
+      throw new AppError(StatusCodes.BAD_REQUEST, "Agency applications and cancellations are restricted to users.");
+    const prevRequest =
+      await this.AgencyJoinRequestRepository.getRequestCondiionally({
+        userId: data.userId as string,
+        agencyId: data.agencyId as string,
+      });
+    if (prevRequest)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `you have already applied for an agency`
+      );
+    
+    const newRequest = await this.AgencyJoinRequestRepository.createRequest(
+      data
+    );
+    return newRequest;
+  }
+
+  async joinRequestStatus(userId: string): Promise<{
+    status: AgencyJoinStatus;
+    agencyDetails: { name: string; hostCount: number } | null;
+  }> {
+    const user = await this.UserRepository.findUserById(userId);
+    if (!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
+
+    const request =
+      await this.AgencyJoinRequestRepository.getRequestCondiionally({ userId });
+    let agencyDetails = null;
+
+    if (request) {
+      const agency = await this.PortalUserRepository.getPortalUserById(
+        request.agencyId as string
+      );
+      if (!agency)
+        throw new AppError(StatusCodes.NOT_FOUND, "agency not found");
+      const hostCount = await this.UserRepository.getHostCounts(
+        request.agencyId as string
+      );
+      agencyDetails = { name: agency!.name, hostCount: hostCount };
+    }
+
+    if (user.userRole == UserRoles.User && !request)
+      return { status: AgencyJoinStatus.List, agencyDetails: null };
+
+    if (
+      user.userRole == UserRoles.User &&
+      request &&
+      request.status == StatusTypes.pending
+    )
+      return { status: AgencyJoinStatus.Pending, agencyDetails: agencyDetails };
+
+    if (
+      user.userRole == UserRoles.Host &&
+      request &&
+      request.status == StatusTypes.accepted
+    ) {
+      await this.AgencyJoinRequestRepository.deleteRequest(
+        request._id as string
+      );
+      return { status: AgencyJoinStatus.Congrats, agencyDetails };
+    }
+
+    if (user.userRole == UserRoles.Host && !request) {
+      const agency = await this.PortalUserRepository.getPortalUserById(
+        user.parentCreator as string
+      );
+      if (!agency)
+        throw new AppError(StatusCodes.NOT_FOUND, "agency not found");
+      const hostCount = await this.UserRepository.getHostCounts(
+        user.parentCreator as string
+      );
+      agencyDetails = { name: agency!.name, hostCount: hostCount };
+      return { status: AgencyJoinStatus.member, agencyDetails };
+    }
+
+    return { status: AgencyJoinStatus.error, agencyDetails: null };
+  }
+
+  async agencyCancelRequest(userId: string): Promise<IAgencyJoinRequestDocument> {
+    const user = await this.UserRepository.findUserById(userId);
+    if (!user) throw new AppError(StatusCodes.BAD_REQUEST, `user not found`);
+    if(user.userRole != UserRoles.User) 
+      throw new AppError(StatusCodes.BAD_REQUEST, "Agency applications and cancellations are restricted to users.");
+    const request = await this.AgencyJoinRequestRepository.getRequestCondiionally({
+      userId,
+    });
+    if(request) {
+      const deleted = await this.AgencyJoinRequestRepository.deleteRequest(request._id as string);
+      return deleted;
+    }
+
+    throw new AppError(StatusCodes.NOT_FOUND, "request not found");
   }
 }

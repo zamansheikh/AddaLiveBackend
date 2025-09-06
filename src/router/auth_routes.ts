@@ -39,6 +39,10 @@ import WithdrawBonusRepository from "../repository/room/withdraw_bonus_repositor
 import WithdrawBonusModel from "../models/room/withdraw_bonus_model";
 import SalaryRepository from "../repository/salary/salary_repository";
 import SalaryModel from "../models/salary/salaryModel";
+import AgencyJoinRequestRepository from "../repository/request/AgencyJoinRequestRepository";
+import AgencyJoinRequestModel from "../models/request/agencyJoinRequset";
+import PortalUserRepository from "../repository/portal_user/portal_user_repository";
+import PortalUser from "../models/portal_users/protal_user_model";
 
 const router = express.Router();
 
@@ -62,6 +66,11 @@ const withdrawHistoryRepository = new RoomHistoryRepository(
 );
 const bonusRepository = new WithdrawBonusRepository(WithdrawBonusModel);
 const salaryRepository = new SalaryRepository(SalaryModel);
+const agencyJoinRequestRepository = new AgencyJoinRequestRepository(
+  AgencyJoinRequestModel
+);
+
+const portalUserRepository = new PortalUserRepository(PortalUser);
 
 const authService = new AuthService(
   userRepository,
@@ -78,7 +87,9 @@ const authService = new AuthService(
   roomHistoryRepository,
   withdrawHistoryRepository,
   bonusRepository,
-  salaryRepository
+  salaryRepository,
+  agencyJoinRequestRepository,
+  portalUserRepository
 );
 const authController = new AuthController(authService);
 
@@ -128,5 +139,10 @@ router.post(
   validateRequest(GenerateTokenDto),
   authController.generateToken
 );
+
+router.route("/agency-join").post(authenticate(), authController.agencyJoinRequest)
+    .get(authenticate(), authController.agencyJoinRequestStatus)
+    .delete(authenticate(), authController.agencyCancelRequest);
+
 
 export default router;

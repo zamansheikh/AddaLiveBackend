@@ -37,7 +37,7 @@ export default class RoomHistoryRepository implements IRoomHistoryRepository {
   async resetRoomHistory(): Promise<DeleteResult> {
     const startOfToday = new Date(Date.now());
     startOfToday.setHours(0, 0, 0, 0);
-    return this.Model.deleteMany({ createdAt: { $lt: startOfToday } });
+    return this.Model.deleteMany({ updatedAt: { $lt: startOfToday } });
   }
 
   async getEligibleRoom(id: string): Promise<IRoomHistoryDocument | null> {

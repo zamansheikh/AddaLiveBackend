@@ -35,6 +35,7 @@ export enum DatabaseNames {
   AgencyWithdraw = "agency-withdraw",
   Banners= 'banners',
   CoinHistory = "coin_histories",
+  AgencyJoinRequest = "agency_join_requests"
 }
 
 export enum ReelStatus {
@@ -182,4 +183,12 @@ export enum StatusTypes {
   accepted = "accepted",
   rejected = "rejected",
   pending = "pending",
+}
+
+export enum AgencyJoinStatus {
+  List = 'list',
+  Pending = 'pending',
+  Congrats = 'congrats',
+  member = 'member',
+  error = 'error'
 }

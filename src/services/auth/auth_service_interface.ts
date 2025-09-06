@@ -1,5 +1,6 @@
 import { UpdateResult } from "mongoose";
 import {
+  AgencyJoinStatus,
   StreamType,
   WhoCanTextMe,
   WithdrawAccountTypes,
@@ -8,6 +9,7 @@ import { IUserEntity } from "../../entities/user_entity_interface";
 import { IUserDocument } from "../../models/user/user_model_interface";
 import { IUSerStatsDocument } from "../../entities/userstats/userstats_interface";
 import { IWithdrawBonusDocument } from "../../models/room/withdraw_bonus_model";
+import { IAgencyJoinRequest, IAgencyJoinRequestDocument } from "../../models/request/agencyJoinRequset";
 
 export interface IGiftUser {
   myId: string;
@@ -70,4 +72,11 @@ export interface IAuthService {
     accountNumber: string;
     totalSalary: number;
   }): Promise<IWithdrawBonusDocument>;
+
+  agencyJoinRequest(data: IAgencyJoinRequest): Promise<IAgencyJoinRequestDocument>;
+  joinRequestStatus(userId: string) :  Promise<{
+    status: AgencyJoinStatus;
+    agencyDetails: { name: string; hostCount: number } | null;
+  }>;
+  agencyCancelRequest(userId: string): Promise<IAgencyJoinRequestDocument>;
 }

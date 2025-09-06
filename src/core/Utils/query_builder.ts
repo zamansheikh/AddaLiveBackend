@@ -1,4 +1,4 @@
-import { Model, Query, FilterQuery, PipelineStage } from "mongoose";
+import { Model, Query, FilterQuery, PipelineStage, FlattenMaps } from "mongoose";
 import AppError from "../errors/app_errors";
 import { StatusCodes } from "http-status-codes";
 
@@ -8,11 +8,20 @@ export class QueryBuilder<T> {
   public modelQuery: Query<T[], T>;
   public aggregatePipeline: PipelineStage[] = [];
   private useAggregate = false;
+  private isLean = false;
 
   constructor(model: Model<T>, query: Record<string, unknown>) {
     this.model = model;
     this.query = query;
     this.modelQuery = this.model.find();
+  }
+
+  useLean() {
+    if (!this.useAggregate) {
+      this.isLean = true;
+      this.modelQuery = this.modelQuery.lean() as any;
+    }
+    return this;
   }
 
   search(searchableFields: string[], isObjectId = false) {
@@ -49,6 +58,7 @@ export class QueryBuilder<T> {
   }
 
   selectField(fields: string) {
+    // 📌 exp -> "name email avatar";
     if (this.useAggregate) {
       const projectStage: { [key: string]: number } = {};
       fields.split(" ").forEach((field) => {
@@ -143,6 +153,9 @@ export class QueryBuilder<T> {
     if (this.useAggregate) {
       return this.model.aggregate(this.aggregatePipeline).exec();
     } else {
+      if (this.isLean) {
+        return this.modelQuery.lean().exec() as any;
+      }
       return this.modelQuery.exec();
     }
   }

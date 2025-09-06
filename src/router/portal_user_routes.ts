@@ -18,6 +18,8 @@ import SalaryRepository from "../repository/salary/salary_repository";
 import SalaryModel from "../models/salary/salaryModel";
 import CoinHistoryRepository from "../repository/coins/coinHistoryRepository";
 import CoinHistoryModel from "../models/coins/coinHistoryModel";
+import AgencyJoinRequestRepository from "../repository/request/AgencyJoinRequestRepository";
+import AgencyJoinRequestModel from "../models/request/agencyJoinRequset";
 
 const router = express.Router();
 
@@ -25,10 +27,14 @@ const userRepository = new UserRepository(User);
 const userStatsRepository = new UserStatsRepository(UserStats);
 const adminRepository = new AdminRepository(Admin);
 const portalUserRepository = new PortalUserRepository(PortalUser);
-const agencyWithdrawRepository = new AgencyWithdrawRepository(AgencyWithdrawModel);
-const salaryRepository = new SalaryRepository(SalaryModel); 
+const agencyWithdrawRepository = new AgencyWithdrawRepository(
+  AgencyWithdrawModel
+);
+const salaryRepository = new SalaryRepository(SalaryModel);
 const coinHistoryRepository = new CoinHistoryRepository(CoinHistoryModel);
-
+const agencyJoinRequestRepository = new AgencyJoinRequestRepository(
+  AgencyJoinRequestModel
+);
 
 const sharedPowerService = new SharedPowerService(
   userRepository,
@@ -37,7 +43,8 @@ const sharedPowerService = new SharedPowerService(
   portalUserRepository,
   agencyWithdrawRepository,
   salaryRepository,
-  coinHistoryRepository
+  coinHistoryRepository,
+  agencyJoinRequestRepository
 );
 const portalUserControllers = new PortalUserControllers(sharedPowerService);
 
@@ -123,10 +130,33 @@ router
   .route("/portal/lower/:parentId")
   .get(authenticate(), portalUserControllers.getHosts);
 
-router.route("/agency/withdraw").post(authenticate([UserRoles.Agency]), portalUserControllers.withdrawAgency);
+router
+  .route("/agency/withdraw")
+  .post(authenticate([UserRoles.Agency]), portalUserControllers.withdrawAgency);
 
-router.route("/agency-all").get(authenticate(), portalUserControllers.getAllAgencyList);
+router
+  .route("/agency-all")
+  .get(authenticate(), portalUserControllers.getAllAgencyList);
 
-router.route("/portal-user/agency/:agencyId").delete(authenticate([UserRoles.Admin, UserRoles.SubAdmin]), portalUserControllers.deleteAgency);
+router
+  .route("/portal-user/agency/:agencyId")
+  .delete(
+    authenticate([UserRoles.Admin, UserRoles.SubAdmin]),
+    portalUserControllers.deleteAgency
+  );
+
+router
+  .route("/agency-join-request")
+  .get(
+    authenticate([UserRoles.Agency]),
+    portalUserControllers.getAllJoinRequest
+  );
+
+router
+  .route("/agency-join-request/:reqId")
+  .put(
+    authenticate([UserRoles.Agency]),
+    portalUserControllers.updateJoinRequestStatus
+  );
 
 export default router;

@@ -39,7 +39,7 @@ export default class AuthController {
       id: userId,
       profileData: req.body,
       avatar,
-      coverPicture
+      coverPicture,
     });
     sendResponseEnhanced(res, updatedUser);
   });
@@ -184,5 +184,42 @@ export default class AuthController {
       highLevelRequirements,
     });
     sendResponseEnhanced(res, updatedUser);
+  });
+
+  agencyJoinRequest = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const { agencyId } = req.body;
+    if (!agencyId)
+      throw new AppError(StatusCodes.BAD_REQUEST, "agencyId is required");
+    const newRequest = await this.authService.agencyJoinRequest({
+      userId: id,
+      agencyId,
+    });
+    sendResponse(res, {
+      statusCode: StatusCodes.CREATED,
+      success: true,
+      result: newRequest,
+      message: "Request to join agency submitted successfully"
+    }
+    )
+  });
+
+  agencyJoinRequestStatus = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const status = await this.authService.joinRequestStatus(id);
+    sendResponseEnhanced(res, status);
+  });
+
+  agencyCancelRequest = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const deletedRequest = await this.authService.agencyCancelRequest(
+      id,
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: deletedRequest,
+      message: "Request to join agency cancelled successfully"
+    });
   });
 }

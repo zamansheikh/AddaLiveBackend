@@ -4,12 +4,14 @@ import { StatusCodes } from "http-status-codes";
 import {
   ActivityZoneState,
   AdminPowers,
+  StatusTypes,
   UserRoles,
   WithdrawAccountTypes,
 } from "./enums";
 import { IUserDocument } from "../../models/user/user_model_interface";
 import { IAdminDocument } from "../../entities/admin/admin_interface";
 import { IPortalUserDocument } from "../../entities/portal_users/portal_user_interface";
+import { stat } from "fs";
 
 export const generateFileHash = (buffer: Buffer): string => {
   return crypto.createHash("sha256").update(buffer).digest("hex");
@@ -169,4 +171,9 @@ export function getPercentageFromHostCount(hostCount: number) {
   else if (hostCount >= 20 && hostCount < 30) return 0.15;
   else if (hostCount >= 30 ) return 0.17;
   else return 0;
+}
+
+export function validateStatus(status: any) {
+  if(!status) throw new AppError(StatusCodes.BAD_REQUEST, "Status is required");
+  if(!Object.values(StatusTypes).includes(status)) throw new AppError(StatusCodes.BAD_REQUEST, `Invalid status: ${status}`)
 }

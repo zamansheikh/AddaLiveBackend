@@ -27,6 +27,8 @@ import { ICoinHistoryRepository } from "../../repository/coins/coinHistoryReposi
 import { ICoinHistory } from "../../models/coins/coinHistoryModel";
 import { IHistory } from "../../entities/history/history_interface";
 import { appendFile } from "fs";
+import { IAgencyJoinRequest } from "../../models/request/agencyJoinRequset";
+import { IAgencyJoinRequestRepository } from "../../repository/request/AgencyJoinRequestRepository";
 
 export interface ISharedPowerService {
   loginPortalUser(
@@ -86,8 +88,18 @@ export interface ISharedPowerService {
     }: { accountNumber: string; accountType: string; totalSalary: number }
   ): Promise<IAgencyWithdrawDocument>;
 
-  getAllAgencyList(query: Record<string, any>): Promise<{pagination: IPagination, data: IPortalUserDocument[]}>;
-  deleteAgency(agencyId: string):Promise<IPortalUserDocument>;
+  getAllAgencyList(
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; data: IPortalUserDocument[] }>;
+  deleteAgency(agencyId: string): Promise<IPortalUserDocument>;
+  getAllJoinRequest(
+    myId: string,
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; data: IAgencyJoinRequest[] }>;
+  updateJoinRequestStatus(
+    reqId: string,
+    status: StatusTypes
+  ): Promise<{status: StatusTypes}>;
 }
 
 export default class SharedPowerService implements ISharedPowerService {
@@ -98,6 +110,7 @@ export default class SharedPowerService implements ISharedPowerService {
   AgencyWithdrawRepository: IAgencyWithdrawRepository;
   SalaryRepository: ISalaryRepository;
   CoinHistoryRepository: ICoinHistoryRepository;
+  AgencyJoinRequestRepository: IAgencyJoinRequestRepository;
 
   constructor(
     UserRepository: IUserRepository,
@@ -106,7 +119,8 @@ export default class SharedPowerService implements ISharedPowerService {
     PortalUserRepository: IPortalUserRepository,
     AgencyWithdrawRepository: IAgencyWithdrawRepository,
     SalaryRepository: ISalaryRepository,
-    CoinHistoryRepository: ICoinHistoryRepository
+    CoinHistoryRepository: ICoinHistoryRepository,
+    AgencyJoinRequestRepository: IAgencyJoinRequestRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
@@ -115,6 +129,7 @@ export default class SharedPowerService implements ISharedPowerService {
     this.AgencyWithdrawRepository = AgencyWithdrawRepository;
     this.SalaryRepository = SalaryRepository;
     this.CoinHistoryRepository = CoinHistoryRepository;
+    this.AgencyJoinRequestRepository = AgencyJoinRequestRepository;
   }
 
   async loginPortalUser(
@@ -329,19 +344,22 @@ export default class SharedPowerService implements ISharedPowerService {
       );
 
     // creating a transaction history
-      const historyObj: ICoinHistory = {
-        senderRole: role,
-        senderId: myId,
-        receiverRole: userRole,
-        receiverId: userId,
-        amount: coins
-      }
-      const newHistory = await this.CoinHistoryRepository.createHistory(historyObj, session);
-      if (!newHistory)
-        throw new AppError(
-          StatusCodes.INTERNAL_SERVER_ERROR,
-          "Failed to create history"
-        );
+    const historyObj: ICoinHistory = {
+      senderRole: role,
+      senderId: myId,
+      receiverRole: userRole,
+      receiverId: userId,
+      amount: coins,
+    };
+    const newHistory = await this.CoinHistoryRepository.createHistory(
+      historyObj,
+      session
+    );
+    if (!newHistory)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to create history"
+      );
 
     // commiting the transaction
     await session.commitTransaction();
@@ -490,17 +508,53 @@ export default class SharedPowerService implements ISharedPowerService {
     return withdraw;
   }
 
-  async getAllAgencyList(query: Record<string, any>): Promise<{ pagination: IPagination; data: IPortalUserDocument[]; }> {
+  async getAllAgencyList(
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; data: IPortalUserDocument[] }> {
     const res = await this.PortalUserRepository.getAllAgency(query);
     return res;
   }
   async deleteAgency(agencyId: string): Promise<IPortalUserDocument> {
     const profile = await this.PortalUserRepository.getPortalUserById(agencyId);
-    if(!profile) throw new AppError(StatusCodes.BAD_REQUEST, `id -> ${agencyId} does not exist`);
-    if(profile.userRole != UserRoles.Agency) throw new AppError(StatusCodes.BAD_REQUEST, `${agencyId} belongs to ${profile.userRole} not to an agency`);
+    if (!profile)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `id -> ${agencyId} does not exist`
+      );
+    if (profile.userRole != UserRoles.Agency)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `${agencyId} belongs to ${profile.userRole} not to an agency`
+      );
     const hostCount = await this.UserRepository.getHostCounts(agencyId);
-    if(hostCount != 0) throw new AppError(StatusCodes.CONFLICT, `${profile.name} has ${hostCount} hosts, so cannot be deleted untill host count is 0`);
-    const deletedAgency = await this.PortalUserRepository.deletePortalUser(agencyId);
+    if (hostCount != 0)
+      throw new AppError(
+        StatusCodes.CONFLICT,
+        `${profile.name} has ${hostCount} hosts, so cannot be deleted untill host count is 0`
+      );
+    const deletedAgency = await this.PortalUserRepository.deletePortalUser(
+      agencyId
+    );
     return deletedAgency;
+  }
+  async getAllJoinRequest(myId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IAgencyJoinRequest[]; }> {
+    return await this.AgencyJoinRequestRepository.getRequests(myId, query);
+  }
+
+  async updateJoinRequestStatus(reqId: string, status: StatusTypes): Promise<{status: StatusTypes}> {
+    const request = await this.AgencyJoinRequestRepository.getRequestById(reqId);
+    if (!request) throw new AppError(StatusCodes.NOT_FOUND, "Request not found");
+    if(status == StatusTypes.rejected){
+      await this.AgencyJoinRequestRepository.deleteRequest(reqId);
+      return {status: StatusTypes.rejected};
+    }
+    if(status == StatusTypes.accepted){
+      await this.UserRepository.findUserByIdAndUpdate(request.userId as string, {
+        userRole:UserRoles.Host,
+        parentCreator: request.agencyId,
+      });
+    }
+    const update = await this.AgencyJoinRequestRepository.updateRequest(reqId, {status});
+    return {status: update.status!};
   }
 }
