@@ -391,9 +391,9 @@ export default class AuthService implements IAuthService {
     id: string,
     totalTime: number,
     type: StreamType
-  ): Promise<IUSerStatsDocument> {
+  ): Promise<{ bonus: number }> {
     // erasing all the previous data from yesterday
-     await this.RoomHistoryRepository.resetRoomHistory();
+    await this.RoomHistoryRepository.resetRoomHistory();
     // checking if the host reached maximum bonus
     const isDone = await this.RoomHistoryRepository.getIsDone(id);
 
@@ -437,13 +437,8 @@ export default class AuthService implements IAuthService {
             StatusCodes.INTERNAL_SERVER_ERROR,
             "Creating History failed"
           );
-        const up = await this.UserStatsRepository.updateDiamonds(id, 0);
-        if (!up)
-          throw new AppError(
-            StatusCodes.INTERNAL_SERVER_ERROR,
-            "updating user stats failed"
-          );
-        return up;
+
+        return { bonus: 0 };
       } else {
         const newHistory = await this.RoomHistoryRepository.createRoomHistory({
           firstEligible: false,
@@ -462,7 +457,7 @@ export default class AuthService implements IAuthService {
             StatusCodes.INTERNAL_SERVER_ERROR,
             "updating user stats failed"
           );
-        return up;
+        return { bonus: 3000 };
       }
     } else {
       // if the first target is not achieved
@@ -485,7 +480,7 @@ export default class AuthService implements IAuthService {
           StatusCodes.INTERNAL_SERVER_ERROR,
           "updating user stats failed"
         );
-      return up;
+      return { bonus: totalTime >= 50 ? 2000 : 0 };
     }
   }
 
@@ -636,8 +631,11 @@ export default class AuthService implements IAuthService {
   ): Promise<IAgencyJoinRequestDocument> {
     const user = await this.UserRepository.findUserById(data.userId as string);
     if (!user) throw new AppError(StatusCodes.NOT_FOUND, `user not found`);
-    if(user.userRole != UserRoles.User)
-      throw new AppError(StatusCodes.BAD_REQUEST, "Agency applications and cancellations are restricted to users.");
+    if (user.userRole != UserRoles.User)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Agency applications and cancellations are restricted to users."
+      );
     const prevRequest =
       await this.AgencyJoinRequestRepository.getRequestCondiionally({
         userId: data.userId as string,
@@ -648,7 +646,7 @@ export default class AuthService implements IAuthService {
         StatusCodes.BAD_REQUEST,
         `you have already applied for an agency`
       );
-    
+
     const newRequest = await this.AgencyJoinRequestRepository.createRequest(
       data
     );
@@ -715,16 +713,24 @@ export default class AuthService implements IAuthService {
     return { status: AgencyJoinStatus.error, agencyDetails: null };
   }
 
-  async agencyCancelRequest(userId: string): Promise<IAgencyJoinRequestDocument> {
+  async agencyCancelRequest(
+    userId: string
+  ): Promise<IAgencyJoinRequestDocument> {
     const user = await this.UserRepository.findUserById(userId);
     if (!user) throw new AppError(StatusCodes.BAD_REQUEST, `user not found`);
-    if(user.userRole != UserRoles.User) 
-      throw new AppError(StatusCodes.BAD_REQUEST, "Agency applications and cancellations are restricted to users.");
-    const request = await this.AgencyJoinRequestRepository.getRequestCondiionally({
-      userId,
-    });
-    if(request) {
-      const deleted = await this.AgencyJoinRequestRepository.deleteRequest(request._id as string);
+    if (user.userRole != UserRoles.User)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Agency applications and cancellations are restricted to users."
+      );
+    const request =
+      await this.AgencyJoinRequestRepository.getRequestCondiionally({
+        userId,
+      });
+    if (request) {
+      const deleted = await this.AgencyJoinRequestRepository.deleteRequest(
+        request._id as string
+      );
       return deleted;
     }
 

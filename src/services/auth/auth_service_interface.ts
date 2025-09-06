@@ -59,7 +59,7 @@ export interface IAuthService {
     id: string,
     totalTime: number,
     type: StreamType
-  ): Promise<IUSerStatsDocument>;
+  ): Promise<{bonus: number}>;
   setChatPrivacy(payload: {
     id: string;
     whoCanTextMe: WhoCanTextMe;
