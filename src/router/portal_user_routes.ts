@@ -132,7 +132,10 @@ router
 
 router
   .route("/agency/withdraw")
-  .post(authenticate([UserRoles.Agency]), portalUserControllers.withdrawAgency);
+  .post(authenticate([UserRoles.Agency]), portalUserControllers.withdrawAgency)
+  .get(authenticate([UserRoles.Admin]), portalUserControllers.getAgencyWithdrawList);
+
+
 
 router
   .route("/agency-all")
@@ -158,5 +161,7 @@ router
     authenticate([UserRoles.Agency]),
     portalUserControllers.updateJoinRequestStatus
   );
+
+
 
 export default router;

@@ -88,6 +88,10 @@ export interface ISharedPowerService {
     }: { accountNumber: string; accountType: string; totalSalary: number }
   ): Promise<IAgencyWithdrawDocument>;
 
+  getAgencyWithdrawList(
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; data: IAgencyWithdrawDocument[] }>;
+
   getAllAgencyList(
     query: Record<string, any>
   ): Promise<{ pagination: IPagination; data: IPortalUserDocument[] }>;
@@ -456,7 +460,7 @@ export default class SharedPowerService implements ISharedPowerService {
     const existingWithdraw =
       await this.AgencyWithdrawRepository.getWithdrawWithStatus(
         id,
-        StatusTypes.pending
+        StatusTypes.pending 
       );
     if (existingWithdraw)
       throw new AppError(
@@ -506,6 +510,10 @@ export default class SharedPowerService implements ISharedPowerService {
     await session.commitTransaction();
     session.endSession();
     return withdraw;
+  }
+
+  async getAgencyWithdrawList(query: Record<string, any>): Promise<{ pagination: IPagination; data: IAgencyWithdrawDocument[]; }> {
+    return await this.AgencyWithdrawRepository.getAgencyWithdrawlist(query);
   }
 
   async getAllAgencyList(

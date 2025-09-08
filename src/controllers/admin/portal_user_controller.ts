@@ -254,6 +254,16 @@ export class PortalUserControllers {
     });
   });
 
+  getAgencyWithdrawList = catchAsync(async (req: Request, res: Response) => {
+    const result = await this.Service.getAgencyWithdrawList(req.query);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Agency withdraw list retrieved successfully",
+    });
+  });
+
   getAllAgencyList = catchAsync(async (req: Request, res: Response) => {
     const result = await this.Service.getAllAgencyList(req.query);
     sendResponse(res, {
