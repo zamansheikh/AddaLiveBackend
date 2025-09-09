@@ -11,7 +11,6 @@ export const validateRequest = (DTOClass: any) => {
     const errors = await validate(dtoInstance);
 
     if (errors.length > 0) {
-      console.log();
       throw new AppError(StatusCodes.BAD_REQUEST, errors.toString())
     }
     req.body = dtoInstance;

@@ -968,7 +968,6 @@ export default class AdminUserService implements IAdminUserService {
     const folderName = parts[parts.length - 2];
     const fileHash = fileName.substring(0, fileName.lastIndexOf("."));
     const publicId = `${folderName}/${folderName}/${fileHash}`;
-    console.log(publicId);
 
     const deleteFile = await deleteFileFromCloudinary({
       isVideo: false,

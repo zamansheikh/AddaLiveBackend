@@ -35,7 +35,11 @@ export enum DatabaseNames {
   AgencyWithdraw = "agency-withdraw",
   Banners= 'banners',
   CoinHistory = "coin_histories",
-  AgencyJoinRequest = "agency_join_requests"
+  AgencyJoinRequest = "agency_join_requests",
+  StoreCategory = 'store_categories',
+  StoreItem = 'store_items',
+  MyBucketItem = "my_bucket_items",
+  StoreItemDeleteHistory= "store_item_delete_history"
 }
 
 export enum ReelStatus {

@@ -26,7 +26,6 @@ export class QueryBuilder<T> {
 
   search(searchableFields: string[], isObjectId = false) {
     const searchTerm = this.query?.searchTerm as string;
-    console.log(searchTerm);
 
     if (searchTerm) {
       const conditions: FilterQuery<T>[] = searchableFields.map((field) => ({

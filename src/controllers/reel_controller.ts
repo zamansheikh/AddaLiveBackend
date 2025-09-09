@@ -75,7 +75,6 @@ export default class ReelController {
         async (req: Request, res: Response) => {
             const { id } = req.user!;
             const { reelId, commentId } = req.params;
-            console.log(req.params);
 
             const reel = await this.ReelService.deleteComment({ commentId, reelId, userId: id });
             sendResponseEnhanced(res, reel);
@@ -86,7 +85,6 @@ export default class ReelController {
         async (req: Request, res: Response) => {
             const { id } = req.user!;
             const { commentId, newComment } = req.body;
-            console.log(req.params);
             const reel = await this.ReelService.editComment({ commentId, newComment, userId: id });
             sendResponseEnhanced(res, reel);
         }

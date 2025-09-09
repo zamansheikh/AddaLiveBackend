@@ -3,12 +3,12 @@ import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import morgan from "morgan";
 import dotenv from "dotenv";
-import session from "express-session";
+import session, { Store } from "express-session";
 import http from "http";
 // socket server
 import SocketServer from "./core/sockets/socket_server";
 // import mongoClient from "mongodb";
-import mongoose from "mongoose";
+import mongoose, { omitUndefined } from "mongoose";
 // router imports
 import AuthRouter from "./router/auth_routes";
 import AdminRouter from "./router/admin_routes";
@@ -20,6 +20,7 @@ import ChatRouter from "./router/chat_router";
 import GameRouter from "./router/game_router";
 import FollowerRouter from "./router/follower_routes";
 import PowerSharedRoutes from "./router/portal_user_routes";
+import StoreRoutes from "./router/store_router";
 import AppVersionRoutes from "./router/app_version_routes";
 
 // error handlers
@@ -84,6 +85,7 @@ app.use("/api/chats", ChatRouter);
 app.use("/api/games", GameRouter);
 app.use("/api/followers", FollowerRouter);
 app.use("/api/power-shared", PowerSharedRoutes);
+app.use("/api/store", StoreRoutes);
 app.use("/release", AppVersionRoutes);
 
 // app.get("/release/latest", async (req: Request, res: Response) => {

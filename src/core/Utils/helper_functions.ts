@@ -177,3 +177,7 @@ export function validateStatus(status: any) {
   if(!status) throw new AppError(StatusCodes.BAD_REQUEST, "Status is required");
   if(!Object.values(StatusTypes).includes(status)) throw new AppError(StatusCodes.BAD_REQUEST, `Invalid status: ${status}`)
 }
+
+export function validateFieldExistance(filed: any, fieldName: string){
+  if(!filed) throw new AppError(StatusCodes.BAD_REQUEST, `${fieldName} is required`);
+}

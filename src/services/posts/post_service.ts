@@ -136,7 +136,7 @@ export default class PostService implements IPostService {
     async commnetOnPosts({ postId, commentText, userID }: { postId: string; commentText: string; userID: string; }): Promise<IPostDocument | IPostCommentDocument | null> {
         const reel = await this.PostRepository.findPostById(postId);
         if (!reel) throw new AppError(StatusCodes.BAD_REQUEST, "either wrong post Id, or does not exist");
-        console.log(postId, commentText, userID);
+
 
         const comment = await this.CommentRepository.create({ commentedBy: new Types.ObjectId(userID), article: commentText, commentedTo: new Types.ObjectId(postId) } as IPostComment);
         if (!comment) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "failed creating comment");

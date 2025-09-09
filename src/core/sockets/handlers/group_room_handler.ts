@@ -822,7 +822,6 @@ export async function registerGroupRoomHandler(
     );
 
     const targetSocketId = onlineUsers.get(targetId);
-    console.log(targetSocketId);
 
     const targetIdDetails = await userRepository.getUserDetailsSelectedField(
       targetId,

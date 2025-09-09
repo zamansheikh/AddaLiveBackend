@@ -112,7 +112,6 @@ export default class UserRepository implements IUserRepository {
     query: Record<string, any>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] }> {
     const qb = new QueryBuilder(this.UserModel, query);
-    console.log(query);
 
     const pipeline = [];
 

@@ -38,7 +38,7 @@ export default class ReelsService implements IReelService {
         if (length > 60) throw new AppError(StatusCodes.BAD_REQUEST, "Video length exceeded the limit");
         try {
             const reelUrl = await uploadFileToCloudinary({ isVideo: true, folder: CloudinaryFolder.Reels, file });
-            console.log(reelUrl);
+ 
             
             body["reelUrl"] = reelUrl;
             return await this.ReelRepository.create(body as IReelEntity)
@@ -143,7 +143,7 @@ export default class ReelsService implements IReelService {
     }
 
     async deleteComment({ userId, commentId, reelId }: { userId: string, commentId: string, reelId: string }): Promise<IReelDocument | IReelsCommentDocument | string | null> {
-        console.log(reelId);
+
 
         const comment = await this.CommentRepository.findCommentById(commentId);
         if (!comment) throw new AppError(StatusCodes.BAD_REQUEST, "Commnet does not exist");
@@ -220,8 +220,6 @@ export default class ReelsService implements IReelService {
         if (!reel) throw new AppError(StatusCodes.BAD_REQUEST, "This reel does not exist");
 
         const comments = await this.CommentRepository.getCommentsWithReplies({ reelId, userId, query });
-
-        // console.log(comments);
 
         return comments;
 
