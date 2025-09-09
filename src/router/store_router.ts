@@ -8,12 +8,21 @@ import StoreController from "../controllers/store_controller";
 import StoreItemRepository from "../repository/store/store_item_repository";
 import StoreItemModel from "../models/store/store_item_model";
 import { upload } from "../core/middlewares/multer";
+import UserRepository from "../repository/user_repository";
+import User from "../models/user/user_model";
+import MyBucketRepository from "../repository/store/my_bucket_repository";
+import MyBucketModel from "../models/store/my_bucket_model";
+import UserStatsRepository from "../repository/userstats/userstats_repository";
+import UserStats from "../models/userstats/userstats_model";
 
 const router = express.Router();
 
 const category = new StoreCategoryRepository(StoreCategoryModel);
 const item = new StoreItemRepository(StoreItemModel);
-const service = new StoreService(category, item);
+const user = new UserRepository(User);
+const stats = new UserStatsRepository(UserStats);
+const bucket = new MyBucketRepository(MyBucketModel);
+const service = new StoreService(category, item, user, stats, bucket);
 const controller = new StoreController(service);
 
 // 📌 store category
@@ -28,17 +37,47 @@ router
   .delete(authenticate([UserRoles.Admin]), controller.deleteCategory);
 
 // 📌 store item
-router.route("/items/single").post(authenticate([UserRoles.Admin]), upload.single("svgaFile"), controller.createStoreItemSingle);
-router.route("/items/batch").post(authenticate([UserRoles.Admin]), upload.array("svgaFile", 10), controller.createStoreItemBatch);
+router
+  .route("/items/single")
+  .post(
+    authenticate([UserRoles.Admin]),
+    upload.single("svgaFile"),
+    controller.createStoreItemSingle
+  );
+router
+  .route("/items/batch")
+  .post(
+    authenticate([UserRoles.Admin]),
+    upload.array("svgaFile", 10),
+    controller.createStoreItemBatch
+  );
 router
   .route("/items/:id")
   .get(authenticate(), controller.getStoreItemById)
   .delete(authenticate([UserRoles.Admin]), controller.deleteStoreItem);
-router.route("/items/single/:id").put(authenticate([UserRoles.Admin]), upload.single("svgaFile"),controller.updateStoreItemSingle)
-router.route("/items/batch/:id").put(authenticate([UserRoles.Admin]), upload.array("svgaFile", 10),controller.updateStoreItemBatch)
+router
+  .route("/items/single/:id")
+  .put(
+    authenticate([UserRoles.Admin]),
+    upload.single("svgaFile"),
+    controller.updateStoreItemSingle
+  );
+router
+  .route("/items/batch/:id")
+  .put(
+    authenticate([UserRoles.Admin]),
+    upload.array("svgaFile", 10),
+    controller.updateStoreItemBatch
+  );
 router
   .route("/items/category/:category")
   .get(authenticate(), controller.getAllStoreItems)
   .put(authenticate([UserRoles.Admin]), controller.changeItemCategory);
+
+  // 📌 my buckets
+
+router.route("/bucket").post(authenticate(), controller.buyStoreItem);
+router.route("/bucket/category/:category").get(authenticate(), controller.getMyBucket);
+
 
 export default router;

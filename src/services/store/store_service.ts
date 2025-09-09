@@ -16,6 +16,11 @@ import {
   uploadFileToCloudinary,
 } from "../../core/Utils/upload_file_cloudinary";
 import { profile } from "console";
+import { IUserRepository } from "../../repository/user_repository";
+import { IMyBucketRepository } from "../../repository/store/my_bucket_repository";
+import IUserStatsRepository from "../../repository/userstats/userstats_repository_interface";
+import mongoose, { mongo } from "mongoose";
+import { IMyBucketDocument } from "../../models/store/my_bucket_model";
 
 export interface IPremiumFiles {
   categoryName: string;
@@ -23,13 +28,13 @@ export interface IPremiumFiles {
 }
 
 export interface IStoreService {
-  // store categories
+  // 📌 store categories
   createCategory(title: string): Promise<IStoreCategoryDocument>;
   getCategoryById(id: string): Promise<IStoreCategoryDocument>;
   getAllCategories(): Promise<IStoreCategoryDocument[]>;
   updateCategory(id: string, title: string): Promise<IStoreCategoryDocument>;
   deleteCategory(id: string): Promise<IStoreCategoryDocument>;
-  // store items
+  // 📌 store items
   createStoreItemSingle(
     item: IStoreItem,
     file: Express.Multer.File
@@ -58,17 +63,34 @@ export interface IStoreService {
     itemId: string,
     newCategory: string
   ): Promise<IStoreItemDocument>;
+  // 📌 my buckets
+  buyStoreItem(ownerId: string, itemId: string): Promise<IStoreItemDocument>;
+  getMyBucket(
+    ownerId: string,
+    category: string,
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; buckets: IMyBucketDocument[] }>;
+  userGiftItem(ownerId: string, bucketId: string): Promise<IMyBucketDocument>;
 }
 
 export default class StoreService implements IStoreService {
   CategoryRepository: IStoreCategoryRepository;
   ItemRepository: IStoreItemRepository;
+  UserRepository: IUserRepository;
+  userStatsRepository: IUserStatsRepository;
+  BucketRepository: IMyBucketRepository;
   constructor(
     categoryRepository: IStoreCategoryRepository,
-    itemRepository: IStoreItemRepository
+    itemRepository: IStoreItemRepository,
+    userRepository: IUserRepository,
+    userStatsRepository: IUserStatsRepository,
+    bucketRepository: IMyBucketRepository
   ) {
     this.CategoryRepository = categoryRepository;
     this.ItemRepository = itemRepository;
+    this.UserRepository = userRepository;
+    this.userStatsRepository = userStatsRepository;
+    this.BucketRepository = bucketRepository;
   }
 
   //  📌 store categories
@@ -294,7 +316,120 @@ export default class StoreService implements IStoreService {
     throw new AppError(StatusCodes.NOT_IMPLEMENTED, "Method not implemented.");
   }
 
-  async changeItemCategory(itemId: string, newCategory: string): Promise<IStoreItemDocument> {
-    return await this.ItemRepository.updateStoreItem(itemId, { categoryId: newCategory });
+  async changeItemCategory(
+    itemId: string,
+    newCategory: string
+  ): Promise<IStoreItemDocument> {
+    return await this.ItemRepository.updateStoreItem(itemId, {
+      categoryId: newCategory,
+    });
+  }
+
+  // 📌 my buckets
+  async buyStoreItem(
+    ownerId: string,
+    itemId: string
+  ): Promise<IStoreItemDocument> {
+    const user = await this.UserRepository.findUserById(ownerId);
+    if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+    const stats = await this.userStatsRepository.getUserStats(ownerId);
+    if (!stats)
+      throw new AppError(StatusCodes.NOT_FOUND, "User stats not found");
+    const item = await this.ItemRepository.getStoreItemById(itemId);
+    if (!item) throw new AppError(StatusCodes.NOT_FOUND, "Item not found");
+    if (item.price > stats.coins!)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `for item price ${item.price} having  ${stats.coins} coins is not enough`
+      );
+
+    // starting transaction
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      await this.userStatsRepository.updateCoins(ownerId, -item.price, session);
+      await this.BucketRepository.createNewBucket(
+        {
+          itemId: item._id as string,
+          ownerId: ownerId,
+          categoryId: item.categoryId,
+          expireAt: new Date(Date.now() + item.validity * 24 * 60 * 60 * 1000), // validity in days
+        },
+        session
+      );
+      await session.commitTransaction();
+      return item;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+
+  async getMyBucket(
+    ownerId: string,
+    category: string,
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; buckets: IMyBucketDocument[] }> {
+    const owener = await this.UserRepository.findUserById(ownerId);
+    if (!owener) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+    const existingCategory = await this.CategoryRepository.getCategoryById(
+      category
+    );
+    if (!existingCategory)
+      throw new AppError(StatusCodes.NOT_FOUND, "Category not found");
+    return await this.BucketRepository.getAllBuckets(ownerId, category, query);
+  }
+
+  async userGiftItem(
+    ownerId: string,
+    bucketId: string
+  ): Promise<IMyBucketDocument> {
+    const owner = await this.UserRepository.findUserById(ownerId);
+    const bucket = await this.BucketRepository.getBucketsById(bucketId);
+    if (!owner) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+    if (!bucket) throw new AppError(StatusCodes.NOT_FOUND, "Bucket not found");
+    if (bucket.ownerId.toString() != ownerId)
+      throw new AppError(
+        StatusCodes.UNAUTHORIZED,
+        "You are not the owner of this bucket"
+      );
+    const item = await this.ItemRepository.getStoreItemById(
+      bucket.itemId.toString()
+    );
+    if (!item) throw new AppError(StatusCodes.NOT_FOUND, "Item not found");
+
+    // start transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      if (item.isPremium) {
+        // unselecting all the items
+        await this.BucketRepository.updateBucketUseStatus(
+          { ownerId: ownerId, useStatus: true },
+          { useStatus: false },
+          session
+        );
+      } else {
+       // unselecting all the items in a single category
+        await this.BucketRepository.updateBucketUseStatus(
+          { ownerId: ownerId, useStatus: true, categoryId: bucket.categoryId },
+          { useStatus: false },
+          session
+        );
+      }
+      const updated = await this.BucketRepository.updateBucket(bucketId, {
+        useStatus: true,
+      });
+      await session.commitTransaction();
+      return updated;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
   }
 }

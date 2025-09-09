@@ -70,7 +70,7 @@ export class QueryBuilder<T> {
     return this;
   }
 
-  populateField(field: string, populateWith: string) {
+  populateField(field: string, populateWith?: string) {
     // field takes the field name you want to populate
     // populate with takes the fields that you want to include in the population
     // the included fields must be in a single string seperated by spaces.

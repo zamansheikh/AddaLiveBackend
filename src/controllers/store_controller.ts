@@ -158,7 +158,7 @@ export default class StoreController {
     ValidateStoreItemUpdateBatch(req.body, req.files as Express.Multer.File[]);
     const { name, validity, categoryId, price, categoryNames } = req.body;
     let premiumFiles: IPremiumFiles[] = [];
-    
+
     if (categoryNames) {
       let names = categoryNames.split(",");
       names = names.map((cat: string) => cat.trim());
@@ -193,9 +193,9 @@ export default class StoreController {
       result: item,
     });
   });
-  
-  changeItemCategory  = catchAsync(async (req: Request, res: Response) => {
-    const {category} = req.params;
+
+  changeItemCategory = catchAsync(async (req: Request, res: Response) => {
+    const { category } = req.params;
     const { itemId } = req.body;
     validateFieldExistance(itemId, "itemId");
     validateFieldExistance(category, "category");
@@ -206,5 +206,42 @@ export default class StoreController {
       result: item,
     });
   });
-  
+
+  //  📌 my buckets
+
+  buyStoreItem = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const {itemId} = req.body;
+    validateFieldExistance(itemId, "itemId");
+    const item = await this.Service.buyStoreItem(id, itemId);
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      result: item,
+    });
+  });
+
+  getMyBucket = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const { category } = req.params;
+    validateFieldExistance(category, "category");
+    const items = await this.Service.getMyBucket(id, category, req.query);
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      result: items,
+    });
+  });
+
+  useGiftItem = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const { bucketId } = req.body;
+    validateFieldExistance(bucketId, "bucketId");
+    const item = await this.Service.useGiftItem(id, bucketId);
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      result: item,
+    });
+  })
 }
