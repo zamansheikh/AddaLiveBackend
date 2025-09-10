@@ -75,8 +75,7 @@ router
   .put(authenticate([UserRoles.Admin]), controller.changeItemCategory);
 
   // 📌 my buckets
-
-router.route("/bucket").post(authenticate(), controller.buyStoreItem);
+router.route("/bucket").post(authenticate(), controller.buyStoreItem).put(authenticate(), controller.useGiftItem);
 router.route("/bucket/category/:category").get(authenticate(), controller.getMyBucket);
 
 

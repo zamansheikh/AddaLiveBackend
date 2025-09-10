@@ -18,9 +18,9 @@ export default class StoreController {
 
   //   📌 store categories
   createCategory = catchAsync(async (req: Request, res: Response) => {
-    const { title } = req.body;
+    const { title, isPremium } = req.body;
     validateFieldExistance(title, "title");
-    const category = await this.Service.createCategory(title);
+    const category = await this.Service.createCategory(title, isPremium);
     sendResponse(res, {
       statusCode: 200,
       success: true,
@@ -237,7 +237,7 @@ export default class StoreController {
     const { id } = req.user!;
     const { bucketId } = req.body;
     validateFieldExistance(bucketId, "bucketId");
-    const item = await this.Service.useGiftItem(id, bucketId);
+    const item = await this.Service.userGiftItem(id, bucketId);
     sendResponse(res, {
       statusCode: 200,
       success: true,

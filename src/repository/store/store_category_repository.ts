@@ -1,14 +1,15 @@
 import { StatusCodes } from "http-status-codes";
 import AppError from "../../core/errors/app_errors";
-import { IStoreCategoryDocument, IStoreCategoryModel } from "../../models/store/store_category_model";
+import { IStoreCategory, IStoreCategoryDocument, IStoreCategoryModel } from "../../models/store/store_category_model";
 
 export interface IStoreCategoryRepository {
-    createCategory(title: string): Promise<IStoreCategoryDocument>;
+    createCategory(title: string, isPremium?: boolean): Promise<IStoreCategoryDocument>;
     getCategoryById(id: string): Promise<IStoreCategoryDocument | null>;
     getAllCategories(): Promise<IStoreCategoryDocument[]>;
     updateCategory(id: string, title: string): Promise<IStoreCategoryDocument>;
     deleteCategory(id: string): Promise<IStoreCategoryDocument>;
     getCategoryByTitle(title: string): Promise<IStoreCategoryDocument | null>;
+    getCategoryConditionally(condition: Partial<IStoreCategory>): Promise<IStoreCategoryDocument | null>;
 }
 
 export default class StoreCategoryRepository implements IStoreCategoryRepository{
@@ -17,8 +18,8 @@ export default class StoreCategoryRepository implements IStoreCategoryRepository
         this.Model = model;
     }
 
-    async createCategory(title: string): Promise<IStoreCategoryDocument> {
-        const category = new this.Model({ title });
+    async createCategory(title: string, isPremium?: boolean): Promise<IStoreCategoryDocument> {
+        const category = new this.Model({ title, isPremium });
         return await category.save();
     }
 
@@ -44,5 +45,9 @@ export default class StoreCategoryRepository implements IStoreCategoryRepository
 
     async getCategoryByTitle(title: string): Promise<IStoreCategoryDocument | null> {
         return await this.Model.findOne({ title });
+    }
+
+    async getCategoryConditionally(condition: Partial<IStoreCategory>): Promise<IStoreCategoryDocument | null> {
+        return await this.Model.findOne(condition);
     }
 }

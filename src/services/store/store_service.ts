@@ -29,7 +29,7 @@ export interface IPremiumFiles {
 
 export interface IStoreService {
   // 📌 store categories
-  createCategory(title: string): Promise<IStoreCategoryDocument>;
+  createCategory(title: string, isPremium?: boolean): Promise<IStoreCategoryDocument>;
   getCategoryById(id: string): Promise<IStoreCategoryDocument>;
   getAllCategories(): Promise<IStoreCategoryDocument[]>;
   updateCategory(id: string, title: string): Promise<IStoreCategoryDocument>;
@@ -94,8 +94,12 @@ export default class StoreService implements IStoreService {
   }
 
   //  📌 store categories
-  async createCategory(title: string): Promise<IStoreCategoryDocument> {
-    return await this.CategoryRepository.createCategory(title);
+  async createCategory(title: string, isPremium?: boolean): Promise<IStoreCategoryDocument> {
+    if(isPremium) {
+      const existingPremium = await this.CategoryRepository.getCategoryConditionally({isPremium: true});
+      if(existingPremium) throw new AppError(StatusCodes.BAD_REQUEST, "Premium category already exists");
+    }
+    return await this.CategoryRepository.createCategory(title, isPremium);
   }
 
   async getCategoryById(id: string): Promise<IStoreCategoryDocument> {
@@ -349,6 +353,7 @@ export default class StoreService implements IStoreService {
     session.startTransaction();
     try {
       await this.userStatsRepository.updateCoins(ownerId, -item.price, session);
+      await this.ItemRepository.updateSoldCount(itemId);
       await this.BucketRepository.createNewBucket(
         {
           itemId: item._id as string,
@@ -396,24 +401,39 @@ export default class StoreService implements IStoreService {
         StatusCodes.UNAUTHORIZED,
         "You are not the owner of this bucket"
       );
+    if (bucket.useStatus) {
+      const updated = await this.BucketRepository.updateBucket(bucketId, {
+        useStatus: false,
+      });
+      return updated;
+    }
     const item = await this.ItemRepository.getStoreItemById(
       bucket.itemId.toString()
     );
     if (!item) throw new AppError(StatusCodes.NOT_FOUND, "Item not found");
+    const premiumCategory = await this.CategoryRepository.getCategoryConditionally({isPremium: true});
 
     // start transaction
     const session = await mongoose.startSession();
     session.startTransaction();
+
     try {
       if (item.isPremium) {
-        // unselecting all the items
+        // deselecting all the items
         await this.BucketRepository.updateBucketUseStatus(
           { ownerId: ownerId, useStatus: true },
           { useStatus: false },
           session
         );
       } else {
-       // unselecting all the items in a single category
+        // deselect premium items
+        if(premiumCategory)
+          await this.BucketRepository.updateBucketUseStatus(
+            { ownerId: ownerId, useStatus: true, categoryId: premiumCategory!._id },
+            { useStatus: false },
+            session
+          );
+        // deselecting all the items in a single category
         await this.BucketRepository.updateBucketUseStatus(
           { ownerId: ownerId, useStatus: true, categoryId: bucket.categoryId },
           { useStatus: false },

@@ -3,6 +3,7 @@ import { DatabaseNames } from "../../core/Utils/enums";
 
 export interface IStoreCategory {
   title: string;
+  isPremium?: boolean;
 }
 
 export interface IStoreCategoryDocument extends Document, IStoreCategory {
@@ -22,6 +23,10 @@ const storeCategorySchema = new mongoose.Schema<
       required: true,
       unique: true,
       trim: true,
+    },
+    isPremium: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }
