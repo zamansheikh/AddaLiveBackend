@@ -19,21 +19,24 @@ export default class AppVersionRepository implements IAppVersionRepository {
   }
 
   async createVersion(data: IAppVersion): Promise<IAppVersionDocument> {
+    const existingVersion = await this.Model.find({});
+    if(existingVersion && existingVersion.length > 0) throw new AppError(StatusCodes.BAD_REQUEST, "Version already exists");
     const newVersion = new this.Model(data);
     return await newVersion.save();
   }
 
   async getAppVersion(): Promise<IAppVersionDocument> {
-    const id = "68b6ffc212404d56f6f000ae";
-    const data = await this.Model.findById(id);
+    let data = await this.Model.find({}) as IAppVersionDocument[];
     if (!data) throw new AppError(StatusCodes.NOT_FOUND, "No version found");
-    return data;
+    return data[0];
   }
 
   async updateVersion(
     data: Partial<IAppVersion>
   ): Promise<IAppVersionDocument> {
-    const id = "68b6ffc212404d56f6f000ae";
+    const d = await this.Model.find({}) as IAppVersionDocument[];
+    if(d && d.length == 0) throw new AppError(StatusCodes.NOT_FOUND, "No version found");
+    const id = d[0]._id;
     const version = await this.Model.findByIdAndUpdate(id, data, {
       new: true,
     });
