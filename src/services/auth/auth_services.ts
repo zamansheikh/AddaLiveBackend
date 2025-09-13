@@ -180,7 +180,11 @@ export default class AuthService implements IAuthService {
     const userStats = await this.UserStatsRepository.getUserStats(id);
     const userWithStats = user.toObject();
     userWithStats.stats = userStats;
-    userWithStats.equippedStoreItems = await getEquipedItemObjects(this.BucketRepository, this.CategoryRepository, id);
+    userWithStats.equippedStoreItems = await getEquipedItemObjects(
+      this.BucketRepository,
+      this.CategoryRepository,
+      id
+    );
     return userWithStats;
   }
 
@@ -233,7 +237,13 @@ export default class AuthService implements IAuthService {
     const myProfile = await this.UserRepository.findUserById(id);
     if (!profile || !myProfile)
       throw new AppError(StatusCodes.NOT_FOUND, "Invalid user Id");
-    const user = await this.UserRepository.getUserDetails({ Id: id, myId });
+    let user = await this.UserRepository.getUserDetails({ Id: id, myId });
+    if (!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
+    (user as any).equippedStoreItems= await getEquipedItemObjects(
+      this.BucketRepository,
+      this.CategoryRepository,
+      id
+    );
     return user;
   }
 

@@ -192,9 +192,9 @@ export function validateFieldExistance(filed: any, fieldName: string) {
 export async function getEquipedItemObjects(
   repository: IMyBucketRepository,
   catRepository: IStoreCategoryRepository,
-  bucketId: string
+  userId: string
 ): Promise<Record<string, any>> {
-  const equipedBuccket = await repository.getEquipedBuckets(bucketId);
+  const equipedBuccket = await repository.getEquipedBuckets(userId);
   let equipedFeatures: Record<string, any> = {};
   for (let i = 0; i < equipedBuccket.length; i++) {
     if (
