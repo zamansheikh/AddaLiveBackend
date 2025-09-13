@@ -12,6 +12,7 @@ import { IUserDocument } from "../../models/user/user_model_interface";
 import { IAdminDocument } from "../../entities/admin/admin_interface";
 import { IPortalUserDocument } from "../../entities/portal_users/portal_user_interface";
 import { stat } from "fs";
+import { IMyBucketRepository } from "../../repository/store/my_bucket_repository";
 
 export const generateFileHash = (buffer: Buffer): string => {
   return crypto.createHash("sha256").update(buffer).digest("hex");
@@ -181,3 +182,5 @@ export function validateStatus(status: any) {
 export function validateFieldExistance(filed: any, fieldName: string){
   if(!filed) throw new AppError(StatusCodes.BAD_REQUEST, `${fieldName} is required`);
 }
+
+export function getEquipedItemObjects(repository: IMyBucketRepository, bucketId: string){}

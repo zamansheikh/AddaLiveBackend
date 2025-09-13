@@ -43,6 +43,10 @@ import AgencyJoinRequestRepository from "../repository/request/AgencyJoinRequest
 import AgencyJoinRequestModel from "../models/request/agencyJoinRequset";
 import PortalUserRepository from "../repository/portal_user/portal_user_repository";
 import PortalUser from "../models/portal_users/protal_user_model";
+import MyBucketRepository from "../repository/store/my_bucket_repository";
+import MyBucketModel from "../models/store/my_bucket_model";
+import StoreCategoryRepository from "../repository/store/store_category_repository";
+import StoreCategoryModel from "../models/store/store_category_model";
 
 const router = express.Router();
 
@@ -69,6 +73,8 @@ const salaryRepository = new SalaryRepository(SalaryModel);
 const agencyJoinRequestRepository = new AgencyJoinRequestRepository(
   AgencyJoinRequestModel
 );
+const bucketRepository = new MyBucketRepository(MyBucketModel);
+const categoryRepository = new StoreCategoryRepository(StoreCategoryModel);
 
 const portalUserRepository = new PortalUserRepository(PortalUser);
 
@@ -89,7 +95,9 @@ const authService = new AuthService(
   bonusRepository,
   salaryRepository,
   agencyJoinRequestRepository,
-  portalUserRepository
+  portalUserRepository,
+  bucketRepository,
+  categoryRepository
 );
 const authController = new AuthController(authService);
 

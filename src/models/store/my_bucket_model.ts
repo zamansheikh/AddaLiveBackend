@@ -1,8 +1,9 @@
 import mongoose from "mongoose";
 import { DatabaseNames } from "../../core/Utils/enums";
+import { IStoreItem } from "./store_item_model";
 
 export interface IMyBucket {
-  itemId: string | mongoose.Schema.Types.ObjectId;
+  itemId: string | mongoose.Schema.Types.ObjectId | IStoreItem;
   ownerId: string | mongoose.Schema.Types.ObjectId;
   categoryId: string | mongoose.Schema.Types.ObjectId;
   expireAt?: Date;

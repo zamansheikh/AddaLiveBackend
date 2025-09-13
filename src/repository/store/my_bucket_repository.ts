@@ -29,6 +29,7 @@ export interface IMyBucketRepository {
     update: Partial<IMyBucket>,
     session?: ClientSession
   ): Promise<UpdateResult>;
+  getEquipedBuckets(id: string): Promise<IMyBucketDocument[]>;
 }
 
 export default class MyBucketRepository implements IMyBucketRepository {
@@ -96,5 +97,13 @@ export default class MyBucketRepository implements IMyBucketRepository {
     return await this.Model.updateOne(filter, update, { session });
   }
 
+  async getEquipedBuckets(id: string): Promise<IMyBucketDocument[]> {
+    const equipped = await this.Model.find({
+      ownerId: id,
+      useStatus: true,
+    }).populate("itemId categoryId");
+    if(!equipped) throw new AppError(StatusCodes.NOT_FOUND, "buckets not found");
+    return equipped;
+  }
 
 }

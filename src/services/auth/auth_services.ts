@@ -30,7 +30,7 @@ import { IPostCommentRepository } from "../../repository/posts/comments/post_com
 import { IReelReactionRepository } from "../../repository/reels/likes/reel_reaction_interface";
 import { IReelCommentRepository } from "../../repository/reels/comments/reel_comments_interface";
 import { IStoryReactionRepository } from "../../repository/stories/likes/story_reaction_repository_interface";
-import { existsSync } from "fs";
+import { appendFile, existsSync } from "fs";
 import { IUSerStatsDocument } from "../../entities/userstats/userstats_interface";
 import { IRoomHistory } from "../../models/room/room_history_model";
 import { IRoomHistoryRepository } from "../../repository/room/room_repository";
@@ -46,6 +46,9 @@ import {
 } from "../../models/request/agencyJoinRequset";
 import { IAgencyJoinRequestRepository } from "../../repository/request/AgencyJoinRequestRepository";
 import { IPortalUserRepository } from "../../repository/portal_user/portal_user_repository";
+import { IMyBucketRepository } from "../../repository/store/my_bucket_repository";
+import { IStoreCategoryRepository } from "../../repository/store/store_category_repository";
+import { IStoreItem } from "../../models/store/store_item_model";
 
 export default class AuthService implements IAuthService {
   UserRepository: IUserRepository;
@@ -65,6 +68,8 @@ export default class AuthService implements IAuthService {
   SalaryRepository: ISalaryRepository;
   AgencyJoinRequestRepository: IAgencyJoinRequestRepository;
   PortalUserRepository: IPortalUserRepository;
+  BucketRepository: IMyBucketRepository;
+  CategoryRepository: IStoreCategoryRepository;
 
   constructor(
     UserRepository: IUserRepository,
@@ -83,7 +88,9 @@ export default class AuthService implements IAuthService {
     BonusRepository: IWithdrawBonusRepository,
     SalaryRepository: ISalaryRepository,
     AgencyJoinRequestRepository: IAgencyJoinRequestRepository,
-    PortalUserRepository: IPortalUserRepository
+    PortalUserRepository: IPortalUserRepository,
+    BucketRepository: IMyBucketRepository,
+    CategoryRepository: IStoreCategoryRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
@@ -102,6 +109,8 @@ export default class AuthService implements IAuthService {
     this.SalaryRepository = SalaryRepository;
     this.AgencyJoinRequestRepository = AgencyJoinRequestRepository;
     this.PortalUserRepository = PortalUserRepository;
+    this.BucketRepository = BucketRepository;
+    this.CategoryRepository = CategoryRepository;
   }
 
   async registerWithGoogle(UserData: IUserEntity) {
@@ -168,8 +177,33 @@ export default class AuthService implements IAuthService {
     const user = await this.UserRepository.findUserById(id);
     if (!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
     const userStats = await this.UserStatsRepository.getUserStats(id);
+    const equipedBuccket = await this.BucketRepository.getEquipedBuckets(id);
+    let equipedFeatures: Record<string, any> = {};
+    for (let i = 0; i < equipedBuccket.length; i++) {
+      if (
+        typeof equipedBuccket[i].itemId == "string" ||
+        equipedBuccket[i].itemId instanceof Types.ObjectId
+      )
+        throw new AppError(StatusCodes.CONFLICT, "itemId is not populated");
+      const item = equipedBuccket[i].itemId as IStoreItem;
+      if (item.bundleFiles && item.bundleFiles.length > 0) {
+        for (let j = 0; j < item.bundleFiles.length; j++) {
+          equipedFeatures[item.bundleFiles[j].categoryName] =
+            item.bundleFiles[j].svgaFile;
+        }
+      } else {
+        const category = await this.CategoryRepository.getCategoryById(
+          item.categoryId as string
+        );
+        if (!category)
+          throw new AppError(StatusCodes.NOT_FOUND, "category not found");
+        equipedFeatures[category.title] = item.svgaFile;
+      }
+    }
+
     const userWithStats = user.toObject();
     userWithStats.stats = userStats;
+    userWithStats.equippedStoreItems = equipedFeatures;
     return userWithStats;
   }
 

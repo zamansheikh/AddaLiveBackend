@@ -17,6 +17,7 @@ export interface IGiftRepository {
     query: Record<string, string>
   ): Promise<{ category: string }[]>;
   updateGiftSendCount(id: string): Promise<IGiftDocument>;
+
 }
 
 export class GiftRepository implements IGiftRepository {
@@ -81,4 +82,6 @@ export class GiftRepository implements IGiftRepository {
       throw new AppError(StatusCodes.NOT_FOUND, "Gift not found");
     return updatedGift;
   }
+
+
 }
