@@ -13,6 +13,9 @@ import { IAdminDocument } from "../../entities/admin/admin_interface";
 import { IPortalUserDocument } from "../../entities/portal_users/portal_user_interface";
 import { stat } from "fs";
 import { IMyBucketRepository } from "../../repository/store/my_bucket_repository";
+import { Types } from "mongoose";
+import { IStoreItem } from "../../models/store/store_item_model";
+import { IStoreCategoryRepository } from "../../repository/store/store_category_repository";
 
 export const generateFileHash = (buffer: Buffer): string => {
   return crypto.createHash("sha256").update(buffer).digest("hex");
@@ -170,17 +173,49 @@ export function getPercentageFromHostCount(hostCount: number) {
   if (hostCount >= 5 && hostCount < 10) return 0.1;
   else if (hostCount >= 10 && hostCount < 20) return 0.12;
   else if (hostCount >= 20 && hostCount < 30) return 0.15;
-  else if (hostCount >= 30 ) return 0.17;
+  else if (hostCount >= 30) return 0.17;
   else return 0;
 }
 
 export function validateStatus(status: any) {
-  if(!status) throw new AppError(StatusCodes.BAD_REQUEST, "Status is required");
-  if(!Object.values(StatusTypes).includes(status)) throw new AppError(StatusCodes.BAD_REQUEST, `Invalid status: ${status}`)
+  if (!status)
+    throw new AppError(StatusCodes.BAD_REQUEST, "Status is required");
+  if (!Object.values(StatusTypes).includes(status))
+    throw new AppError(StatusCodes.BAD_REQUEST, `Invalid status: ${status}`);
 }
 
-export function validateFieldExistance(filed: any, fieldName: string){
-  if(!filed) throw new AppError(StatusCodes.BAD_REQUEST, `${fieldName} is required`);
+export function validateFieldExistance(filed: any, fieldName: string) {
+  if (!filed)
+    throw new AppError(StatusCodes.BAD_REQUEST, `${fieldName} is required`);
 }
 
-export function getEquipedItemObjects(repository: IMyBucketRepository, bucketId: string){}
+export async function getEquipedItemObjects(
+  repository: IMyBucketRepository,
+  catRepository: IStoreCategoryRepository,
+  bucketId: string
+): Promise<Record<string, any>> {
+  const equipedBuccket = await repository.getEquipedBuckets(bucketId);
+  let equipedFeatures: Record<string, any> = {};
+  for (let i = 0; i < equipedBuccket.length; i++) {
+    if (
+      typeof equipedBuccket[i].itemId == "string" ||
+      equipedBuccket[i].itemId instanceof Types.ObjectId
+    )
+      throw new AppError(StatusCodes.CONFLICT, "itemId is not populated");
+    const item = equipedBuccket[i].itemId as IStoreItem;
+    if (item.bundleFiles && item.bundleFiles.length > 0) {
+      for (let j = 0; j < item.bundleFiles.length; j++) {
+        equipedFeatures[item.bundleFiles[j].categoryName] =
+          item.bundleFiles[j].svgaFile;
+      }
+    } else {
+      const category = await catRepository.getCategoryById(
+        item.categoryId as string
+      );
+      if (!category)
+        throw new AppError(StatusCodes.NOT_FOUND, "category not found");
+      equipedFeatures[category.title] = item.svgaFile;
+    }
+  }
+  return equipedFeatures;
+}

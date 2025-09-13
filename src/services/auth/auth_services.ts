@@ -49,6 +49,7 @@ import { IPortalUserRepository } from "../../repository/portal_user/portal_user_
 import { IMyBucketRepository } from "../../repository/store/my_bucket_repository";
 import { IStoreCategoryRepository } from "../../repository/store/store_category_repository";
 import { IStoreItem } from "../../models/store/store_item_model";
+import { getEquipedItemObjects } from "../../core/Utils/helper_functions";
 
 export default class AuthService implements IAuthService {
   UserRepository: IUserRepository;
@@ -177,33 +178,9 @@ export default class AuthService implements IAuthService {
     const user = await this.UserRepository.findUserById(id);
     if (!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
     const userStats = await this.UserStatsRepository.getUserStats(id);
-    const equipedBuccket = await this.BucketRepository.getEquipedBuckets(id);
-    let equipedFeatures: Record<string, any> = {};
-    for (let i = 0; i < equipedBuccket.length; i++) {
-      if (
-        typeof equipedBuccket[i].itemId == "string" ||
-        equipedBuccket[i].itemId instanceof Types.ObjectId
-      )
-        throw new AppError(StatusCodes.CONFLICT, "itemId is not populated");
-      const item = equipedBuccket[i].itemId as IStoreItem;
-      if (item.bundleFiles && item.bundleFiles.length > 0) {
-        for (let j = 0; j < item.bundleFiles.length; j++) {
-          equipedFeatures[item.bundleFiles[j].categoryName] =
-            item.bundleFiles[j].svgaFile;
-        }
-      } else {
-        const category = await this.CategoryRepository.getCategoryById(
-          item.categoryId as string
-        );
-        if (!category)
-          throw new AppError(StatusCodes.NOT_FOUND, "category not found");
-        equipedFeatures[category.title] = item.svgaFile;
-      }
-    }
-
     const userWithStats = user.toObject();
     userWithStats.stats = userStats;
-    userWithStats.equippedStoreItems = equipedFeatures;
+    userWithStats.equippedStoreItems = await getEquipedItemObjects(this.BucketRepository, this.CategoryRepository, id);
     return userWithStats;
   }
 
