@@ -9,6 +9,19 @@ import User from "../../models/user/user_model";
 import { IUserDocument } from "../../models/user/user_model_interface";
 import { Socket } from "net";
 import mongoose from "mongoose";
+import MyBucketRepository from "../../repository/store/my_bucket_repository";
+import MyBucketModel from "../../models/store/my_bucket_model";
+import StoreCategoryRepository from "../../repository/store/store_category_repository";
+import StoreCategoryModel from "../../models/store/store_category_model";
+
+export interface IMemberDetails {
+  name: string;
+  avatar: string;
+  uid: string;
+  country: string;
+  _id: mongoose.Schema.Types.ObjectId | string;
+  equipedStoreItems: Record<string, string>;
+}
 
 export interface RoomData {
   hostId: string;
@@ -16,13 +29,7 @@ export interface RoomData {
   hostDetails?: IUserDocument | null;
   hostCoins: number;
   members: Set<string>;
-  membersDetails: {
-    name: string;
-    avatar: string;
-    uid: string;
-    country: string;
-    _id: mongoose.Schema.Types.ObjectId | string;
-  }[];
+  membersDetails: IMemberDetails[];
   messages: {
     name: string;
     avatar: string;
@@ -30,30 +37,13 @@ export interface RoomData {
     country: string;
     _id: mongoose.Schema.Types.ObjectId | string;
     text: string;
+    equipedStoreItems: Record<string, string>;
   }[];
-  broadcastersDetails: {
-    name: string;
-    avatar: string;
-    uid: string;
-    country: string;
-    _id: mongoose.Schema.Types.ObjectId | string;
-  }[];
+  broadcastersDetails: IMemberDetails[];
   bannedUsers: Set<string>;
   brodcasters: Set<string>;
-  adminDetails: {
-    name: string;
-    avatar: string;
-    uid: string;
-    country: string;
-    _id: mongoose.Schema.Types.ObjectId | string;
-  } | null;
-  callRequests: Set<{
-    name: string;
-    avatar: string;
-    uid: string;
-    country: string;
-    _id: mongoose.Schema.Types.ObjectId | string;
-  }>;
+  adminDetails: IMemberDetails | null;
+  callRequests: Set<IMemberDetails>;
   mutedUsers: Set<string>;
   title: string;
 }
@@ -64,6 +54,8 @@ export default class SocketServer {
   private onlineUsers = new Map<string, string>(); // Map<userId, socketId>
   private hostedRooms = {} as Record<string, RoomData>;
   private userRepo = new UserRepository(User);
+  private bucketRepo = new MyBucketRepository(MyBucketModel);
+  private categoryRepo = new StoreCategoryRepository(StoreCategoryModel);
 
   // Private constructor: enforce singleton usage
   private constructor(server: HttpServer) {
@@ -105,7 +97,9 @@ export default class SocketServer {
         socket,
         this.onlineUsers,
         this.hostedRooms,
-        this.userRepo
+        this.userRepo,
+        this.bucketRepo,
+        this.categoryRepo
       );
 
       socket.on("disconnect", () => {
@@ -182,5 +176,5 @@ export default class SocketServer {
     if (room) {
       room.hostCoins += coin;
     }
-  } 
+  }
 }

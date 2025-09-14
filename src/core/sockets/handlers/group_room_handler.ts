@@ -1,11 +1,14 @@
 import { Socket, Server } from "socket.io";
 import { RoomTypes, SocketChannels } from "../../Utils/enums";
 import { StatusCodes } from "http-status-codes";
-import { RoomData } from "../socket_server";
+import { IMemberDetails, RoomData } from "../socket_server";
 import AppError from "../../errors/app_errors";
 import { IUserDocument } from "../../../models/user/user_model_interface";
 import { IUserRepository } from "../../../repository/user_repository";
 import mongoose from "mongoose";
+import { IMyBucketRepository } from "../../../repository/store/my_bucket_repository";
+import { IStoreCategoryRepository } from "../../../repository/store/store_category_repository";
+import { getEquipedItemObjects } from "../../Utils/helper_functions";
 
 export interface ISerializedRoomData {
   hostId: string;
@@ -13,13 +16,7 @@ export interface ISerializedRoomData {
   hostDetails?: IUserDocument | null;
   hostCoins: number;
   members: string[];
-  membersDetails: {
-    name: string;
-    avatar: string;
-    uid: string;
-    country: string;
-    _id: mongoose.Schema.Types.ObjectId | string;
-  }[];
+  membersDetails: IMemberDetails[];
   bannedUsers: string[];
   brodcasters: string[];
   messages: {
@@ -29,28 +26,11 @@ export interface ISerializedRoomData {
     country: string;
     _id: mongoose.Schema.Types.ObjectId | string;
     text: string;
+    equipedStoreItems: Record<string, string>;
   }[];
-  broadcastersDetails: {
-    name: string;
-    avatar: string;
-    uid: string;
-    country: string;
-    _id: mongoose.Schema.Types.ObjectId | string;
-  }[];
-  adminDetails: {
-    name: string;
-    avatar: string;
-    uid: string;
-    country: string;
-    _id: mongoose.Schema.Types.ObjectId | string;
-  } | null;
-  callRequests: {
-    name: string;
-    avatar: string;
-    uid: string;
-    country: string;
-    _id: mongoose.Schema.Types.ObjectId | string;
-  }[];
+  broadcastersDetails: IMemberDetails[];
+  adminDetails: IMemberDetails | null;
+  callRequests: IMemberDetails[];
   mutedUsers: string[];
   title: string;
 }
@@ -60,7 +40,9 @@ export async function registerGroupRoomHandler(
   socket: Socket,
   onlineUsers: Map<string, string>,
   hostedRooms: Record<string, RoomData>,
-  userRepository: IUserRepository
+  userRepository: IUserRepository,
+  bucketRepository: IMyBucketRepository,
+  categoryRepository: IStoreCategoryRepository
 ) {
   const userId = socket.handshake.query.userId as string;
   const userDetails = await userRepository.getUserDetailsSelectedField(userId, [
@@ -69,6 +51,13 @@ export async function registerGroupRoomHandler(
     "uid",
     "country",
   ]);
+  const userObj = userDetails.toObject();
+  userObj.equipedStoreItems = await getEquipedItemObjects(
+    bucketRepository,
+    categoryRepository,
+    userId
+  );
+
 
   if (!userId) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
 
@@ -96,6 +85,7 @@ export async function registerGroupRoomHandler(
       country: userDetails.country as string,
       _id: userDetails._id as string,
       text: messageText,
+      equipedStoreItems: userObj.equipedStoreItems,
     };
     if (room.messages.length >= 100) room.messages.shift();
     room.messages.push(message);
@@ -135,6 +125,7 @@ export async function registerGroupRoomHandler(
           uid: userDetails.uid as string,
           country: userDetails.country as string,
           _id: userDetails._id as string,
+          equipedStoreItems: userObj.equipedStoreItems,
         },
       ],
       messages: [],
@@ -260,6 +251,7 @@ export async function registerGroupRoomHandler(
       country: broadcaster.country as string,
       _id: broadcaster._id as string,
       text: `Has been made an admin`,
+      equipedStoreItems: broadcaster.equipedStoreItems,
     };
     io.to(roomId).emit(SocketChannels.sendMessage, message);
     io.to(roomId).emit(SocketChannels.makeAdmin, {
@@ -298,6 +290,12 @@ export async function registerGroupRoomHandler(
       targetId,
       ["name", "avatar", "uid", "country"]
     );
+    const targetEquipedStoreItems = await getEquipedItemObjects(
+      bucketRepository,
+      categoryRepository,
+      targetId
+    );
+
     let message = {
       name: targetIdDetails.name as string,
       avatar: targetIdDetails.avatar as string,
@@ -305,6 +303,7 @@ export async function registerGroupRoomHandler(
       country: targetIdDetails.country as string,
       _id: targetIdDetails._id as string,
       text: `left the room`,
+      equipedStoreItems: targetEquipedStoreItems,
     };
 
     if (room.mutedUsers.has(targetId)) {
@@ -383,6 +382,7 @@ export async function registerGroupRoomHandler(
       country: userDetails.country as string,
       _id: userDetails._id as string,
       text: `Has requested to join the call`,
+      equipedStoreItems: userObj.equipedStoreItems,
     };
     io.to(roomId).emit(SocketChannels.sendMessage, message);
 
@@ -392,6 +392,7 @@ export async function registerGroupRoomHandler(
       uid: userDetails.uid as string,
       country: userDetails.country as string,
       _id: userDetails._id as string,
+      equipedStoreItems: userObj.equipedStoreItems,
     });
     const hostSocketId = onlineUsers.get(room.hostId);
     if (hostSocketId) {
@@ -490,12 +491,19 @@ export async function registerGroupRoomHandler(
       targetId,
       ["name", "avatar", "uid", "country"]
     );
+    const targetEquipedStoreItems = await getEquipedItemObjects(
+      bucketRepository,
+      categoryRepository,
+      targetId
+    );
+
     room.broadcastersDetails.push({
       name: targetUser.name as string,
       avatar: targetUser.avatar as string,
       uid: targetUser.uid as string,
       country: targetUser.country as string,
       _id: targetUser._id as string,
+      equipedStoreItems: targetEquipedStoreItems,
     });
 
     const targetIdDetails = await userRepository.getUserDetailsSelectedField(
@@ -510,6 +518,7 @@ export async function registerGroupRoomHandler(
       country: targetIdDetails.country as string,
       _id: targetIdDetails._id as string,
       text: `Has joined the call`,
+      equipedStoreItems: targetEquipedStoreItems,
     };
     io.to(roomId).emit(SocketChannels.sendMessage, message);
 
@@ -618,7 +627,11 @@ export async function registerGroupRoomHandler(
       targetId,
       ["name", "avatar", "uid", "country"]
     );
-
+    const targetEquipedStoreItems = await getEquipedItemObjects(
+      bucketRepository,
+      categoryRepository,
+      targetId
+    );
     const message = {
       name: targetIdDetails.name as string,
       avatar: targetIdDetails.avatar as string,
@@ -626,6 +639,7 @@ export async function registerGroupRoomHandler(
       country: targetIdDetails.country as string,
       _id: targetIdDetails._id as string,
       text: `Has been removed from call`,
+      equipedStoreItems: targetEquipedStoreItems,
     };
     io.to(roomId).emit(SocketChannels.sendMessage, message);
     const targetSocketId = onlineUsers.get(targetId);
@@ -676,6 +690,7 @@ export async function registerGroupRoomHandler(
       uid: userDetails.uid as string,
       country: userDetails.country as string,
       _id: userDetails._id as string,
+      equipedStoreItems: userObj.equipedStoreItems,
     });
     socket.join(roomId);
     const message = {
@@ -685,6 +700,7 @@ export async function registerGroupRoomHandler(
       country: userDetails.country as string,
       _id: userDetails._id as string,
       text: "joined the room",
+      equipedStoreItems: userObj.equipedStoreItems,
     };
     io.to(roomId).emit(SocketChannels.sendMessage, message);
     io.to(roomId).emit(SocketChannels.userJoined, userDetails);
@@ -736,6 +752,7 @@ export async function registerGroupRoomHandler(
       country: userDetails.country as string,
       _id: userDetails._id as string,
       text: `left the room`,
+      equipedStoreItems: userObj.equipedStoreItems,
     };
     io.to(roomId).emit(SocketChannels.sendMessage, message);
 
@@ -828,6 +845,12 @@ export async function registerGroupRoomHandler(
       ["name", "avatar", "uid", "country"]
     );
 
+    const targetEquipedStoreItems = await getEquipedItemObjects(
+      bucketRepository,
+      categoryRepository,
+      targetId
+    );
+
     const message = {
       name: targetIdDetails.name as string,
       avatar: targetIdDetails.avatar as string,
@@ -835,6 +858,7 @@ export async function registerGroupRoomHandler(
       country: targetIdDetails.country as string,
       _id: targetIdDetails._id as string,
       text: `Has been banned from this room`,
+      equipedStoreItems: targetEquipedStoreItems,
     };
 
     io.to(roomId).emit(SocketChannels.sendMessage, message);
