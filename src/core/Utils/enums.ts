@@ -39,7 +39,8 @@ export enum DatabaseNames {
   StoreCategory = 'store_categories',
   StoreItem = 'store_items',
   MyBucketItem = "my_bucket_items",
-  StoreItemDeleteHistory= "store_item_delete_history"
+  StoreItemDeleteHistory= "store_item_delete_history",
+  RoomBonusRecord = "room_bonus_records",
 }
 
 export enum ReelStatus {

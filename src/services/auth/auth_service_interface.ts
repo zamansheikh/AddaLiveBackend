@@ -9,7 +9,10 @@ import { IUserEntity } from "../../entities/user_entity_interface";
 import { IUserDocument } from "../../models/user/user_model_interface";
 import { IUSerStatsDocument } from "../../entities/userstats/userstats_interface";
 import { IWithdrawBonusDocument } from "../../models/room/withdraw_bonus_model";
-import { IAgencyJoinRequest, IAgencyJoinRequestDocument } from "../../models/request/agencyJoinRequset";
+import {
+  IAgencyJoinRequest,
+  IAgencyJoinRequestDocument,
+} from "../../models/request/agencyJoinRequset";
 
 export interface IGiftUser {
   myId: string;
@@ -29,7 +32,7 @@ export interface IAuthService {
     id,
     profileData,
     avatar,
-    coverPicture
+    coverPicture,
   }: {
     id: string;
     profileData: Partial<Record<string, any>>;
@@ -59,7 +62,7 @@ export interface IAuthService {
     id: string,
     totalTime: number,
     type: StreamType
-  ): Promise<{bonus: number}>;
+  ): Promise<{ bonus: number }>;
   setChatPrivacy(payload: {
     id: string;
     whoCanTextMe: WhoCanTextMe;
@@ -73,10 +76,19 @@ export interface IAuthService {
     totalSalary: number;
   }): Promise<IWithdrawBonusDocument>;
 
-  agencyJoinRequest(data: IAgencyJoinRequest): Promise<IAgencyJoinRequestDocument>;
-  joinRequestStatus(userId: string) :  Promise<{
+  agencyJoinRequest(
+    data: IAgencyJoinRequest
+  ): Promise<IAgencyJoinRequestDocument>;
+  joinRequestStatus(userId: string): Promise<{
     status: AgencyJoinStatus;
     agencyDetails: { name: string; hostCount: number } | null;
   }>;
   agencyCancelRequest(userId: string): Promise<IAgencyJoinRequestDocument>;
+
+  getLiveStatusCounts(hostId: string): Promise<{
+    dayCount: number;
+    hourCount: number;
+    audioHour: number;
+    videoHour: number;
+  }>;
 }

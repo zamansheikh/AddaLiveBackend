@@ -47,6 +47,9 @@ import MyBucketRepository from "../repository/store/my_bucket_repository";
 import MyBucketModel from "../models/store/my_bucket_model";
 import StoreCategoryRepository from "../repository/store/store_category_repository";
 import StoreCategoryModel from "../models/store/store_category_model";
+import RoomBonusRecordRepository from "../repository/room/room_bonus_records_repository";
+import RoomBonusRecordsModel from "../models/room/bonus_records_model";
+import { UserRoles } from "../core/Utils/enums";
 
 const router = express.Router();
 
@@ -77,6 +80,7 @@ const bucketRepository = new MyBucketRepository(MyBucketModel);
 const categoryRepository = new StoreCategoryRepository(StoreCategoryModel);
 
 const portalUserRepository = new PortalUserRepository(PortalUser);
+const roomBonousRepository = new RoomBonusRecordRepository(RoomBonusRecordsModel);
 
 const authService = new AuthService(
   userRepository,
@@ -97,7 +101,8 @@ const authService = new AuthService(
   agencyJoinRequestRepository,
   portalUserRepository,
   bucketRepository,
-  categoryRepository
+  categoryRepository,
+  roomBonousRepository
 );
 const authController = new AuthController(authService);
 
@@ -151,6 +156,9 @@ router.post(
 router.route("/agency-join").post(authenticate(), authController.agencyJoinRequest)
     .get(authenticate(), authController.agencyJoinRequestStatus)
     .delete(authenticate(), authController.agencyCancelRequest);
+
+router.route("/live-count/:hostId").get(authenticate(), authController.getLiveCountStatus);
+
 
 
 export default router;

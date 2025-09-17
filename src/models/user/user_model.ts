@@ -21,6 +21,7 @@ const userSchema = new mongoose.Schema<IUserDocument>(
       default: UserActiveStatus.offline,
     },
     userPermissions: [{ type: String }],
+    totalBoughtCoins: { type: Number, default: 0 },
     level: { type: Number, default: 0 },
     avatar: { type: String },
     coverPicture: { type: String },

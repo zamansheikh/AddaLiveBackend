@@ -10,7 +10,7 @@ import Admin from "../models/admin/admin_model";
 import PortalUserRepository from "../repository/portal_user/portal_user_repository";
 import PortalUser from "../models/portal_users/protal_user_model";
 import SharedPowerService from "../services/admin/portal_user_service";
-import { PortalUserControllers } from "../controllers/admin/portal_user_controller";
+import { coinExperiment, PortalUserControllers } from "../controllers/admin/portal_user_controller";
 import { upload } from "../core/middlewares/multer";
 import AgencyWithdrawModel from "../models/room/agency_withdraw_model";
 import AgencyWithdrawRepository from "../repository/room/agency_withdraw_repository";
@@ -161,7 +161,6 @@ router
     authenticate([UserRoles.Agency]),
     portalUserControllers.updateJoinRequestStatus
   );
-
 
 
 export default router;

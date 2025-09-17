@@ -18,6 +18,7 @@ export interface UserData {
     lastName?: string;
     gender?: Gender;
     birthday?: Date;
+    totalBoughtCoins: number;
     level?: number;
     country?: string;
     whoCanTextMe?: WhoCanTextMe;

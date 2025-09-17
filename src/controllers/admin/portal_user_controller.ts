@@ -6,6 +6,8 @@ import { StatusCodes } from "http-status-codes";
 import sendResponse from "../../core/Utils/send_response";
 import { UserRoles, WithdrawAccountTypes } from "../../core/Utils/enums";
 import { validatePromoteUserPermission, validateStatus } from "../../core/Utils/helper_functions";
+import User from "../../models/user/user_model";
+import { IUserModel } from "../../models/user/user_model_interface";
 
 export class PortalUserControllers {
   Service: ISharedPowerService;
@@ -82,11 +84,6 @@ export class PortalUserControllers {
 
   searchUsersByEmail = catchAsync(async (req: Request, res: Response) => {
     const { email } = req.query;
-    if (!email)
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        "Email query parameter is required"
-      );
     const result = await this.Service.searchUserEmail(
       email as string,
       req.query
@@ -315,3 +312,4 @@ export class PortalUserControllers {
     });
   });
 }
+

@@ -155,16 +155,30 @@ export function getWithdrawDateBoundaires(): { gte: Date; lte: Date } {
   const date = today.getDate();
   const lastDate = new Date(year, month + 1, 0).getDate();
 
-  if (date == 15) {
+  if (date <= 15) {
     return {
       gte: new Date(year, month, 1, 0, 0, 0),
-      lte: new Date(year, month, 15, 23, 59, 59),
+      lte: new Date(year, month, date, 23, 59, 59),
     };
-  } else if (date == lastDate) {
+  } else if ( date > 15 &&date <= lastDate) {
     return {
       gte: new Date(year, month, 15, 0, 0, 0),
-      lte: new Date(year, month, lastDate, 23, 59, 59),
+      lte: new Date(year, month, date, 23, 59, 59),
     };
+  } else
+    throw new AppError(StatusCodes.BAD_REQUEST, "today is not salary date");
+}
+
+export function getNextSalaryDate(): Date {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth(); // 0-indexed
+  const date = today.getDate();
+  const lastDate = new Date(year, month + 1, 0).getDate();
+  if (date <= 15) {
+    return new Date(year, month, 15, 23, 59, 59);
+  } else if (date > 15 && date <= lastDate) {
+    return new Date(year, month, lastDate, 23, 59, 59);
   } else
     throw new AppError(StatusCodes.BAD_REQUEST, "today is not salary date");
 }
@@ -218,4 +232,13 @@ export async function getEquipedItemObjects(
     }
   }
   return equipedFeatures;
+}
+
+export function determineUserLevel(coins: number): number {
+  for (let i = 0; i < userLevels.length; i++) {
+    if (coins <= userLevels[i]) {
+      return i + 1; // Levels start from 1
+    }
+  }
+  return 40; // at maximum level
 }

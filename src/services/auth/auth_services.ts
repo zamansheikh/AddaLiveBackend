@@ -49,7 +49,12 @@ import { IPortalUserRepository } from "../../repository/portal_user/portal_user_
 import { IMyBucketRepository } from "../../repository/store/my_bucket_repository";
 import { IStoreCategoryRepository } from "../../repository/store/store_category_repository";
 import { IStoreItem } from "../../models/store/store_item_model";
-import { getEquipedItemObjects } from "../../core/Utils/helper_functions";
+import {
+  getEquipedItemObjects,
+  getNextSalaryDate,
+} from "../../core/Utils/helper_functions";
+import { IRoomBonusRecords } from "../../models/room/bonus_records_model";
+import { IRoomBonusRecordsRepository } from "../../repository/room/room_bonus_records_repository";
 
 export default class AuthService implements IAuthService {
   UserRepository: IUserRepository;
@@ -71,6 +76,7 @@ export default class AuthService implements IAuthService {
   PortalUserRepository: IPortalUserRepository;
   BucketRepository: IMyBucketRepository;
   CategoryRepository: IStoreCategoryRepository;
+  RoomBonusRecordsRepository: IRoomBonusRecordsRepository;
 
   constructor(
     UserRepository: IUserRepository,
@@ -91,7 +97,8 @@ export default class AuthService implements IAuthService {
     AgencyJoinRequestRepository: IAgencyJoinRequestRepository,
     PortalUserRepository: IPortalUserRepository,
     BucketRepository: IMyBucketRepository,
-    CategoryRepository: IStoreCategoryRepository
+    CategoryRepository: IStoreCategoryRepository,
+    RoomBonusRecords: IRoomBonusRecordsRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
@@ -112,6 +119,7 @@ export default class AuthService implements IAuthService {
     this.PortalUserRepository = PortalUserRepository;
     this.BucketRepository = BucketRepository;
     this.CategoryRepository = CategoryRepository;
+    this.RoomBonusRecordsRepository = RoomBonusRecords;
   }
 
   async registerWithGoogle(UserData: IUserEntity) {
@@ -239,7 +247,7 @@ export default class AuthService implements IAuthService {
       throw new AppError(StatusCodes.NOT_FOUND, "Invalid user Id");
     let user = await this.UserRepository.getUserDetails({ Id: id, myId });
     if (!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
-    (user as any).equippedStoreItems= await getEquipedItemObjects(
+    (user as any).equippedStoreItems = await getEquipedItemObjects(
       this.BucketRepository,
       this.CategoryRepository,
       id
@@ -438,6 +446,11 @@ export default class AuthService implements IAuthService {
         StatusCodes.CONFLICT,
         "You have reached the maximum bonus for today"
       );
+    const record: IRoomBonusRecords = {
+      bonusDiamonds: 0,
+      userId: id,
+      expireAt: getNextSalaryDate(),
+    };
     // checking the id validaty;
     const user = await this.UserRepository.findUserById(id);
     if (!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
@@ -472,12 +485,8 @@ export default class AuthService implements IAuthService {
             StatusCodes.INTERNAL_SERVER_ERROR,
             "Creating History failed"
           );
-        const up = await this.UserStatsRepository.updateDiamonds(id, 3000);
-        if (!up)
-          throw new AppError(
-            StatusCodes.INTERNAL_SERVER_ERROR,
-            "updating user stats failed"
-          );
+        record.bonusDiamonds = 3000;
+        await this.RoomBonusRecordsRepository.createRecord(record);
         return { bonus: 3000 };
       }
     } else {
@@ -492,15 +501,10 @@ export default class AuthService implements IAuthService {
           StatusCodes.INTERNAL_SERVER_ERROR,
           "Creating History failed"
         );
-      const up = await this.UserStatsRepository.updateDiamonds(
-        id,
-        totalTime >= 50 ? 2000 : 0
-      );
-      if (!up)
-        throw new AppError(
-          StatusCodes.INTERNAL_SERVER_ERROR,
-          "updating user stats failed"
-        );
+      if (totalTime >= 50) {
+        record.bonusDiamonds = 2000;
+        await this.RoomBonusRecordsRepository.createRecord(record);
+      }
       return { bonus: totalTime >= 50 ? 2000 : 0 };
     }
   }
@@ -534,7 +538,11 @@ export default class AuthService implements IAuthService {
     const userstats = await this.UserStatsRepository.getUserStats(hostId);
     if (!userstats)
       throw new AppError(StatusCodes.NOT_FOUND, "user stats not found");
-    if (userstats.diamonds! < totalSalary)
+    const bonusDiamonds = await this.RoomBonusRecordsRepository.readTotalBonus(
+      hostId
+    );
+
+    if (userstats.diamonds! + bonusDiamonds < totalSalary)
       throw new AppError(StatusCodes.BAD_REQUEST, "not enough diamonds");
 
     const dayCount = await this.WithDrawHistoryRepository.getDayCount(hostId);
@@ -565,7 +573,7 @@ export default class AuthService implements IAuthService {
 
     await this.UserStatsRepository.updateDiamonds(
       hostId,
-      -totalSalary,
+      -(totalSalary - bonusDiamonds),
       session
     );
 
@@ -756,5 +764,28 @@ export default class AuthService implements IAuthService {
     }
 
     throw new AppError(StatusCodes.NOT_FOUND, "request not found");
+  }
+
+  async getLiveStatusCounts(hostId: string): Promise<{
+    dayCount: number;
+    hourCount: number;
+    audioHour: number;
+    videoHour: number;
+  }> {
+    const dayCount = await this.WithDrawHistoryRepository.getDayCount(hostId);
+    const hourCount = await this.WithDrawHistoryRepository.getTimeCount(hostId);
+    const audioTimeCount = await this.WithDrawHistoryRepository.getAudioHour(
+      hostId
+    );
+    const videoTimeCount = await this.WithDrawHistoryRepository.getVideoHour(
+      hostId
+    );
+
+    return {
+      dayCount,
+      hourCount,
+      audioHour: audioTimeCount,
+      videoHour: videoTimeCount,
+    };
   }
 }

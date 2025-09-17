@@ -222,4 +222,10 @@ export default class AuthController {
       message: "Request to join agency cancelled successfully"
     });
   });
+
+  getLiveCountStatus = catchAsync(async (req: Request, res: Response) => {
+    const { hostId } = req.params;
+    const counts = await this.authService.getLiveStatusCounts(hostId);
+    sendResponseEnhanced(res, counts);
+  });
 }

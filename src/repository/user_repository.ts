@@ -68,6 +68,7 @@ export interface IUserRepository {
     users: IUserDocument[];
   }>;
 
+
   getUserCounts(role: UserRoles): Promise<number>;
   getHostCounts(parentCreator: string): Promise<number>;
 }
@@ -163,9 +164,11 @@ export default class UserRepository implements IUserRepository {
   }
 
   async findUserByIdAndUpdate(id: string, payload: Record<string, any>) {
-    return await this.UserModel.findByIdAndUpdate(id, payload, {
+    const udpated =  await this.UserModel.findByIdAndUpdate(id, payload, {
       new: true,
     }).select("-password");
+    if(!udpated) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+    return udpated;
   }
 
   async searchUserByEmail(
@@ -173,7 +176,7 @@ export default class UserRepository implements IUserRepository {
     query: Record<string, unknown>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] } | null> {
     const qb = new QueryBuilder(this.UserModel, query);
-    const res = qb.find({ email: { $regex: email, $options: "i" } });
+    const res = qb.search(["email", "uid"]).sort();
     const users = await res.paginate().sort().exec();
     const pagination = await res.countTotal();
     return { users, pagination };
@@ -378,6 +381,8 @@ export default class UserRepository implements IUserRepository {
     const pagination = await res.countTotal();
     return { users, pagination };
   }
+
+
 
   async getUserCounts(role: UserRoles): Promise<number> { 
     return await this.UserModel.countDocuments({ userRole: role });

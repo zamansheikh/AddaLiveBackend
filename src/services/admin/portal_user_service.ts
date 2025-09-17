@@ -14,7 +14,10 @@ import { IPortalUserRepository } from "../../repository/portal_user/portal_user_
 import { IUserRepository } from "../../repository/user_repository";
 import IUserStatsRepository from "../../repository/userstats/userstats_repository_interface";
 import AppError from "../../core/errors/app_errors";
-import { canUserUpdate } from "../../core/Utils/helper_functions";
+import {
+  canUserUpdate,
+  determineUserLevel,
+} from "../../core/Utils/helper_functions";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -103,7 +106,7 @@ export interface ISharedPowerService {
   updateJoinRequestStatus(
     reqId: string,
     status: StatusTypes
-  ): Promise<{status: StatusTypes}>;
+  ): Promise<{ status: StatusTypes }>;
 }
 
 export default class SharedPowerService implements ISharedPowerService {
@@ -317,7 +320,7 @@ export default class SharedPowerService implements ISharedPowerService {
     const session = await mongoose.startSession();
     session.startTransaction();
 
-    // checking if i have sufficient funds
+    // checking if i have sufficient funds (admin merchant or reseller)
     if (myProfile.coins! < coins)
       throw new AppError(StatusCodes.BAD_REQUEST, `Insufficient funds`);
 
@@ -326,7 +329,7 @@ export default class SharedPowerService implements ISharedPowerService {
       await this.AdminRepository.updateCoin(myId, -coins, session);
     else await this.PortalUserRepository.updateCoin(myId, -coins, session);
 
-    // adding coin to the target user
+    // adding coin to the target user (user or host)
     let transactionUpdate;
     if (userRole == UserRoles.Merchant || userRole == UserRoles.Reseller)
       transactionUpdate = await this.PortalUserRepository.updateCoin(
@@ -334,12 +337,22 @@ export default class SharedPowerService implements ISharedPowerService {
         coins,
         session
       );
-    else
+    else {
+      const userProfile = await this.UserRepository.findUserById(userId);
+      if (!userProfile)
+        throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+      const newLevel = determineUserLevel(userProfile.totalBoughtCoins + coins);
+      await this.UserRepository.findUserByIdAndUpdate(userId, {
+        totalBoughtCoins: userProfile.totalBoughtCoins + coins,
+        userLevel: newLevel,
+      });
       transactionUpdate = await this.UserStatsRepository.updateCoins(
         userId,
         coins,
         session
       );
+    }
+
     // checking if the transaction succeeded
     if (!transactionUpdate)
       throw new AppError(
@@ -460,7 +473,7 @@ export default class SharedPowerService implements ISharedPowerService {
     const existingWithdraw =
       await this.AgencyWithdrawRepository.getWithdrawWithStatus(
         id,
-        StatusTypes.pending 
+        StatusTypes.pending
       );
     if (existingWithdraw)
       throw new AppError(
@@ -512,7 +525,9 @@ export default class SharedPowerService implements ISharedPowerService {
     return withdraw;
   }
 
-  async getAgencyWithdrawList(query: Record<string, any>): Promise<{ pagination: IPagination; data: IAgencyWithdrawDocument[]; }> {
+  async getAgencyWithdrawList(
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; data: IAgencyWithdrawDocument[] }> {
     return await this.AgencyWithdrawRepository.getAgencyWithdrawlist(query);
   }
 
@@ -545,24 +560,38 @@ export default class SharedPowerService implements ISharedPowerService {
     );
     return deletedAgency;
   }
-  async getAllJoinRequest(myId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IAgencyJoinRequest[]; }> {
+  async getAllJoinRequest(
+    myId: string,
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; data: IAgencyJoinRequest[] }> {
     return await this.AgencyJoinRequestRepository.getRequests(myId, query);
   }
 
-  async updateJoinRequestStatus(reqId: string, status: StatusTypes): Promise<{status: StatusTypes}> {
-    const request = await this.AgencyJoinRequestRepository.getRequestById(reqId);
-    if (!request) throw new AppError(StatusCodes.NOT_FOUND, "Request not found");
-    if(status == StatusTypes.rejected){
+  async updateJoinRequestStatus(
+    reqId: string,
+    status: StatusTypes
+  ): Promise<{ status: StatusTypes }> {
+    const request = await this.AgencyJoinRequestRepository.getRequestById(
+      reqId
+    );
+    if (!request)
+      throw new AppError(StatusCodes.NOT_FOUND, "Request not found");
+    if (status == StatusTypes.rejected) {
       await this.AgencyJoinRequestRepository.deleteRequest(reqId);
-      return {status: StatusTypes.rejected};
+      return { status: StatusTypes.rejected };
     }
-    if(status == StatusTypes.accepted){
-      await this.UserRepository.findUserByIdAndUpdate(request.userId as string, {
-        userRole:UserRoles.Host,
-        parentCreator: request.agencyId,
-      });
+    if (status == StatusTypes.accepted) {
+      await this.UserRepository.findUserByIdAndUpdate(
+        request.userId as string,
+        {
+          userRole: UserRoles.Host,
+          parentCreator: request.agencyId,
+        }
+      );
     }
-    const update = await this.AgencyJoinRequestRepository.updateRequest(reqId, {status});
-    return {status: update.status!};
+    const update = await this.AgencyJoinRequestRepository.updateRequest(reqId, {
+      status,
+    });
+    return { status: update.status! };
   }
 }
