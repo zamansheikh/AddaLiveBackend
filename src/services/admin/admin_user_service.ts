@@ -5,7 +5,7 @@ import {
   IUserStats,
   IUSerStatsDocument,
 } from "../../entities/userstats/userstats_interface";
-import IUserStatsRepository from "../../repository/userstats/userstats_repository_interface";
+import IUserStatsRepository from "../../repository/users/userstats_repository_interface";
 import { IAdminRepository } from "../../repository/admin/admin_repository";
 import { IAdmin, IAdminDocument } from "../../entities/admin/admin_interface";
 import bcrypt from "bcrypt";
@@ -18,7 +18,7 @@ import {
   StatusTypes,
 } from "../../core/Utils/enums";
 import { IPagination } from "../../core/Utils/query_builder";
-import { IUserRepository } from "../../repository/user_repository";
+import { IUserRepository } from "../../repository/users/user_repository";
 import {
   canUserUpdate,
   getPercentageFromHostCount,
@@ -52,6 +52,8 @@ import { ICoinHistoryRepository } from "../../repository/coins/coinHistoryReposi
 import { ICoinHistoryDocument } from "../../models/coins/coinHistoryModel";
 import { IAgencyWithdrawDocument } from "../../models/room/agency_withdraw_model";
 import { IAgencyWithdrawRepository } from "../../repository/room/agency_withdraw_repository";
+import { ILevelTagBg, ILevelTagBgDocument } from "../../models/user/level_tag_bg_model";
+import { ILevelTagBgRepository } from "../../repository/users/level_tag_bg_repository";
 
 export interface IAdminUserService {
   loginAdmin(credentials: {
