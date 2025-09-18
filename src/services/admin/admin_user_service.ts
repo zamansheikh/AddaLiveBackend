@@ -21,6 +21,7 @@ import { IPagination } from "../../core/Utils/query_builder";
 import { IUserRepository } from "../../repository/users/user_repository";
 import {
   canUserUpdate,
+  getCloudinaryPublicId,
   getPercentageFromHostCount,
   isVideoFile,
 } from "../../core/Utils/helper_functions";
@@ -52,7 +53,10 @@ import { ICoinHistoryRepository } from "../../repository/coins/coinHistoryReposi
 import { ICoinHistoryDocument } from "../../models/coins/coinHistoryModel";
 import { IAgencyWithdrawDocument } from "../../models/room/agency_withdraw_model";
 import { IAgencyWithdrawRepository } from "../../repository/room/agency_withdraw_repository";
-import { ILevelTagBg, ILevelTagBgDocument } from "../../models/user/level_tag_bg_model";
+import {
+  ILevelTagBg,
+  ILevelTagBgDocument,
+} from "../../models/user/level_tag_bg_model";
 import { ILevelTagBgRepository } from "../../repository/users/level_tag_bg_repository";
 
 export interface IAdminUserService {
@@ -174,7 +178,11 @@ export interface IAdminUserService {
     status: StatusTypes
   ): Promise<IAgencyWithdrawDocument>;
 
-  createLevelTagBg(level: string, tag: Express.Multer.File, bg: Express.Multer.File): Promise<ILevelTagBgDocument>;
+  createLevelTagBg(
+    level: string,
+    tag: Express.Multer.File,
+    bg: Express.Multer.File
+  ): Promise<ILevelTagBgDocument>;
   getLevelTagBgs(): Promise<ILevelTagBgDocument[]>;
   updateLevelTagBg(
     id: string,
@@ -1016,18 +1024,30 @@ export default class AdminUserService implements IAdminUserService {
     return history;
   }
 
-  async getAgencyWithdrawList(query: Record<string, unknown>): Promise<{ pagination: IPagination; data: IAgencyWithdrawDocument[]; }> {
+  async getAgencyWithdrawList(
+    query: Record<string, unknown>
+  ): Promise<{ pagination: IPagination; data: IAgencyWithdrawDocument[] }> {
     return await this.AgencyWithdrawRepository.getAgencyWithdrawlist(query);
   }
 
-  async updateAgencyWithdrawStatus(id: string, status: StatusTypes): Promise<IAgencyWithdrawDocument> {
-    return await this.AgencyWithdrawRepository.updateWithdraw(id, {status: status});
+  async updateAgencyWithdrawStatus(
+    id: string,
+    status: StatusTypes
+  ): Promise<IAgencyWithdrawDocument> {
+    return await this.AgencyWithdrawRepository.updateWithdraw(id, {
+      status: status,
+    });
   }
 
-  async createLevelTagBg(level: string, tag: Express.Multer.File, bg: Express.Multer.File): Promise<ILevelTagBgDocument> {
+  async createLevelTagBg(
+    level: string,
+    tag: Express.Multer.File,
+    bg: Express.Multer.File
+  ): Promise<ILevelTagBgDocument> {
     const existingLevel = await this.LevelTagBgRepository.findByLevel(level);
-    if (existingLevel) throw new AppError(StatusCodes.CONFLICT, "Level already exists");
-    
+    if (existingLevel)
+      throw new AppError(StatusCodes.CONFLICT, "Level already exists");
+
     const tagUrl = await uploadFileToCloudinary({
       isVideo: false,
       folder: CloudinaryFolder.LevelTagBgAssets,
@@ -1041,11 +1061,15 @@ export default class AdminUserService implements IAdminUserService {
     let levelTagBg: ILevelTagBg = {
       level: level,
       levelTag: tagUrl,
-      levelBg: bgUrl
+      levelBg: bgUrl,
     };
 
     const newLevel = await this.LevelTagBgRepository.create(levelTagBg);
-    if (!newLevel) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to create level tag bg");
+    if (!newLevel)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to create level tag bg"
+      );
     return newLevel;
   }
 
@@ -1053,45 +1077,67 @@ export default class AdminUserService implements IAdminUserService {
     return await this.LevelTagBgRepository.findAll();
   }
 
-  async updateLevelTagBg( id: string,
+  async updateLevelTagBg(
+    id: string,
     level?: string,
     tag?: Express.Multer.File,
-    bg?: Express.Multer.File): Promise<ILevelTagBgDocument> {
-      const existingLevel = await this.LevelTagBgRepository.findById(id);
-    if (!existingLevel) throw new AppError(StatusCodes.NOT_FOUND, "Level tag not found");
+    bg?: Express.Multer.File
+  ): Promise<ILevelTagBgDocument> {
+    const existingLevel = await this.LevelTagBgRepository.findById(id);
+    if (!existingLevel)
+      throw new AppError(StatusCodes.NOT_FOUND, "Level tag not found");
 
-      let updateData: Partial<ILevelTagBg> = {};
+    let updateData: Partial<ILevelTagBg> = {};
 
-      if (level) {
-        const levelExists = await this.LevelTagBgRepository.findByLevel(level);
-        if (levelExists && levelExists._id?.toString() !== id) {
-          throw new AppError(StatusCodes.CONFLICT, "Level already exists");
-        }
-        updateData.level = level;
+    if (level) {
+      const levelExists = await this.LevelTagBgRepository.findByLevel(level);
+      if (levelExists && levelExists._id?.toString() !== id) {
+        throw new AppError(StatusCodes.CONFLICT, "Level already exists");
       }
+      updateData.level = level;
+    }
 
-      if (tag) {
-        
-        const tagUrl = await uploadFileToCloudinary({
-          isVideo: false,
-          folder: CloudinaryFolder.LevelTagBgAssets,
-          file: tag,
-        });
-        updateData.levelTag = tagUrl;
-      }
+    if (tag) {
+      const url = existingLevel.levelTag;
+      const publicId = getCloudinaryPublicId(url);
+      await deleteFileFromCloudinary({
+        isVideo: false,
+        publicId: publicId,
+      });
 
-      if (bg) {
-        const bgUrl = await uploadFileToCloudinary({
-          isVideo: false,
-          folder: CloudinaryFolder.LevelTagBgAssets,
-          file: bg,
-        });
-        updateData.levelBg = bgUrl;
-      }
+      const tagUrl = await uploadFileToCloudinary({
+        isVideo: false,
+        folder: CloudinaryFolder.LevelTagBgAssets,
+        file: tag,
+      });
+      updateData.levelTag = tagUrl;
+    }
 
-      const updatedLevelTagBg = await this.LevelTagBgRepository.update(id, updateData);
-      if (!updatedLevelTagBg) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update level tag bg");
-      return updatedLevelTagBg;
-      
+    if (bg) {
+      const url = existingLevel.levelBg;
+      const publicId = getCloudinaryPublicId(url);
+      await deleteFileFromCloudinary({
+        isVideo: false,
+        publicId: publicId,
+      });
+
+      const bgUrl = await uploadFileToCloudinary({
+        isVideo: false,
+        folder: CloudinaryFolder.LevelTagBgAssets,
+        file: bg,
+      });
+      updateData.levelBg = bgUrl;
+    }
+
+    const updatedLevelTagBg = await this.LevelTagBgRepository.update(
+      id,
+      updateData
+    );
+    if (!updatedLevelTagBg)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to update level tag bg"
+      );
+    return updatedLevelTagBg;
   }
 }

@@ -247,6 +247,7 @@ export function getCloudinaryPublicId(url: string): string {
   const parts = new URL(url).pathname.split("/");
   const fileName = parts[parts.length - 1];
   const folderName = parts[parts.length - 2];
-  const publicId = `${folderName}/${folderName}/${fileName}`;
+  const fileHash = fileName.substring(0, fileName.lastIndexOf("."));
+  const publicId = `${folderName}/${folderName}/${fileHash}`;
   return publicId;
 }
