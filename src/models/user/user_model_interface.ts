@@ -12,6 +12,8 @@ export interface UserData {
     userStateInApp?: UserActiveStatus;
     userPermissions: string[];
     avatar?: string;
+    currentLevelTag?: string;
+    currentLevelBackground?: string;
     coverPicture: string;
     name?: string;
     firstName?: string;

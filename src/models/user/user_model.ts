@@ -24,6 +24,8 @@ const userSchema = new mongoose.Schema<IUserDocument>(
     totalBoughtCoins: { type: Number, default: 0 },
     level: { type: Number, default: 0 },
     avatar: { type: String },
+    currentLevelTag: { type: String },
+    currentLevelBackground: { type: String },
     coverPicture: { type: String },
     name: String,
     firstName: String,
