@@ -1,12 +1,12 @@
 import express from "express";
-import UserRepository from "../repository/user_repository";
+import UserRepository from "../repository/users/user_repository";
 import User from "../models/user/user_model";
 import AdminUserService from "../services/admin/admin_user_service";
 import AdminUserController from "../controllers/admin/admin_user_controller";
 import { ActivityZoneUpdateDto } from "../dtos/admin/activityzone_update_dto";
 import { validateRequest } from "../core/middlewares/validate_request";
 import { UpdateStatDto } from "../dtos/admin/update_state_dto";
-import UserStatsRepository from "../repository/userstats/userstats_repository";
+import UserStatsRepository from "../repository/users/userstats_repository";
 import UserStats from "../models/userstats/userstats_model";
 import { authenticate } from "../core/middlewares/auth_middleware";
 import { UserRoles } from "../core/Utils/enums";
@@ -29,6 +29,8 @@ import CoinHistoryRepository from "../repository/coins/coinHistoryRepository";
 import CoinHistoryModel from "../models/coins/coinHistoryModel";
 import AgencyWithdrawRepository from "../repository/room/agency_withdraw_repository";
 import AgencyWithdrawModel from "../models/room/agency_withdraw_model";
+import LevelTagBgRepository from "../repository/users/level_tag_bg_repository";
+import LevelTagBgModel from "../models/user/level_tag_bg_model";
 
 const router = express.Router();
 
@@ -42,6 +44,7 @@ const salaryRepository = new SalaryRepository(SalaryModel);
 const bannerRepository = new BannerRepository(BannerModel);
 const coinHistoryRepository = new CoinHistoryRepository(CoinHistoryModel);
 const agencyWithdrawRepository = new AgencyWithdrawRepository(AgencyWithdrawModel);
+const tagBgRepository = new LevelTagBgRepository(LevelTagBgModel);
 
 const adminUserService = new AdminUserService(
   userRepository,
@@ -53,7 +56,8 @@ const adminUserService = new AdminUserService(
   salaryRepository,
   bannerRepository,
   coinHistoryRepository,
-  agencyWithdrawRepository
+  agencyWithdrawRepository,
+  tagBgRepository
 );
 const adminUserController = new AdminUserController(adminUserService);
 
@@ -236,5 +240,16 @@ router
 router
   .route("/banners/docs")
   .get(authenticate([UserRoles.Admin]), adminUserController.getBannerDoc);
+
+router.route("/level-tags").post(authenticate([UserRoles.Admin]),  upload.fields([
+      { name: "tag", maxCount: 1 },
+      { name: "bg", maxCount: 1 },
+    ]), adminUserController.createLevelTag)
+    .get(adminUserController.getLevelTags);
+
+router.route("/level-tags/:id").put(authenticate([UserRoles.Admin]), upload.fields([
+      { name: "tag", maxCount: 1 },
+      { name: "bg", maxCount: 1 },
+    ]), adminUserController.updateLeveltags);
 
 export default router;

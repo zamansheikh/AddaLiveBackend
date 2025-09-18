@@ -11,8 +11,8 @@ import { IUSerStatsDocument } from "../../entities/userstats/userstats_interface
 import { IUserDocument } from "../../models/user/user_model_interface";
 import { IAdminRepository } from "../../repository/admin/admin_repository";
 import { IPortalUserRepository } from "../../repository/portal_user/portal_user_repository";
-import { IUserRepository } from "../../repository/user_repository";
-import IUserStatsRepository from "../../repository/userstats/userstats_repository_interface";
+import { IUserRepository } from "../../repository/users/user_repository";
+import IUserStatsRepository from "../../repository/users/userstats_repository_interface";
 import AppError from "../../core/errors/app_errors";
 import {
   canUserUpdate,

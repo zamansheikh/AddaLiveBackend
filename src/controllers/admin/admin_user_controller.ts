@@ -622,8 +622,12 @@ export default class AdminUserController {
     });
   });
 
-  getAdminCoinHistory = catchAsync(async (req: Request, res: Response) =>{
-    const result = await this.AdminUserService.getCoinHistory(UserRoles.Admin, null, req.query);
+  getAdminCoinHistory = catchAsync(async (req: Request, res: Response) => {
+    const result = await this.AdminUserService.getCoinHistory(
+      UserRoles.Admin,
+      null,
+      req.query
+    );
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
@@ -666,10 +670,82 @@ export default class AdminUserController {
       });
     }
   );
-  
+
+  createLevelTag = catchAsync(async (req: Request, res: Response) => {
+    const { tag, bg } = req.files as ITagFiles; // both are arrays
+    const { level } = req.body;
+    const tagFile = tag?.[0];
+    const bgFile = bg?.[0];
+    if (!tagFile || !bgFile || !level)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Either tag or bg fields cannot be missing"
+      );
+
+    if (!/^\d+-\d+$/.test(level))
+      throw new AppError(StatusCodes.BAD_REQUEST, "Invalid level format");
+
+    const result = await this.AdminUserService.createLevelTagBg(
+      level,
+      tagFile,
+      bgFile
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.CREATED,
+      success: true,
+      result: result,
+      message: "Level tag created successfully",
+    });
+  });
+
+  getLevelTags = catchAsync(async (req: Request, res: Response) => {
+    const result = await this.AdminUserService.getLevelTagBgs();
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Level tags retrieved successfully",
+    });
+  });
+
+  updateLeveltags = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { level } = req.body;
+    const files = req.files as ITagFiles;
+    const tagFile = files.tag?.[0];
+    const bgFile = files.bg?.[0];
+
+    if (!level && !tagFile && !bgFile) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "At least one field (level, tag, or bg) is required for update"
+      );
+    }
+
+    if (level && !/^\d+-\d+$/.test(level))
+      throw new AppError(StatusCodes.BAD_REQUEST, "Invalid level format");
+
+    const result = await this.AdminUserService.updateLevelTagBg(
+      id,
+      level,
+      tagFile,
+      bgFile
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Level tag updated successfully",
+    });
+  });
 }
 
 export interface IGiftFile {
   previewImage?: Express.Multer.File[];
   svgaImage?: Express.Multer.File[];
+}
+
+export interface ITagFiles {
+  tag?: Express.Multer.File[];
+  bg?: Express.Multer.File[];
 }

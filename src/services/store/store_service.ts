@@ -16,9 +16,9 @@ import {
   uploadFileToCloudinary,
 } from "../../core/Utils/upload_file_cloudinary";
 import { profile } from "console";
-import { IUserRepository } from "../../repository/user_repository";
+import { IUserRepository } from "../../repository/users/user_repository";
 import { IMyBucketRepository } from "../../repository/store/my_bucket_repository";
-import IUserStatsRepository from "../../repository/userstats/userstats_repository_interface";
+import IUserStatsRepository from "../../repository/users/userstats_repository_interface";
 import mongoose, { mongo } from "mongoose";
 import { IMyBucketDocument } from "../../models/store/my_bucket_model";
 

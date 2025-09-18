@@ -8,11 +8,11 @@ import StoreController from "../controllers/store_controller";
 import StoreItemRepository from "../repository/store/store_item_repository";
 import StoreItemModel from "../models/store/store_item_model";
 import { upload } from "../core/middlewares/multer";
-import UserRepository from "../repository/user_repository";
+import UserRepository from "../repository/users/user_repository";
 import User from "../models/user/user_model";
 import MyBucketRepository from "../repository/store/my_bucket_repository";
 import MyBucketModel from "../models/store/my_bucket_model";
-import UserStatsRepository from "../repository/userstats/userstats_repository";
+import UserStatsRepository from "../repository/users/userstats_repository";
 import UserStats from "../models/userstats/userstats_model";
 
 const router = express.Router();

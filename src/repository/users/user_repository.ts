@@ -1,10 +1,10 @@
 import mongoose, { mongo } from "mongoose";
-import { IUserEntity } from "../entities/user_entity_interface";
-import { IUserDocument, IUserModel } from "../models/user/user_model_interface";
-import { DatabaseNames, UserRoles } from "../core/Utils/enums";
-import Friendship from "../models/friendship/friendship_model";
-import { IPagination, QueryBuilder } from "../core/Utils/query_builder";
-import AppError from "../core/errors/app_errors";
+import { IUserEntity } from "../../entities/user_entity_interface";
+import { IUserDocument, IUserModel } from "../../models/user/user_model_interface";
+import { DatabaseNames, UserRoles } from "../../core/Utils/enums";
+import Friendship from "../../models/friendship/friendship_model";
+import { IPagination, QueryBuilder } from "../../core/Utils/query_builder";
+import AppError from "../../core/errors/app_errors";
 import { StatusCodes } from "http-status-codes";
 
 export interface ITextPrivacy {

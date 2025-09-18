@@ -11,7 +11,7 @@ import { customValidateFileResponse } from "../core/middlewares/custom_validate_
 import { validateRequest } from "../core/middlewares/validate_request";
 import { StoryReactionDto } from "../dtos/stories/story_react_dto";
 import User from "../models/user/user_model";
-import UserRepository from "../repository/user_repository";
+import UserRepository from "../repository/users/user_repository";
 
 const router = express.Router();
 

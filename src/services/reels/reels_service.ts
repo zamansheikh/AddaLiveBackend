@@ -10,7 +10,7 @@ import { CloudinaryFolder, ReactionType } from "../../core/Utils/enums";
 import AppError from "../../core/errors/app_errors";
 import { StatusCodes } from "http-status-codes";
 import { IReelEntity } from "../../entities/reel/reel_entity_interface";
-import { IUserRepository } from "../../repository/user_repository";
+import { IUserRepository } from "../../repository/users/user_repository";
 import { IPagination } from "../../core/Utils/query_builder";
 
 

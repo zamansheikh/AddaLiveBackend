@@ -6,7 +6,7 @@ import { IPagination } from "../../core/Utils/query_builder";
 import IFriendshipRepository from "../../repository/friendships/friendship_repository_interface";
 import mongoose from "mongoose";
 import { IFriendshipDocument } from "../../entities/friendship/friendship_model_interface";
-import { IUserRepository } from "../../repository/user_repository";
+import { IUserRepository } from "../../repository/users/user_repository";
 
 export interface IFollowerService {
     createFollower(follow: IFollower): Promise<IFollowerDocument | null>;

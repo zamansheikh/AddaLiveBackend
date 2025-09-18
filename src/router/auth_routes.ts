@@ -1,6 +1,6 @@
 import express from "express";
 import User from "../models/user/user_model";
-import UserRepository from "../repository/user_repository";
+import UserRepository from "../repository/users/user_repository";
 import AuthService from "../services/auth/auth_services";
 import AuthController from "../controllers/auth_controller";
 import { RegisterUserDto } from "../dtos/auth/register_with_google_dto";
@@ -9,7 +9,7 @@ import { upload } from "../core/middlewares/multer";
 import { authenticate } from "../core/middlewares/auth_middleware";
 import { validateRequest } from "../core/middlewares/validate_request";
 import UserStats from "../models/userstats/userstats_model";
-import UserStatsRepository from "../repository/userstats/userstats_repository";
+import UserStatsRepository from "../repository/users/userstats_repository";
 import { GiftUserDto } from "../dtos/auth/gift_user_dto";
 import { validate } from "class-validator";
 import { GenerateTokenDto } from "../dtos/auth/generate_token_dto";

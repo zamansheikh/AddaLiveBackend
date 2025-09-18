@@ -4,7 +4,7 @@ import Follower from "../models/followers/followers_model";
 import FollowerService from "../services/follower/follower_service";
 import FollowerController from "../controllers/follower_controller";
 import { authenticate } from "../core/middlewares/auth_middleware";
-import UserRepository from "../repository/user_repository";
+import UserRepository from "../repository/users/user_repository";
 import User from "../models/user/user_model";
 import FriendshipRepository from "../repository/friendships/friendship_repository";
 import Friendship from "../models/friendship/friendship_model";

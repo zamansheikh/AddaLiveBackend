@@ -4,9 +4,9 @@ import { IPagination } from "../../core/Utils/query_builder";
 import { IHistory, IHistoryDocument } from "../../entities/history/history_interface";
 import { IUSerStatsDocument } from "../../entities/userstats/userstats_interface";
 import { IHistoryRepository } from "../../repository/history/history_repository";
-import IUserStatsRepository from "../../repository/userstats/userstats_repository_interface";
+import IUserStatsRepository from "../../repository/users/userstats_repository_interface";
 import { UserStatus } from "../../core/Utils/enums";
-import { IUserRepository } from "../../repository/user_repository";
+import { IUserRepository } from "../../repository/users/user_repository";
 
 export interface ILeaderBoardResponse {
     serial: string | null;

@@ -4,7 +4,7 @@ import { Server, Socket } from "socket.io";
 import { Server as HttpServer } from "http";
 import { registerGroupRoomHandler } from "./handlers/group_room_handler";
 import { RoomTypes, SocketChannels } from "../Utils/enums";
-import UserRepository from "../../repository/user_repository";
+import UserRepository from "../../repository/users/user_repository";
 import User from "../../models/user/user_model";
 import { IUserDocument } from "../../models/user/user_model_interface";
 import mongoose from "mongoose";

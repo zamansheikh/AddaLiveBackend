@@ -4,13 +4,13 @@ import GameController from '../controllers/game_controller';
 import { validateRequest } from '../core/middlewares/validate_request';
 import { UpdateUserStatsDto } from '../dtos/game/update_userstats_dto';
 import { CreateHistoryDto } from '../dtos/game/create_history_dto';
-import UserStatsRepository from '../repository/userstats/userstats_repository';
+import UserStatsRepository from '../repository/users/userstats_repository';
 import HistoryRepository from '../repository/history/history_repository';
 import GameService from '../services/game/game_service';
 import UserStats from '../models/userstats/userstats_model';
 import History from '../models/history/history_model';
 import User from '../models/user/user_model';
-import UserRepository from '../repository/user_repository';
+import UserRepository from '../repository/users/user_repository';
 
 const router = express.Router()
 

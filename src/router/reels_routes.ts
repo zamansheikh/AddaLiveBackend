@@ -19,7 +19,7 @@ import { UploadReelDto } from "../dtos/reels/upload_reel_dto";
 import { customValidateFileResponse } from "../core/middlewares/custom_validate_file_response";
 import { validateRequest } from "../core/middlewares/validate_request";
 import { ReelReactionDto } from "../dtos/reels/reel_reaction_dto";
-import UserRepository from "../repository/user_repository";
+import UserRepository from "../repository/users/user_repository";
 import User from "../models/user/user_model";
 
 const router = express.Router();

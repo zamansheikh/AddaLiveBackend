@@ -10,7 +10,7 @@ import AppError from "../../core/errors/app_errors";
 import { StatusCodes } from "http-status-codes";
 import { IStoryReaction, IStoryReactionDocument } from "../../entities/storeis/story_reaction_interface";
 import { IPagination } from "../../core/Utils/query_builder";
-import { IUserRepository } from "../../repository/user_repository";
+import { IUserRepository } from "../../repository/users/user_repository";
 
 
 export default class StoryService implements IStoryService {

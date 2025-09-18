@@ -19,7 +19,7 @@ import {  PostEditCommentDto } from "../dtos/posts/post_edit_comment_dto";
 import { PostReactOnCommentDto } from "../dtos/posts/post_react_on_comment_dto";
 import { PostReplyCommentDto } from "../dtos/posts/post_reply_comment_dto";
 import User from "../models/user/user_model";
-import UserRepository from "../repository/user_repository";
+import UserRepository from "../repository/users/user_repository";
 
 const router = express.Router();
 

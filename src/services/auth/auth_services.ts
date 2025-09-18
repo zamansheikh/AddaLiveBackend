@@ -13,13 +13,13 @@ import {
 import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary";
 import { IUserEntity } from "../../entities/user_entity_interface";
 import jwt from "jsonwebtoken";
-import IUserStatsRepository from "../../repository/userstats/userstats_repository_interface";
+import IUserStatsRepository from "../../repository/users/userstats_repository_interface";
 import { Types, UpdateResult } from "mongoose";
 import { IAuthService, IGiftUser } from "./auth_service_interface";
 import { IUserDocument } from "../../models/user/user_model_interface";
 import mongoose from "mongoose";
 import { RtcRole, RtcTokenBuilder } from "agora-token";
-import { IUserRepository } from "../../repository/user_repository";
+import { IUserRepository } from "../../repository/users/user_repository";
 import SocketServer from "../../core/sockets/socket_server";
 import { IGiftRepository } from "../../repository/gifts/gifts_repositories";
 import { IPostRepository } from "../../repository/posts/post_repository_interface";

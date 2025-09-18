@@ -4,7 +4,7 @@ import { StatusCodes } from "http-status-codes";
 import { IMemberDetails, RoomData } from "../socket_server";
 import AppError from "../../errors/app_errors";
 import { IUserDocument } from "../../../models/user/user_model_interface";
-import { IUserRepository } from "../../../repository/user_repository";
+import { IUserRepository } from "../../../repository/users/user_repository";
 import mongoose from "mongoose";
 import { IMyBucketRepository } from "../../../repository/store/my_bucket_repository";
 import { IStoreCategoryRepository } from "../../../repository/store/store_category_repository";

@@ -160,7 +160,7 @@ export function getWithdrawDateBoundaires(): { gte: Date; lte: Date } {
       gte: new Date(year, month, 1, 0, 0, 0),
       lte: new Date(year, month, date, 23, 59, 59),
     };
-  } else if ( date > 15 &&date <= lastDate) {
+  } else if (date > 15 && date <= lastDate) {
     return {
       gte: new Date(year, month, 15, 0, 0, 0),
       lte: new Date(year, month, date, 23, 59, 59),
@@ -241,4 +241,12 @@ export function determineUserLevel(coins: number): number {
     }
   }
   return 40; // at maximum level
+}
+
+export function getCloudinaryPublicId(url: string): string {
+  const parts = new URL(url).pathname.split("/");
+  const fileName = parts[parts.length - 1];
+  const folderName = parts[parts.length - 2];
+  const publicId = `${folderName}/${folderName}/${fileName}`;
+  return publicId;
 }

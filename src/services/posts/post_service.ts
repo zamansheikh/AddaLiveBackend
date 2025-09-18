@@ -12,7 +12,7 @@ import { uploadFileToCloudinary } from "../../core/Utils/upload_file_cloudinary"
 import { CloudinaryFolder, ReactionType } from "../../core/Utils/enums";
 import { isVideoFile } from "../../core/Utils/helper_functions";
 import { Types } from "mongoose";
-import { IUserRepository } from "../../repository/user_repository";
+import { IUserRepository } from "../../repository/users/user_repository";
 
 export default class PostService implements IPostService {
 

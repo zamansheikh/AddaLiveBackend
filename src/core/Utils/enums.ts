@@ -41,6 +41,7 @@ export enum DatabaseNames {
   MyBucketItem = "my_bucket_items",
   StoreItemDeleteHistory= "store_item_delete_history",
   RoomBonusRecord = "room_bonus_records",
+  LevelTagBg = "level_tag_bg"
 }
 
 export enum ReelStatus {
@@ -63,6 +64,7 @@ export enum CloudinaryFolder {
   messageVideos = "message_videos",
   giftAssets = "gift_assets",
   BannerAssets = "banner_assets",
+  LevelTagBgAssets = "level_tag_bg_assets",
 }
 
 export enum FriendshipStatus {

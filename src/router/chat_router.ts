@@ -10,7 +10,7 @@ import ChatService from '../services/chat/chat_service';
 import ChatController from '../controllers/chat_controller';
 import { upload } from '../core/middlewares/multer';
 import EditMessageDto from '../dtos/chat/edit_message_dto';
-import UserRepository from '../repository/user_repository';
+import UserRepository from '../repository/users/user_repository';
 import User from '../models/user/user_model';
 import FollowerRepository from '../repository/follower/follower_repository';
 import Follower from '../models/followers/followers_model';
