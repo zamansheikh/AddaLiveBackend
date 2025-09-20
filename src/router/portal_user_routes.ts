@@ -20,6 +20,8 @@ import CoinHistoryRepository from "../repository/coins/coinHistoryRepository";
 import CoinHistoryModel from "../models/coins/coinHistoryModel";
 import AgencyJoinRequestRepository from "../repository/request/AgencyJoinRequestRepository";
 import AgencyJoinRequestModel from "../models/request/agencyJoinRequset";
+import LevelTagBgRepository from "../repository/users/level_tag_bg_repository";
+import LevelTagBgModel from "../models/user/level_tag_bg_model";
 
 const router = express.Router();
 
@@ -36,6 +38,8 @@ const agencyJoinRequestRepository = new AgencyJoinRequestRepository(
   AgencyJoinRequestModel
 );
 
+const tagBgRepository = new LevelTagBgRepository(LevelTagBgModel);
+
 const sharedPowerService = new SharedPowerService(
   userRepository,
   userStatsRepository,
@@ -44,7 +48,8 @@ const sharedPowerService = new SharedPowerService(
   agencyWithdrawRepository,
   salaryRepository,
   coinHistoryRepository,
-  agencyJoinRequestRepository
+  agencyJoinRequestRepository,
+  tagBgRepository
 );
 const portalUserControllers = new PortalUserControllers(sharedPowerService);
 

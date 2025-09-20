@@ -129,7 +129,10 @@ export class PortalUserControllers {
   });
 
   assignCoinToUser = catchAsync(async (req: Request, res: Response) => {
-    const { userId, coins, userRole } = req.body;
+    let { userId, coins, userRole } = req.body;
+    if(userRole == UserRoles.Host){
+      userRole = UserRoles.User;
+    }
     const { id, role } = req.user!;
     if (!userId || !coins)
       throw new AppError(
@@ -146,7 +149,7 @@ export class PortalUserControllers {
     const updatedUser = await this.Service.assignCoinToUser(
       userId,
       userRole,
-      coins,
+      Number(coins),
       id,
       role as UserRoles
     );

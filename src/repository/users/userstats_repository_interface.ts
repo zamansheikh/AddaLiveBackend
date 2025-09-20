@@ -9,7 +9,7 @@ export default interface IUserStatsRepository {
     deleteStats(userId: string): Promise<IUSerStatsDocument | null>;
     updateProperty(id: string, property: Record<string, any>): Promise<IUSerStatsDocument | null>;
     updateStars(userId: string, stars: number): Promise<IUSerStatsDocument | null>;
-    updateCoins(userId: string, coins: number, session?: ClientSession): Promise<IUSerStatsDocument | null>;
+    updateCoins(userId: string, coins: number, session?: ClientSession): Promise<IUSerStatsDocument>;
     updateDiamonds(userId: string, diamonds: number, session?: ClientSession): Promise<IUSerStatsDocument | null>;
     updateLevels(userId: string, levels: number): Promise<IUSerStatsDocument | null>;
     getUserLeaderBoardInfo(query: Record<string, string>): Promise<ILeaderBoardResponse[] | null>;

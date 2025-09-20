@@ -1,4 +1,4 @@
-  const userLevels = [
+  export const userLevels = [
     100000, // Level 1
     300000, // Level 2
     500000, // Level 3

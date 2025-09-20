@@ -1,6 +1,6 @@
 import mongoose, { mongo } from "mongoose";
 import { IUserEntity } from "../../entities/user_entity_interface";
-import { IUserDocument, IUserModel } from "../../models/user/user_model_interface";
+import { IUserDocument, IUserModel, UserData } from "../../models/user/user_model_interface";
 import { DatabaseNames, UserRoles } from "../../core/Utils/enums";
 import Friendship from "../../models/friendship/friendship_model";
 import { IPagination, QueryBuilder } from "../../core/Utils/query_builder";
@@ -33,7 +33,8 @@ export interface IUserRepository {
   ): Promise<IUserDocument[] | null>;
   findUserByIdAndUpdate(
     id: string,
-    payload: Record<string, any>
+    payload: Partial<UserData>,
+    session?: mongoose.ClientSession
   ): Promise<IUserDocument | null>;
   getUserDetails(details: {
     Id: string;
@@ -163,7 +164,7 @@ export default class UserRepository implements IUserRepository {
     return await this.UserModel.find({ [field]: value }).select("-password");
   }
 
-  async findUserByIdAndUpdate(id: string, payload: Record<string, any>) {
+  async findUserByIdAndUpdate(id: string, payload: Partial<UserData>, session?: mongoose.ClientSession) {
     const udpated =  await this.UserModel.findByIdAndUpdate(id, payload, {
       new: true,
     }).select("-password");

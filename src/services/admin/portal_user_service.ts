@@ -17,6 +17,7 @@ import AppError from "../../core/errors/app_errors";
 import {
   canUserUpdate,
   determineUserLevel,
+  determineUserTagAndBg,
 } from "../../core/Utils/helper_functions";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
@@ -32,6 +33,8 @@ import { IHistory } from "../../entities/history/history_interface";
 import { appendFile } from "fs";
 import { IAgencyJoinRequest } from "../../models/request/agencyJoinRequset";
 import { IAgencyJoinRequestRepository } from "../../repository/request/AgencyJoinRequestRepository";
+import { ILevelTagBg } from "../../models/user/level_tag_bg_model";
+import { ILevelTagBgRepository } from "../../repository/users/level_tag_bg_repository";
 
 export interface ISharedPowerService {
   loginPortalUser(
@@ -118,6 +121,7 @@ export default class SharedPowerService implements ISharedPowerService {
   SalaryRepository: ISalaryRepository;
   CoinHistoryRepository: ICoinHistoryRepository;
   AgencyJoinRequestRepository: IAgencyJoinRequestRepository;
+  LevelTagBgRepository: ILevelTagBgRepository;
 
   constructor(
     UserRepository: IUserRepository,
@@ -127,7 +131,8 @@ export default class SharedPowerService implements ISharedPowerService {
     AgencyWithdrawRepository: IAgencyWithdrawRepository,
     SalaryRepository: ISalaryRepository,
     CoinHistoryRepository: ICoinHistoryRepository,
-    AgencyJoinRequestRepository: IAgencyJoinRequestRepository
+    AgencyJoinRequestRepository: IAgencyJoinRequestRepository,
+    LevelTagBgRepository: ILevelTagBgRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
@@ -137,6 +142,7 @@ export default class SharedPowerService implements ISharedPowerService {
     this.SalaryRepository = SalaryRepository;
     this.CoinHistoryRepository = CoinHistoryRepository;
     this.AgencyJoinRequestRepository = AgencyJoinRequestRepository;
+    this.LevelTagBgRepository = LevelTagBgRepository;
   }
 
   async loginPortalUser(
@@ -290,77 +296,28 @@ export default class SharedPowerService implements ISharedPowerService {
         `${role} cannot assign coins to ${userRole}`
       );
 
-    // fetching target profile
-    let targetUserProfile;
-    if (userRole == UserRoles.Merchant || userRole == UserRoles.Reseller)
-      targetUserProfile = await this.PortalUserRepository.getPortalUserById(
-        userId
-      );
-    else
-      targetUserProfile = await this.UserStatsRepository.getUserStats(userId);
-    // checking for invalid data
-    if (!targetUserProfile)
-      throw new AppError(
-        StatusCodes.NOT_FOUND,
-        `User with id ${userId} not found`
-      );
-
-    // fetching my profile
+    // fetching my profile;
     let myProfile;
     if (role == UserRoles.Admin)
       myProfile = await this.AdminRepository.getAdminById(myId);
     else myProfile = await this.PortalUserRepository.getPortalUserById(myId);
+
     if (!myProfile)
-      throw new AppError(
-        StatusCodes.NOT_FOUND,
-        `Portal User with id ${myId} not found`
-      );
+      throw new AppError(StatusCodes.NOT_FOUND, "Not valid token");
 
-    // starting mongoose transaction
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
-    // checking if i have sufficient funds (admin merchant or reseller)
+    // checking for coin sufficiency
     if (myProfile.coins! < coins)
-      throw new AppError(StatusCodes.BAD_REQUEST, `Insufficient funds`);
+      throw new AppError(StatusCodes.BAD_REQUEST, "Insufficient coins");
 
-    // negating coin from my profile
-    if (role == UserRoles.Admin)
-      await this.AdminRepository.updateCoin(myId, -coins, session);
-    else await this.PortalUserRepository.updateCoin(myId, -coins, session);
-
-    // adding coin to the target user (user or host)
-    let transactionUpdate;
+    // fetching target profile
+    let targetProfile;
     if (userRole == UserRoles.Merchant || userRole == UserRoles.Reseller)
-      transactionUpdate = await this.PortalUserRepository.updateCoin(
-        userId,
-        coins,
-        session
-      );
-    else {
-      const userProfile = await this.UserRepository.findUserById(userId);
-      if (!userProfile)
-        throw new AppError(StatusCodes.NOT_FOUND, "User not found");
-      const newLevel = determineUserLevel(userProfile.totalBoughtCoins + coins);
-      await this.UserRepository.findUserByIdAndUpdate(userId, {
-        totalBoughtCoins: userProfile.totalBoughtCoins + coins,
-        userLevel: newLevel,
-      });
-      transactionUpdate = await this.UserStatsRepository.updateCoins(
-        userId,
-        coins,
-        session
-      );
-    }
+      targetProfile = await this.PortalUserRepository.getPortalUserById(userId);
+    else targetProfile = await this.UserRepository.findUserById(userId);
+    if (!targetProfile)
+      throw new AppError(StatusCodes.NOT_FOUND, "User not found");
 
-    // checking if the transaction succeeded
-    if (!transactionUpdate)
-      throw new AppError(
-        StatusCodes.INTERNAL_SERVER_ERROR,
-        "Failed to assign coins to user"
-      );
-
-    // creating a transaction history
+    // preparing history body
     const historyObj: ICoinHistory = {
       senderRole: role,
       senderId: myId,
@@ -368,21 +325,63 @@ export default class SharedPowerService implements ISharedPowerService {
       receiverId: userId,
       amount: coins,
     };
-    const newHistory = await this.CoinHistoryRepository.createHistory(
-      historyObj,
-      session
-    );
-    if (!newHistory)
-      throw new AppError(
-        StatusCodes.INTERNAL_SERVER_ERROR,
-        "Failed to create history"
+    // variable to store return body;
+    let returnBody;
+
+    // starting transactions
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    // negating coin from myProfile
+    if ((role = UserRoles.Admin))
+      await this.AdminRepository.updateCoin(myId, -coins, session);
+    else await this.PortalUserRepository.updateCoin(myId, -coins, session);
+
+    // adding coin to targetProfile
+    if (userRole == UserRoles.Merchant || userRole == UserRoles.Reseller) {
+      console.log("inside if condition");
+      returnBody = await this.PortalUserRepository.updateCoin(
+        userId,
+        coins,
+        session
+      );
+    } else {
+      console.log("inside else condition");
+
+      // when the target profile is the role user
+      const userProfile = targetProfile as IUserDocument;
+      // determine level, bg and tags
+      const newLevel = determineUserLevel(userProfile.totalBoughtCoins + coins);
+      console.log("new level => ", newLevel);
+      const newTagAndBg = determineUserTagAndBg(newLevel);
+      console.log("new tag and bg => ", newTagAndBg);
+      const tagAndBgDocument = await this.LevelTagBgRepository.findByLevel(
+        newTagAndBg
+      );
+      console.log("tag and bg document => ", tagAndBgDocument);
+      // updating the user profile accordingly;
+     const updateProfile = await this.UserRepository.findUserByIdAndUpdate(userId, {
+        totalBoughtCoins: userProfile.totalBoughtCoins + coins,
+        level: newLevel,
+        currentLevelTag: tagAndBgDocument?.levelTag,
+        currentLevelBackground: tagAndBgDocument?.levelBg,
+      });
+      console.log("update profile => ", updateProfile);
+
+      
+      // adding coin to the user;
+      returnBody = await this.UserStatsRepository.updateCoins(
+        userId,
+        coins,
+        session
       );
 
-    // commiting the transaction
+      await this.CoinHistoryRepository.createHistory(historyObj, session);
+    }
+
     await session.commitTransaction();
     session.endSession();
 
-    return transactionUpdate;
+    return returnBody;
   }
 
   async demoteUser(

@@ -26,12 +26,12 @@ export interface IPortalUserRepository {
     id: string,
     coins: number,
     session?: ClientSession
-  ): Promise<IPortalUserDocument | null>;
+  ): Promise<IPortalUserDocument>;
   updateDiamonds(
     id: string,
     diamonds: number,
     session?: ClientSession
-  ): Promise<IPortalUserDocument | null>;
+  ): Promise<IPortalUserDocument>;
   getPortalChildUsers(
     userRole: UserRoles,
     parentId: string,
@@ -80,23 +80,35 @@ export default class PortalUserRepository implements IPortalUserRepository {
     id: string,
     coins: number,
     session?: ClientSession
-  ): Promise<IPortalUserDocument | null> {
-    return await this.Model.findByIdAndUpdate(
+  ): Promise<IPortalUserDocument > {
+    const updated =  await this.Model.findByIdAndUpdate(
       id,
       { $inc: { coins: coins } },
       { new: true }
     ).session(session || null);
+    if (!updated)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to update coins"
+      );
+    return updated;
   }
   async updateDiamonds(
     id: string,
     diamonds: number,
     session?: ClientSession
-  ): Promise<IPortalUserDocument | null> {
-    return await this.Model.findByIdAndUpdate(
+  ): Promise<IPortalUserDocument> {
+    const udpated = await this.Model.findByIdAndUpdate(
       id,
       { $inc: { diamonds: diamonds } },
       { new: true }
     ).session(session || null);
+    if (!udpated)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to update diamonds"
+      );
+    return udpated;
   }
 
   async getPortalUserByUserId(

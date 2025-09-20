@@ -6,6 +6,7 @@ import {
 } from "../../entities/userstats/userstats_interface";
 import { ILeaderBoardResponse } from "../../services/game/game_service";
 import IUserStatsRepository from "./userstats_repository_interface";
+import AppError from "../../core/errors/app_errors";
 
 export default class UserStatsRepository implements IUserStatsRepository {
   model: IUSerStatsModel;
@@ -29,23 +30,30 @@ export default class UserStatsRepository implements IUserStatsRepository {
     return await this.model.findOne({ userId });
   }
 
-  async updateGiftDiamond(userIds: string[], diamonds: number, session?: ClientSession): Promise<mongoose.UpdateResult> {
-    const result = await this.model.updateMany(
-      { userId: { $in: userIds } },
-      { $inc: { diamonds: diamonds } }
-    ).session(session || null);
+  async updateGiftDiamond(
+    userIds: string[],
+    diamonds: number,
+    session?: ClientSession
+  ): Promise<mongoose.UpdateResult> {
+    const result = await this.model
+      .updateMany(
+        { userId: { $in: userIds } },
+        { $inc: { diamonds: diamonds } }
+      )
+      .session(session || null);
     return result;
-    
   }
 
   async updateCoins(
     userId: string,
     coins: number,
     session?: ClientSession
-  ): Promise<IUSerStatsDocument | null> {
-    return await this.model
+  ): Promise<IUSerStatsDocument> {
+    const updated = await this.model
       .findOneAndUpdate({ userId }, { $inc: { coins } }, { new: true })
       .session(session || null);
+    if (!updated) throw new AppError(500, "Failed to update coins");
+    return updated;
   }
 
   async updateStars(

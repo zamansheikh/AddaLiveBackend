@@ -16,6 +16,7 @@ import { IMyBucketRepository } from "../../repository/store/my_bucket_repository
 import { Types } from "mongoose";
 import { IStoreItem } from "../../models/store/store_item_model";
 import { IStoreCategoryRepository } from "../../repository/store/store_category_repository";
+import { userLevels } from "./constants";
 
 export const generateFileHash = (buffer: Buffer): string => {
   return crypto.createHash("sha256").update(buffer).digest("hex");
@@ -236,11 +237,23 @@ export async function getEquipedItemObjects(
 
 export function determineUserLevel(coins: number): number {
   for (let i = 0; i < userLevels.length; i++) {
-    if (coins <= userLevels[i]) {
-      return i + 1; // Levels start from 1
+    if (coins < userLevels[i]) {
+      return i ; // Levels start from 0
     }
   }
   return 40; // at maximum level
+}
+
+export function determineUserTagAndBg(level: number): string {
+  if (level >= 1 && level <= 5) return "1-5";
+  else if (level >= 6 && level <= 10) return "6-10";
+  else if (level >= 11 && level <= 15) return "11-15";
+  else if (level >= 16 && level <= 20) return "16-20";
+  else if (level >= 21 && level <= 25) return "21-25";
+  else if (level >= 26 && level <= 30) return "26-30";
+  else if (level >= 31 && level <= 35) return "31-35";
+  else if (level >= 36 && level <= 40) return "36-40";
+  return "41-45";
 }
 
 export function getCloudinaryPublicId(url: string): string {
