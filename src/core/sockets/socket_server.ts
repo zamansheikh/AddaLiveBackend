@@ -27,6 +27,7 @@ export interface RoomData {
   roomType: RoomTypes;
   hostDetails?: IUserDocument | null;
   hostCoins: number;
+  hostBonus: number;
   members: Set<string>;
   membersDetails: IMemberDetails[];
   messages: {
@@ -45,6 +46,7 @@ export interface RoomData {
   callRequests: Set<IMemberDetails>;
   mutedUsers: Set<string>;
   title: string;
+  createdAt: Date;
 }
 
 export default class SocketServer {

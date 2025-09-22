@@ -15,6 +15,7 @@ export interface ISerializedRoomData {
   roomType: RoomTypes;
   hostDetails?: IUserDocument | null;
   hostCoins: number;
+  hostBonus: number;
   members: string[];
   membersDetails: IMemberDetails[];
   bannedUsers: string[];
@@ -33,6 +34,7 @@ export interface ISerializedRoomData {
   callRequests: IMemberDetails[];
   mutedUsers: string[];
   title: string;
+  duration: number; // in seconds
 }
 
 export async function registerGroupRoomHandler(
@@ -57,7 +59,6 @@ export async function registerGroupRoomHandler(
     categoryRepository,
     userId
   );
-
 
   if (!userId) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
 
@@ -118,6 +119,7 @@ export async function registerGroupRoomHandler(
       roomType: roomType,
       hostDetails: userDetails,
       hostCoins: 0,
+      hostBonus: 0,
       broadcastersDetails: [
         {
           name: userDetails.name as string,
@@ -137,6 +139,7 @@ export async function registerGroupRoomHandler(
       callRequests: new Set(),
       mutedUsers: new Set(),
       title: title,
+      createdAt: new Date(),
     };
     socket.join(roomId);
 
@@ -150,6 +153,7 @@ export async function registerGroupRoomHandler(
         messages: roomData.messages,
         hostDetails: roomData.hostDetails,
         hostCoins: roomData.hostCoins,
+        hostBonus: roomData.hostBonus,
         broadcastersDetails: roomData.broadcastersDetails,
         members: Array.from(roomData.members),
         membersDetails: roomData.membersDetails,
@@ -159,6 +163,9 @@ export async function registerGroupRoomHandler(
         callRequests: Array.from(roomData.callRequests),
         mutedUsers: Array.from(roomData.mutedUsers),
         title: roomData.title,
+        duration: Math.floor(
+          (new Date().getTime() - roomData.createdAt.getTime()) / 1000
+        ),
       };
       serializedRoom.push(obj);
     }
@@ -771,6 +778,7 @@ export async function registerGroupRoomHandler(
         broadcastersDetails: roomData.broadcastersDetails,
         hostDetails: roomData.hostDetails,
         hostCoins: roomData.hostCoins,
+        hostBonus: roomData.hostBonus,
         members: Array.from(roomData.members),
         membersDetails: roomData.membersDetails,
         bannedUsers: Array.from(roomData.bannedUsers),
@@ -779,6 +787,9 @@ export async function registerGroupRoomHandler(
         callRequests: Array.from(roomData.callRequests),
         mutedUsers: Array.from(roomData.mutedUsers),
         title: roomData.title,
+        duration: Math.floor(
+          (new Date().getTime() - roomData.createdAt.getTime()) / 1000
+        ),
       };
       if (!obj.bannedUsers.includes(userId)) {
         serializedRoom.push(obj);
