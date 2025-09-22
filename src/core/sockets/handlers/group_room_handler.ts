@@ -909,5 +909,56 @@ export async function registerGroupRoomHandler(
     );
   });
 
+  socket.on(SocketChannels.updateHostBonus, ({ roomId, bonus }) => {
+    if (!roomId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Room ID is required",
+      });
+    const room = hostedRooms[roomId];
+    if (!room)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "This room does not exists",
+      });
+    if (room.hostId != userId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.UNAUTHORIZED,
+        message: "You are not host of this room",
+      });
+    room.hostBonus += bonus;
+    io.to(roomId).emit(SocketChannels.updateHostBonus, {
+      roomId,
+      hostBonus: room.hostBonus,
+    });
+  });
+
+
+  socket.on(SocketChannels.updateHostCoins, ({ roomId, coins }) => {
+    if (!roomId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.BAD_REQUEST,
+        message: "Room ID is required",
+      });
+    const room = hostedRooms[roomId];
+    if (!room)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.NOT_FOUND,
+        message: "This room does not exists",
+      });
+    if (room.hostId != userId)
+      return io.to(socket.id).emit(SocketChannels.error, {
+        status: StatusCodes.UNAUTHORIZED,
+        message: "You are not host of this room",
+      });
+    room.hostCoins += coins;
+    io.to(roomId).emit(SocketChannels.updateHostCoins, {
+      roomId,
+      coins: room.hostCoins,
+    });
+  });
+
+
+
   socket.on(SocketChannels.inviteUser, ({ roomId, targetId }) => {});
 }

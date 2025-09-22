@@ -109,6 +109,9 @@ export enum SocketChannels {
 
   sendGift = "sent-gift",
   sendMessage = "sent-message",
+
+  updateHostBonus = "update-host-bonus",
+  updateHostCoins = "update-host-coins",
 }
 
 export enum RoomTypes {
