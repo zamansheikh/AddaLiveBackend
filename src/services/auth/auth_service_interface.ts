@@ -76,6 +76,8 @@ export interface IAuthService {
     totalSalary: number;
   }): Promise<IWithdrawBonusDocument>;
 
+  getMyBonus(userId: string): Promise<number>;
+
   agencyJoinRequest(
     data: IAgencyJoinRequest
   ): Promise<IAgencyJoinRequestDocument>;

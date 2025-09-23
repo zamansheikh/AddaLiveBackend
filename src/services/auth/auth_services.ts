@@ -611,6 +611,11 @@ export default class AuthService implements IAuthService {
     return newWithdraw;
   }
 
+  async getMyBonus(userId: string): Promise<number> {
+    const myBonus  = await this.RoomBonusRecordsRepository.readTotalBonusWithoutStatusSeen(userId);
+    return myBonus;
+  }
+
   async setChatPrivacy(payload: {
     id: string;
     whoCanTextMe: WhoCanTextMe;

@@ -144,7 +144,8 @@ router
   .post(authenticate(), authController.addDailtyBonus);
 router
   .route("/withdraw-bonus")
-  .post(authenticate(), authController.withdrawBonus);
+  .post(authenticate([UserRoles.User, UserRoles.Host]), authController.withdrawBonus)
+  .get(authenticate([UserRoles.User, UserRoles.Host]), authController.getMyBonus);
 
 router.post(
   "/generate-token",

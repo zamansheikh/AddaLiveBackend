@@ -124,6 +124,12 @@ export default class AuthController {
     sendResponseEnhanced(res, updatedUser);
   });
 
+  getMyBonus = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const bonus = await this.authService.getMyBonus(id);
+    sendResponseEnhanced(res, { bonus });
+  });
+
   generateToken = catchAsync(async (req: Request, res: Response) => {
     let { channelName, uid, APP_ID, APP_CERTIFICATE } = req.body;
     APP_ID = APP_ID || process.env.AGORA_APP_ID;

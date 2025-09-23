@@ -10,6 +10,7 @@ import { StatusCodes } from "http-status-codes";
 export interface IRoomBonusRecordsRepository {
   createRecord(data: IRoomBonusRecords): Promise<IRoomBonusRecordsDocument>;
   readTotalBonus(userId: string): Promise<number>;
+  readTotalBonusWithoutStatusSeen(userId: string): Promise<number>;
 }
 
 export default class RoomBonusRecordRepository
@@ -46,6 +47,24 @@ export default class RoomBonusRecordRepository
       },
     ]);
     await this.updateTheReadStatus(userId);
+    return totalBonus[0]?.totalBonus ?? 0;
+  }
+
+  async readTotalBonusWithoutStatusSeen(userId: string): Promise<number> {
+    const totalBonus = await this.Model.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(userId),
+          readStatus: false,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalBonus: { $sum: "$bonusDiamonds" },
+        },
+      },
+    ]);
     return totalBonus[0]?.totalBonus ?? 0;
   }
 
