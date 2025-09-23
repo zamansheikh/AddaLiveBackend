@@ -340,6 +340,8 @@ export default class AuthService implements IAuthService {
     const hasMyId = targetUserIds.filter((id) => id == myId);
     const otherIds = targetUserIds.filter((id) => id != myId);
 
+    
+    
     let updateStats = {
       acknowledged: true,
       modifiedCount: 1,
@@ -352,7 +354,7 @@ export default class AuthService implements IAuthService {
     session.startTransaction();
 
     mystats.coins! -= totalPrice;
-    if (hasMyId) mystats.diamonds! += exisitngGift.diamonds * qty;
+    if (hasMyId.length > 0) mystats.diamonds! += exisitngGift.diamonds * qty;
     await mystats.save({ session });
 
     if (otherIds)
@@ -407,7 +409,7 @@ export default class AuthService implements IAuthService {
         "updating user stats failed"
       );
 
-    if (hasMyId && otherIds) {
+    if (hasMyId.length > 0 && otherIds.length > 0) {
       updateStats.matchedCount += 1;
       updateStats.modifiedCount += 1;
     }
