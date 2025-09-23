@@ -18,6 +18,8 @@ export interface IMemberDetails {
   avatar: string;
   uid: string;
   country: string;
+  currentBackground: string;
+  currentTag: string;
   _id: mongoose.Schema.Types.ObjectId | string;
   equipedStoreItems: Record<string, string>;
 }
@@ -30,12 +32,16 @@ export interface RoomData {
   hostBonus: number;
   members: Set<string>;
   membersDetails: IMemberDetails[];
+  currentBackground: string;
+  currentTag: string;
   messages: {
     name: string;
     avatar: string;
     uid: string;
     country: string;
     _id: mongoose.Schema.Types.ObjectId | string;
+    currentBackground: string;
+    currentTag: string;
     text: string;
     equipedStoreItems: Record<string, string>;
   }[];

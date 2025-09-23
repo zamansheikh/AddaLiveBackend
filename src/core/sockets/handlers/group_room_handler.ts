@@ -20,6 +20,8 @@ export interface ISerializedRoomData {
   membersDetails: IMemberDetails[];
   bannedUsers: string[];
   brodcasters: string[];
+  currentBackground: string;
+  currentTag: string;
   messages: {
     name: string;
     avatar: string;
@@ -52,7 +54,12 @@ export async function registerGroupRoomHandler(
     "avatar",
     "uid",
     "country",
+    "currentLevelBackground",
+    "currentLevelTag"
   ]);
+
+  console.log(userDetails);
+  
   const userObj = userDetails.toObject();
   userObj.equipedStoreItems = await getEquipedItemObjects(
     bucketRepository,
@@ -86,6 +93,8 @@ export async function registerGroupRoomHandler(
       country: userDetails.country as string,
       _id: userDetails._id as string,
       text: messageText,
+      currentBackground: userDetails.currentLevelBackground as string,
+      currentTag: userDetails.currentLevelTag as string,
       equipedStoreItems: userObj.equipedStoreItems,
     };
     if (room.messages.length >= 100) room.messages.shift();
@@ -120,6 +129,8 @@ export async function registerGroupRoomHandler(
       hostDetails: userDetails,
       hostCoins: 0,
       hostBonus: 0,
+      currentBackground: userDetails.currentLevelBackground as string,
+      currentTag: userDetails.currentLevelTag as string,
       broadcastersDetails: [
         {
           name: userDetails.name as string,
@@ -127,6 +138,8 @@ export async function registerGroupRoomHandler(
           uid: userDetails.uid as string,
           country: userDetails.country as string,
           _id: userDetails._id as string,
+          currentBackground: userDetails.currentLevelBackground as string,
+          currentTag: userDetails.currentLevelTag as string,
           equipedStoreItems: userObj.equipedStoreItems,
         },
       ],
@@ -155,6 +168,8 @@ export async function registerGroupRoomHandler(
         hostCoins: roomData.hostCoins,
         hostBonus: roomData.hostBonus,
         broadcastersDetails: roomData.broadcastersDetails,
+        currentBackground: roomData.currentBackground,
+        currentTag: roomData.currentTag,
         members: Array.from(roomData.members),
         membersDetails: roomData.membersDetails,
         bannedUsers: Array.from(roomData.bannedUsers),
@@ -400,6 +415,8 @@ export async function registerGroupRoomHandler(
       country: userDetails.country as string,
       _id: userDetails._id as string,
       equipedStoreItems: userObj.equipedStoreItems,
+      currentBackground: userDetails.currentLevelBackground as string,
+      currentTag: userDetails.currentLevelTag as string,
     });
     const hostSocketId = onlineUsers.get(room.hostId);
     if (hostSocketId) {
@@ -511,6 +528,8 @@ export async function registerGroupRoomHandler(
       country: targetUser.country as string,
       _id: targetUser._id as string,
       equipedStoreItems: targetEquipedStoreItems,
+      currentBackground: targetUser.currentLevelBackground as string,
+      currentTag: targetUser.currentLevelTag as string,
     });
 
     const targetIdDetails = await userRepository.getUserDetailsSelectedField(
@@ -698,6 +717,9 @@ export async function registerGroupRoomHandler(
       country: userDetails.country as string,
       _id: userDetails._id as string,
       equipedStoreItems: userObj.equipedStoreItems,
+      currentBackground: userDetails.currentLevelBackground as string,
+      currentTag: userDetails.currentLevelTag as string,
+      
     });
     socket.join(roomId);
     const message = {
@@ -776,6 +798,8 @@ export async function registerGroupRoomHandler(
         roomId: room,
         messages: roomData.messages,
         broadcastersDetails: roomData.broadcastersDetails,
+        currentBackground: roomData.currentBackground,
+        currentTag: roomData.currentTag,
         hostDetails: roomData.hostDetails,
         hostCoins: roomData.hostCoins,
         hostBonus: roomData.hostBonus,
