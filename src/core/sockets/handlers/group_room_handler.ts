@@ -28,6 +28,9 @@ export interface ISerializedRoomData {
     uid: string;
     country: string;
     _id: mongoose.Schema.Types.ObjectId | string;
+    currentBackground: string;
+    currentTag: string;
+    currentLevel: number;
     text: string;
     equipedStoreItems: Record<string, string>;
   }[];
@@ -55,7 +58,8 @@ export async function registerGroupRoomHandler(
     "uid",
     "country",
     "currentLevelBackground",
-    "currentLevelTag"
+    "currentLevelTag",
+    "level"
   ]);
 
   console.log(userDetails);
@@ -95,6 +99,7 @@ export async function registerGroupRoomHandler(
       text: messageText,
       currentBackground: userDetails.currentLevelBackground as string,
       currentTag: userDetails.currentLevelTag as string,
+      currentLevel: userDetails.level as number,
       equipedStoreItems: userObj.equipedStoreItems,
     };
     if (room.messages.length >= 100) room.messages.shift();
@@ -140,6 +145,7 @@ export async function registerGroupRoomHandler(
           _id: userDetails._id as string,
           currentBackground: userDetails.currentLevelBackground as string,
           currentTag: userDetails.currentLevelTag as string,
+          currentLevel: userDetails.level as number,
           equipedStoreItems: userObj.equipedStoreItems,
         },
       ],
@@ -416,6 +422,7 @@ export async function registerGroupRoomHandler(
       _id: userDetails._id as string,
       equipedStoreItems: userObj.equipedStoreItems,
       currentBackground: userDetails.currentLevelBackground as string,
+      currentLevel: userDetails.level as number,
       currentTag: userDetails.currentLevelTag as string,
     });
     const hostSocketId = onlineUsers.get(room.hostId);
@@ -529,6 +536,7 @@ export async function registerGroupRoomHandler(
       _id: targetUser._id as string,
       equipedStoreItems: targetEquipedStoreItems,
       currentBackground: targetUser.currentLevelBackground as string,
+      currentLevel: targetUser.level as number,
       currentTag: targetUser.currentLevelTag as string,
     });
 
@@ -718,6 +726,7 @@ export async function registerGroupRoomHandler(
       _id: userDetails._id as string,
       equipedStoreItems: userObj.equipedStoreItems,
       currentBackground: userDetails.currentLevelBackground as string,
+      currentLevel: userDetails.level as number,
       currentTag: userDetails.currentLevelTag as string,
       
     });

@@ -20,6 +20,7 @@ export interface IMemberDetails {
   country: string;
   currentBackground: string;
   currentTag: string;
+  currentLevel: number;
   _id: mongoose.Schema.Types.ObjectId | string;
   equipedStoreItems: Record<string, string>;
 }
@@ -42,6 +43,7 @@ export interface RoomData {
     _id: mongoose.Schema.Types.ObjectId | string;
     currentBackground: string;
     currentTag: string;
+    currentLevel: number;
     text: string;
     equipedStoreItems: Record<string, string>;
   }[];
