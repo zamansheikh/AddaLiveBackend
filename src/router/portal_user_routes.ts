@@ -167,5 +167,18 @@ router
     portalUserControllers.updateJoinRequestStatus
   );
 
+  // import jwt from "jsonwebtoken";
+
+  // router.route("/exp").get((req, res)=>{
+  //       const token = jwt.sign(
+  //     {
+  //       id: "68b499c5e3d66f1124080da3",
+  //       role: 'merchant',
+  //       permissions: [],
+  //     },
+  //     'thisisjosnwebsecret'
+  //   );
+  //   res.json({token})
+  // })
 
 export default router;

@@ -738,10 +738,13 @@ export async function registerGroupRoomHandler(
       country: userDetails.country as string,
       _id: userDetails._id as string,
       text: "joined the room",
+      currentBackground: userDetails.currentLevelBackground as string,
+      currentTag: userDetails.currentLevelTag as string,
+      currentLevel: userDetails.level as number,
       equipedStoreItems: userObj.equipedStoreItems,
     };
     io.to(roomId).emit(SocketChannels.sendMessage, message);
-    io.to(roomId).emit(SocketChannels.userJoined, userDetails);
+    io.to(roomId).emit(SocketChannels.userJoined, userObj);
   });
 
   socket.on(SocketChannels.leaveRoom, ({ roomId }) => {

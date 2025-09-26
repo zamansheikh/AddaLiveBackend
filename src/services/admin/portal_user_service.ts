@@ -338,34 +338,29 @@ export default class SharedPowerService implements ISharedPowerService {
 
     // adding coin to targetProfile
     if (userRole == UserRoles.Merchant || userRole == UserRoles.Reseller) {
-      console.log("inside if condition");
       returnBody = await this.PortalUserRepository.updateCoin(
         userId,
         coins,
         session
       );
     } else {
-      console.log("inside else condition");
 
       // when the target profile is the role user
       const userProfile = targetProfile as IUserDocument;
       // determine level, bg and tags
       const newLevel = determineUserLevel(userProfile.totalBoughtCoins + coins);
-      console.log("new level => ", newLevel);
       const newTagAndBg = determineUserTagAndBg(newLevel);
       console.log("new tag and bg => ", newTagAndBg);
       const tagAndBgDocument = await this.LevelTagBgRepository.findByLevel(
         newTagAndBg
       );
-      console.log("tag and bg document => ", tagAndBgDocument);
       // updating the user profile accordingly;
-     const updateProfile = await this.UserRepository.findUserByIdAndUpdate(userId, {
+       await this.UserRepository.findUserByIdAndUpdate(userId, {
         totalBoughtCoins: userProfile.totalBoughtCoins + coins,
         level: newLevel,
         currentLevelTag: tagAndBgDocument?.levelTag,
         currentLevelBackground: tagAndBgDocument?.levelBg,
       });
-      console.log("update profile => ", updateProfile);
 
       
       // adding coin to the user;
