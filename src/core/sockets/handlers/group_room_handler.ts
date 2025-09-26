@@ -59,11 +59,11 @@ export async function registerGroupRoomHandler(
     "country",
     "currentLevelBackground",
     "currentLevelTag",
-    "level"
+    "level",
   ]);
 
   console.log(userDetails);
-  
+
   const userObj = userDetails.toObject();
   userObj.equipedStoreItems = await getEquipedItemObjects(
     bucketRepository,
@@ -505,7 +505,7 @@ export async function registerGroupRoomHandler(
         status: StatusCodes.UNAUTHORIZED,
         message: "User is banned from this room",
       });
-    if (room.brodcasters.size >= 3)
+    if (room.brodcasters.size >= 4)
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.BAD_REQUEST,
         message: "Maximum 3 broadcasters are allowed",
@@ -520,7 +520,15 @@ export async function registerGroupRoomHandler(
     // ! update
     const targetUser = await userRepository.getUserDetailsSelectedField(
       targetId,
-      ["name", "avatar", "uid", "country"]
+      [
+        "name",
+        "avatar",
+        "uid",
+        "country",
+        "currentLevelBackground",
+        "currentLevelTag",
+        "level",
+      ]
     );
     const targetEquipedStoreItems = await getEquipedItemObjects(
       bucketRepository,
@@ -728,7 +736,6 @@ export async function registerGroupRoomHandler(
       currentBackground: userDetails.currentLevelBackground as string,
       currentLevel: userDetails.level as number,
       currentTag: userDetails.currentLevelTag as string,
-      
     });
     socket.join(roomId);
     const message = {
@@ -969,7 +976,6 @@ export async function registerGroupRoomHandler(
     });
   });
 
-
   socket.on(SocketChannels.updateHostCoins, ({ roomId, coins }) => {
     if (!roomId)
       return io.to(socket.id).emit(SocketChannels.error, {
@@ -993,8 +999,6 @@ export async function registerGroupRoomHandler(
       coins: room.hostCoins,
     });
   });
-
-
 
   socket.on(SocketChannels.inviteUser, ({ roomId, targetId }) => {});
 }
