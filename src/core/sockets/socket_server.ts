@@ -155,10 +155,10 @@ export default class SocketServer {
   private handleUserConnect(userId: string, socket: Socket) {
     if (this.disconnectedUsers.has(userId)) {
       clearTimeout(this.disconnectedUsers.get(userId)?.timeOut);
-      this.disconnectedUsers.delete(userId);
       if (this.disconnectedUsers.get(userId)?.roomId) {
         socket.join(this.disconnectedUsers.get(userId)?.roomId!);
       }
+      this.disconnectedUsers.delete(userId);
     }
     this.onlineUsers.set(userId, socket.id);
     console.log(`User ${userId} connected with socket ID: ${socket.id}`);
@@ -170,6 +170,28 @@ export default class SocketServer {
     roomData: RoomData
   ) {
     // remove the users and leave the room when diconnected
+
+    if (roomData.hostId == userId) {
+      this.io.to(roomId).emit(SocketChannels.roomClosed, {
+        roomId,
+        message: "Room has been closed by the host",
+      });
+
+      const membersArray = Array.from(roomData.members);
+      for (let i = 0; i < membersArray.length; i++) {
+        const member = membersArray[i];
+        const socketId = this.onlineUsers.get(member);
+        if (socketId) {
+          const io = this.io;
+          const socket = io.sockets.sockets.get(socketId);
+          if (socket) {
+            socket.leave(roomId);
+          }
+        }
+      }
+      delete this.hostedRooms[roomId];
+      return;
+    }
 
     if (roomData.members.has(userId)) {
       if (roomData.brodcasters.has(userId)) {
@@ -203,6 +225,14 @@ export default class SocketServer {
       roomData.membersDetails = roomData.membersDetails.filter(
         (member) => member._id.toString() !== userId
       );
+      const socketId = this.onlineUsers.get(userId);
+      if (socketId) {
+        const io = this.io;
+        const socket = io.sockets.sockets.get(socketId);
+        if (socket) {
+          socket.leave(roomId);
+        }
+      }
 
       this.io.to(roomId).emit(SocketChannels.userLeft, userDetails);
     }

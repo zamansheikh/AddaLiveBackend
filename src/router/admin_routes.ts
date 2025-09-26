@@ -231,7 +231,7 @@ router
   .delete(authenticate([UserRoles.Admin]), adminUserController.deleteBanner);
 
 router
-  .route("/transaction-dmin")
+  .route("/transaction-admin")
   .get(
     authenticate([UserRoles.Admin]),
     adminUserController.getAdminCoinHistory

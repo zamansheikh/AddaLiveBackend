@@ -54,7 +54,7 @@ export default class CoinHistoryRepository implements ICoinHistoryRepository {
       },
     ]);
 
-    const data = await res.exec();
+    const data = await res.sort().exec();
     const pagination = await res.countTotal();
     return {
       pagination,

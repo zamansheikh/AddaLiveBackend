@@ -230,7 +230,10 @@ export async function registerGroupRoomHandler(
     delete hostedRooms[roomId];
 
     // ! if unintended users are also getting the event, use io.to(roomId),
-    io.to(roomId).emit(SocketChannels.roomList, Object.keys(hostedRooms));
+    io.to(roomId).emit(SocketChannels.roomClosed, {
+      roomId,
+      message: "Room has been closed by the host",
+    });
   });
 
   socket.on(SocketChannels.makeAdmin, ({ roomId, targetId }) => {

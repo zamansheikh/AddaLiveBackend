@@ -332,7 +332,7 @@ export default class SharedPowerService implements ISharedPowerService {
     const session = await mongoose.startSession();
     session.startTransaction();
     // negating coin from myProfile
-    if ((role = UserRoles.Admin))
+    if (role == UserRoles.Admin)
       await this.AdminRepository.updateCoin(myId, -coins, session);
     else await this.PortalUserRepository.updateCoin(myId, -coins, session);
 
@@ -344,34 +344,30 @@ export default class SharedPowerService implements ISharedPowerService {
         session
       );
     } else {
-
       // when the target profile is the role user
       const userProfile = targetProfile as IUserDocument;
       // determine level, bg and tags
       const newLevel = determineUserLevel(userProfile.totalBoughtCoins + coins);
       const newTagAndBg = determineUserTagAndBg(newLevel);
-      console.log("new tag and bg => ", newTagAndBg);
       const tagAndBgDocument = await this.LevelTagBgRepository.findByLevel(
         newTagAndBg
       );
       // updating the user profile accordingly;
-       await this.UserRepository.findUserByIdAndUpdate(userId, {
+      await this.UserRepository.findUserByIdAndUpdate(userId, {
         totalBoughtCoins: userProfile.totalBoughtCoins + coins,
         level: newLevel,
         currentLevelTag: tagAndBgDocument?.levelTag,
         currentLevelBackground: tagAndBgDocument?.levelBg,
       });
 
-      
       // adding coin to the user;
       returnBody = await this.UserStatsRepository.updateCoins(
         userId,
         coins,
         session
       );
-
-      await this.CoinHistoryRepository.createHistory(historyObj, session);
     }
+    await this.CoinHistoryRepository.createHistory(historyObj, session);
 
     await session.commitTransaction();
     session.endSession();
