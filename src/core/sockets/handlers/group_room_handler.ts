@@ -38,6 +38,7 @@ export interface ISerializedRoomData {
   adminDetails: IMemberDetails | null;
   callRequests: IMemberDetails[];
   mutedUsers: string[];
+  ranking: IMemberDetails[];
   title: string;
   duration: number; // in seconds
 }
@@ -157,6 +158,20 @@ export async function registerGroupRoomHandler(
       adminDetails: null,
       callRequests: new Set(),
       mutedUsers: new Set(),
+      ranking: [
+        {
+          name: userDetails.name as string,
+          avatar: userDetails.avatar as string,
+          uid: userDetails.uid as string,
+          country: userDetails.country as string,
+          _id: userDetails._id as string,
+          currentBackground: userDetails.currentLevelBackground as string,
+          currentTag: userDetails.currentLevelTag as string,
+          currentLevel: userDetails.level as number,
+          equipedStoreItems: userObj.equipedStoreItems,
+          totalGiftSent: 0
+        },
+      ],
       title: title,
       createdAt: new Date(),
     };
@@ -184,6 +199,7 @@ export async function registerGroupRoomHandler(
         callRequests: Array.from(roomData.callRequests),
         mutedUsers: Array.from(roomData.mutedUsers),
         title: roomData.title,
+        ranking: roomData.ranking,
         duration: Math.floor(
           (new Date().getTime() - roomData.createdAt.getTime()) / 1000
         ),
@@ -740,6 +756,18 @@ export async function registerGroupRoomHandler(
       currentLevel: userDetails.level as number,
       currentTag: userDetails.currentLevelTag as string,
     });
+    room.ranking.push({
+      name: userDetails.name as string,
+      avatar: userDetails.avatar as string,
+      uid: userDetails.uid as string,
+      country: userDetails.country as string,
+      _id: userDetails._id as string,
+      equipedStoreItems: userObj.equipedStoreItems,
+      currentBackground: userDetails.currentLevelBackground as string,
+      currentLevel: userDetails.level as number,
+      currentTag: userDetails.currentLevelTag as string,
+      totalGiftSent: 0,
+    });
     socket.join(roomId);
     const message = {
       name: userDetails.name as string,
@@ -832,6 +860,7 @@ export async function registerGroupRoomHandler(
         adminDetails: roomData.adminDetails,
         callRequests: Array.from(roomData.callRequests),
         mutedUsers: Array.from(roomData.mutedUsers),
+        ranking: roomData.ranking,
         title: roomData.title,
         duration: Math.floor(
           (new Date().getTime() - roomData.createdAt.getTime()) / 1000

@@ -636,6 +636,24 @@ export default class AdminUserController {
     });
   });
 
+
+  getPortalUserCoinHistory = catchAsync(async (req: Request, res: Response) => {
+    const {userId} = req.params;
+    const result = await this.AdminUserService.getCoinHistory(
+      UserRoles.Merchant,
+      userId,
+      req.query
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "transaction history retrieved successfully",
+    });
+  });
+
+
+
   getAgencyWithdrawList = catchAsync(async (req: Request, res: Response) => {
     const result = await this.AdminUserService.getAgencyWithdrawList(req.query);
     sendResponse(res, {

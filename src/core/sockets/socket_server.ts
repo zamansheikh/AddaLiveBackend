@@ -23,6 +23,7 @@ export interface IMemberDetails {
   currentLevel: number;
   _id: mongoose.Schema.Types.ObjectId | string;
   equipedStoreItems: Record<string, string>;
+  totalGiftSent?: number;
 }
 
 export interface RoomData {
@@ -53,6 +54,7 @@ export interface RoomData {
   adminDetails: IMemberDetails | null;
   callRequests: Set<IMemberDetails>;
   mutedUsers: Set<string>;
+  ranking: IMemberDetails[];
   title: string;
   createdAt: Date;
 }
@@ -152,6 +154,18 @@ export default class SocketServer {
     }
   }
 
+  public updateRoomRanking(roomId:string, userId: string, gifts: number) {
+    const room = this.hostedRooms[roomId];
+    if (room) {
+      for(let i = 0; i < room.ranking.length; i++){
+        if(room.ranking[i]._id.toString() === userId){
+          room.ranking[i].totalGiftSent! += gifts;
+          break;
+        }
+      }
+    }
+  }
+
   private handleUserConnect(userId: string, socket: Socket) {
     if (this.disconnectedUsers.has(userId)) {
       clearTimeout(this.disconnectedUsers.get(userId)?.timeOut);
@@ -188,6 +202,7 @@ export default class SocketServer {
             socket.leave(roomId);
           }
         }
+
       }
       delete this.hostedRooms[roomId];
       return;

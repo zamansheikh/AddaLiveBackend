@@ -230,12 +230,22 @@ router
   )
   .delete(authenticate([UserRoles.Admin]), adminUserController.deleteBanner);
 
+
 router
   .route("/transaction-admin")
   .get(
     authenticate([UserRoles.Admin]),
     adminUserController.getAdminCoinHistory
   );
+
+router
+  .route("/transaction-portal-user/:userId")
+  .get(
+    authenticate([UserRoles.Admin, UserRoles.Merchant, UserRoles.Reseller]),
+    adminUserController.getPortalUserCoinHistory
+  );
+
+
 
 router
   .route("/banners/docs")

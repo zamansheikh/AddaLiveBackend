@@ -373,6 +373,12 @@ export default class AuthService implements IAuthService {
       exisitngGift.diamonds * qty
     );
 
+    SocketServer.getInstance().updateRoomRanking(
+      roomId,
+      myId,
+      exisitngGift.diamonds * qty
+    );
+
     ioInstance.to(roomId).emit(SocketChannels.sendGift, {
       avatar: myUser.avatar,
       name: myUser.name,
@@ -381,6 +387,7 @@ export default class AuthService implements IAuthService {
       qty: qty,
       gift: exisitngGift,
     });
+    
     const firstRecievedUser = await this.UserRepository.findUserById(
       targetUserIds[0]
     );

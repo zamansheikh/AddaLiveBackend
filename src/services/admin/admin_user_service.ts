@@ -1020,6 +1020,12 @@ export default class AdminUserService implements IAdminUserService {
     };
     if (senderRole == UserRoles.Admin) {
       history = await this.CoinHistoryRepository.getAdminHistories(query);
+    } else if (senderRole == UserRoles.Merchant || senderRole == UserRoles.Reseller) {
+      const portalUser = await this.PortalUserRepository.getPortalUserById(
+        senderId!
+      );
+      if(!portalUser) throw new AppError(StatusCodes.NOT_FOUND, `Portal user with id -> ${senderId} not found`);
+      history = await this.CoinHistoryRepository.getPortalHistory(senderId!, query);
     }
     return history;
   }
