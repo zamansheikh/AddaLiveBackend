@@ -63,7 +63,6 @@ export async function registerGroupRoomHandler(
     "level",
   ]);
 
-  console.log(userDetails);
 
   const userObj = userDetails.toObject();
   userObj.equipedStoreItems = await getEquipedItemObjects(

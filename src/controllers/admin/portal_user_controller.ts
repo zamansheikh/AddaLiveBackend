@@ -139,7 +139,6 @@ export class PortalUserControllers {
         StatusCodes.BAD_REQUEST,
         "User ID and coins are required"
       );
-    console.log(id, role);
     
     if (isNaN(Number(coins)))
       throw new AppError(StatusCodes.BAD_REQUEST, "Coins must be a number");
