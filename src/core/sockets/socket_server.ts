@@ -147,22 +147,34 @@ export default class SocketServer {
     return this.onlineUsers.get(userId);
   }
 
-  public updateRoomCoin(roomId: string, coin: number): void {
+  public updateRoomCoin(
+    roomId: string,
+    coin: number,
+    targetUserIds: string[]
+  ): void {
     const room = this.hostedRooms[roomId];
     if (room) {
-      room.hostCoins += coin;
+      const hasHostId = targetUserIds.filter((id) => id == room.hostId);
+      if (hasHostId.length > 0) room.hostCoins += coin;
     }
   }
 
-  public updateRoomRanking(roomId:string, userId: string, gifts: number) {
+  public updateRoomRanking(
+    roomId: string,
+    userId: string,
+    gifts: number,
+    targetUserIds: string[]
+  ) {
     const room = this.hostedRooms[roomId];
     if (room) {
-      for(let i = 0; i < room.ranking.length; i++){
-        if(room.ranking[i]._id.toString() === userId){
-          room.ranking[i].totalGiftSent! += gifts;
-          break;
+      const hasHostId = targetUserIds.filter((id) => id == room.hostId);
+      if (hasHostId.length > 0)
+        for (let i = 0; i < room.ranking.length; i++) {
+          if (room.ranking[i]._id.toString() === userId) {
+            room.ranking[i].totalGiftSent! += gifts;
+            break;
+          }
         }
-      }
     }
   }
 
@@ -202,7 +214,6 @@ export default class SocketServer {
             socket.leave(roomId);
           }
         }
-
       }
       delete this.hostedRooms[roomId];
       return;

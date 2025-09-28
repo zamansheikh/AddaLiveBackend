@@ -340,8 +340,6 @@ export default class AuthService implements IAuthService {
     const hasMyId = targetUserIds.filter((id) => id == myId);
     const otherIds = targetUserIds.filter((id) => id != myId);
 
-    
-    
     let updateStats = {
       acknowledged: true,
       modifiedCount: 1,
@@ -368,15 +366,18 @@ export default class AuthService implements IAuthService {
 
     // sending the information to the frontend via socket
     const ioInstance = SocketServer.getInstance().getIO();
+
     SocketServer.getInstance().updateRoomCoin(
       roomId,
-      exisitngGift.diamonds * qty
+      exisitngGift.diamonds * qty,
+      targetUserIds
     );
 
     SocketServer.getInstance().updateRoomRanking(
       roomId,
       myId,
-      exisitngGift.diamonds * qty
+      exisitngGift.diamonds * qty,
+      targetUserIds
     );
 
     ioInstance.to(roomId).emit(SocketChannels.sendGift, {
@@ -387,7 +388,7 @@ export default class AuthService implements IAuthService {
       qty: qty,
       gift: exisitngGift,
     });
-    
+
     const firstRecievedUser = await this.UserRepository.findUserById(
       targetUserIds[0]
     );
@@ -619,7 +620,10 @@ export default class AuthService implements IAuthService {
   }
 
   async getMyBonus(userId: string): Promise<number> {
-    const myBonus  = await this.RoomBonusRecordsRepository.readTotalBonusWithoutStatusSeen(userId);
+    const myBonus =
+      await this.RoomBonusRecordsRepository.readTotalBonusWithoutStatusSeen(
+        userId
+      );
     return myBonus;
   }
 
