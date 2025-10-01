@@ -3,7 +3,7 @@
 import { Server, Socket } from "socket.io";
 import { Server as HttpServer } from "http";
 import { registerGroupRoomHandler } from "./handlers/group_room_handler";
-import { RoomTypes, SocketChannels } from "../Utils/enums";
+import { RoomTypes, SocketAudioChannels, SocketChannels } from "../Utils/enums";
 import UserRepository from "../../repository/users/user_repository";
 import User from "../../models/user/user_model";
 import { IUserDocument } from "../../models/user/user_model_interface";
@@ -12,52 +12,14 @@ import MyBucketRepository from "../../repository/store/my_bucket_repository";
 import MyBucketModel from "../../models/store/my_bucket_model";
 import StoreCategoryRepository from "../../repository/store/store_category_repository";
 import StoreCategoryModel from "../../models/store/store_category_model";
-
-export interface IMemberDetails {
-  name: string;
-  avatar: string;
-  uid: string;
-  country: string;
-  currentBackground: string;
-  currentTag: string;
-  currentLevel: number;
-  _id: mongoose.Schema.Types.ObjectId | string;
-  equipedStoreItems: Record<string, string>;
-  totalGiftSent?: number;
-}
-
-export interface RoomData {
-  hostId: string;
-  roomType: RoomTypes;
-  hostDetails?: IUserDocument | null;
-  hostCoins: number;
-  hostBonus: number;
-  members: Set<string>;
-  membersDetails: IMemberDetails[];
-  currentBackground: string;
-  currentTag: string;
-  messages: {
-    name: string;
-    avatar: string;
-    uid: string;
-    country: string;
-    _id: mongoose.Schema.Types.ObjectId | string;
-    currentBackground: string;
-    currentTag: string;
-    currentLevel: number;
-    text: string;
-    equipedStoreItems: Record<string, string>;
-  }[];
-  broadcastersDetails: IMemberDetails[];
-  bannedUsers: Set<string>;
-  brodcasters: Set<string>;
-  adminDetails: IMemberDetails | null;
-  callRequests: Set<IMemberDetails>;
-  mutedUsers: Set<string>;
-  ranking: IMemberDetails[];
-  title: string;
-  createdAt: Date;
-}
+import {
+  IAudioRoomData,
+  IMemberDetails,
+  IRoomMessage,
+  RoomData,
+} from "./interface/socket_interface";
+import { registerAudioRoomHandler } from "./handlers/audio_room_handler";
+import { isEmptyObject, socketResponse } from "../Utils/helper_functions";
 
 export default class SocketServer {
   private static instance: SocketServer;
@@ -68,6 +30,7 @@ export default class SocketServer {
     { timeOut: NodeJS.Timeout; roomId?: string }
   >(); // Map<userId, socketId>
   private hostedRooms = {} as Record<string, RoomData>;
+  private hostedAudioRooms = {} as Record<string, IAudioRoomData>;
   private userRepo = new UserRepository(User);
   private bucketRepo = new MyBucketRepository(MyBucketModel);
   private categoryRepo = new StoreCategoryRepository(StoreCategoryModel);
@@ -111,6 +74,16 @@ export default class SocketServer {
         socket,
         this.onlineUsers,
         this.hostedRooms,
+        this.userRepo,
+        this.bucketRepo,
+        this.categoryRepo
+      );
+
+      registerAudioRoomHandler(
+        this.io,
+        socket,
+        this.onlineUsers,
+        this.hostedAudioRooms,
         this.userRepo,
         this.bucketRepo,
         this.categoryRepo
@@ -269,6 +242,127 @@ export default class SocketServer {
         roomId,
         message: "Room has been closed by the host",
       });
+    }
+  }
+
+  handleAudioRoomDisconnect(
+    userId: string,
+    roomId: string,
+    roomData: IAudioRoomData
+  ) {
+    if ((roomData.hostDetails as IMemberDetails)._id == userId) {
+      socketResponse(this.io, SocketAudioChannels.RoomDetails, roomId, {
+        success: true,
+        message: "Room has been closed by the host",
+        data: {},
+      });
+      const membersArray = Array.from(roomData.members);
+      for (let i = 0; i < membersArray.length; i++) {
+        const member = membersArray[i];
+        const socketId = this.onlineUsers.get(member);
+        if (socketId) {
+          const socket = this.io.sockets.sockets.get(socketId);
+          if (socket) {
+            socket.leave(roomId);
+          }
+        }
+      }
+      delete this.hostedAudioRooms[roomId];
+      return;
+    }
+    if (roomData.members.has(userId)) {
+      // message body
+      const leftUserDetails = roomData.membersDetails.filter(
+        (member) => member._id == userId
+      );
+      let message: IRoomMessage = {
+        name: leftUserDetails[0].name as string,
+        avatar: leftUserDetails[0].avatar as string,
+        uid: leftUserDetails[0].uid as string,
+        country: leftUserDetails[0].country as string,
+        _id: leftUserDetails[0]._id as string,
+        text: "left the room",
+        currentBackground: leftUserDetails[0].currentBackground as string,
+        currentTag: leftUserDetails[0].currentTag as string,
+        currentLevel: leftUserDetails[0].currentLevel as number,
+        equipedStoreItems: leftUserDetails[0].equipedStoreItems,
+      };
+      // remove from seats
+      if (
+        !isEmptyObject(roomData.premiumSeat.member) &&
+        (roomData.premiumSeat.member as IMemberDetails)._id == userId
+      ) {
+        roomData.premiumSeat.member = {};
+        message.text = "left premiumSeat";
+        socketResponse(this.io, SocketAudioChannels.SendMessage, roomId, {
+          success: true,
+          message: "Successfully left the seat",
+          data: message,
+        });
+        socketResponse(this.io, SocketAudioChannels.leaveSeat, roomId, {
+          success: true,
+          message: "Successfully left the seat",
+          data: {
+            seatKey: "premiumSeat",
+            member: {},
+          },
+        });
+      }
+
+      // remove from seats
+      for (const [seatKey, seat] of Object.entries(roomData.seats)) {
+        if (
+          !isEmptyObject(seat.member) &&
+          (seat.member as IMemberDetails)._id == userId
+        ) {
+          roomData.seats[seatKey].member = {};
+          message.text = `left ${seatKey}`;
+          socketResponse(this.io, SocketAudioChannels.SendMessage, roomId, {
+            success: true,
+            message: "Successfully left the seat",
+            data: message,
+          });
+          socketResponse(this.io, SocketAudioChannels.leaveSeat, roomId, {
+            success: true,
+            message: "Successfully left the seat",
+            data: {
+              seatKey,
+              member: {},
+            },
+          });
+        }
+      }
+
+      // remove from muted
+      if (roomData.mutedUsers.has(userId)) roomData.mutedUsers.delete(userId);
+      // removing from members
+      roomData.members.delete(userId);
+      // removing from membersDetails
+      roomData.membersDetails = roomData.membersDetails.filter(
+        (member) => member._id.toString() !== userId
+      );
+
+      // send leave event
+      socketResponse(this.io, SocketAudioChannels.userLeft, roomId, {
+        success: true,
+        message: "Successfully left the room",
+        data: {
+          _id: userId,
+        },
+      });
+      socketResponse(this.io, SocketAudioChannels.SendMessage, roomId, {
+        success: true,
+        message: "Successfully left the room",
+        data: message,
+      });
+      // remove from socket
+      const socketId = this.onlineUsers.get(userId);
+      if (socketId) {
+        const getSocket = this.io.sockets.sockets.get(socketId);
+        if (getSocket) {
+          getSocket.leave(roomId);
+        }
+      }
     }
   }
 }

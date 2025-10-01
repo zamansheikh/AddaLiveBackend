@@ -1,7 +1,6 @@
 import { Socket, Server } from "socket.io";
 import { RoomTypes, SocketChannels } from "../../Utils/enums";
 import { StatusCodes } from "http-status-codes";
-import { IMemberDetails, RoomData } from "../socket_server";
 import AppError from "../../errors/app_errors";
 import { IUserDocument } from "../../../models/user/user_model_interface";
 import { IUserRepository } from "../../../repository/users/user_repository";
@@ -9,6 +8,7 @@ import mongoose from "mongoose";
 import { IMyBucketRepository } from "../../../repository/store/my_bucket_repository";
 import { IStoreCategoryRepository } from "../../../repository/store/store_category_repository";
 import { getEquipedItemObjects } from "../../Utils/helper_functions";
+import { IMemberDetails, RoomData } from "../interface/socket_interface";
 
 export interface ISerializedRoomData {
   hostId: string;

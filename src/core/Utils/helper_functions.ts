@@ -17,6 +17,8 @@ import { Types } from "mongoose";
 import { IStoreItem } from "../../models/store/store_item_model";
 import { IStoreCategoryRepository } from "../../repository/store/store_category_repository";
 import { userLevels } from "./constants";
+import { Server } from "socket.io";
+import { ISearializedAudioRoom } from "../sockets/interface/socket_interface";
 
 export const generateFileHash = (buffer: Buffer): string => {
   return crypto.createHash("sha256").update(buffer).digest("hex");
@@ -235,10 +237,28 @@ export async function getEquipedItemObjects(
   return equipedFeatures;
 }
 
+export async function checkPremiumItem(
+  repository: IMyBucketRepository,
+  userId: string
+): Promise<boolean> {
+  const equipedBuccket = await repository.getEquipedBuckets(userId);
+  
+  if (equipedBuccket.length != 1) return false;
+
+  if (
+    typeof equipedBuccket[0].itemId == "string" ||
+    equipedBuccket[0].itemId instanceof Types.ObjectId
+  )
+    throw new AppError(StatusCodes.CONFLICT, "itemId is not populated");
+  const item = equipedBuccket[0].itemId as IStoreItem;
+  if(item.isPremium) return true;
+  return false;
+}
+
 export function determineUserLevel(coins: number): number {
   for (let i = 0; i < userLevels.length; i++) {
     if (coins < userLevels[i]) {
-      return i ; // Levels start from 0
+      return i; // Levels start from 0
     }
   }
   return 40; // at maximum level
@@ -253,7 +273,7 @@ export function determineUserTagAndBg(level: number): string {
   else if (level >= 26 && level <= 30) return "26-30";
   else if (level >= 31 && level <= 35) return "31-35";
   else if (level >= 36 && level <= 40) return "36-40";
-  return "41-45";
+  return "36-40";
 }
 
 export function getCloudinaryPublicId(url: string): string {
@@ -263,4 +283,21 @@ export function getCloudinaryPublicId(url: string): string {
   const fileHash = fileName.substring(0, fileName.lastIndexOf("."));
   const publicId = `${folderName}/${folderName}/${fileHash}`;
   return publicId;
+}
+
+export function socketResponse(
+  io: Server,
+  channel: string,
+  dest: string,
+  { success, message, data }: { success: boolean; message: string; data?: any }
+) {
+  io.to(dest).emit(channel, {
+    success,
+    message,
+    data,
+  });
+}
+
+export function isEmptyObject(obj: object): boolean {  
+  return Object.keys(obj).length === 0;
 }

@@ -114,6 +114,21 @@ export enum SocketChannels {
   updateHostCoins = "update-host-coins",
 }
 
+export enum SocketAudioChannels {
+  CreateAudioRoom = 'create-audio-room',
+  GetAllAudioRooms = 'get-all-audio-rooms',
+  JoinAudioRoom = 'join-audio-room',
+  joinSeat= 'join-audio-seat',
+  RemoveFromSeat= 'remove-from-seat',
+  leaveSeat= 'leave-audio-seat',
+  SendMessage = 'send-audio-message',
+  RoomDetails = 'audio-room-details',
+  MuteUnmute = 'audio-mute-unmute',
+  LeaveAudioRoom = 'leave-audio-room',
+  userLeft = 'audio-user-left',
+  CloseRoom = 'close-audio-room',
+}
+
 export enum RoomTypes {
   live = "live",
   pk = "pk",
