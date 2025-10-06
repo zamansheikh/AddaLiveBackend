@@ -432,14 +432,14 @@ export const registerAudioRoomHandler = async (
 
   // take leave from room
   socket.on(SocketAudioChannels.LeaveAudioRoom, ({ roomId }) => {
-    if(!audioRoomPolicy.ensureRoomExists(roomId)) return;
-    if(!audioRoomPolicy.ensureHasMember(roomId, userId)) return;
+    if (!audioRoomPolicy.ensureRoomExists(roomId)) return;
+    if (!audioRoomPolicy.ensureHasMember(roomId, userId)) return;
     const room = audioRoom[roomId];
     const socketInstance = SocketServer.getInstance();
     socketInstance.handleAudioRoomDisconnect(userId, roomId, room);
   });
 
-  // send message 
+  // send message
   socket.on(SocketAudioChannels.SendMessage, ({ roomId, text }) => {
     if (!audioRoomPolicy.ensureRoomExists(roomId)) return;
     if (!audioRoomPolicy.ensureHasMember(roomId, userId)) return;
@@ -462,6 +462,42 @@ export const registerAudioRoomHandler = async (
       success: true,
       message: "Successfully sent message",
       data: message,
+    });
+  });
+
+  socket.on(SocketAudioChannels.BanUser, ({ roomId, targetId }) => {
+    if (!audioRoomPolicy.ensureIsHost(roomId, userId)) return;
+    if (!audioRoomPolicy.ensureRoomExists(roomId)) return;
+    if (!audioRoomPolicy.ensureHasMember(roomId, targetId)) return;
+    if (targetId === userId) {
+      socketResponse(io, SocketChannels.error, socket.id, {
+        success: false,
+        message: "You can't ban yourself",
+      });
+    }
+    const room = audioRoom[roomId];
+    room.bannedUsers.add(targetId);
+    const socketInstance = SocketServer.getInstance();
+    socketInstance.handleAudioRoomDisconnect(userId, roomId, room);
+    socketResponse(io, SocketAudioChannels.BanUser, roomId, {
+      success: true,
+      message: "Successfully banned the user",
+      data: {
+        bannedUsers: Array.from(room.bannedUsers),
+      },
+    });
+  });
+  socket.on(SocketAudioChannels.UnBanUser, ({ roomId, targetId }) => {
+    if (!audioRoomPolicy.ensureIsHost(roomId, userId)) return;
+    if (!audioRoomPolicy.ensureRoomExists(roomId)) return;
+    const room = audioRoom[roomId];
+    if (room.bannedUsers.has(targetId)) room.bannedUsers.delete(targetId);
+    socketResponse(io, SocketAudioChannels.UnBanUser, roomId, {
+      success: true,
+      message: "Successfully unbanned the user",
+      data: {
+        bannedUsers: Array.from(room.bannedUsers),
+      },
     });
   });
 };

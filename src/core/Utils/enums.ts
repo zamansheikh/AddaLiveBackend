@@ -31,17 +31,17 @@ export enum DatabaseNames {
   RoomHistory = "room-histories",
   withdrawRoomHistory = "withdraw-room-histories",
   WithdrawBonus = "withdraw-bonus",
-  Salaries = "salaries", 
+  Salaries = "salaries",
   AgencyWithdraw = "agency-withdraw",
-  Banners= 'banners',
+  Banners = "banners",
   CoinHistory = "coin_histories",
   AgencyJoinRequest = "agency_join_requests",
-  StoreCategory = 'store_categories',
-  StoreItem = 'store_items',
+  StoreCategory = "store_categories",
+  StoreItem = "store_items",
   MyBucketItem = "my_bucket_items",
-  StoreItemDeleteHistory= "store_item_delete_history",
+  StoreItemDeleteHistory = "store_item_delete_history",
   RoomBonusRecord = "room_bonus_records",
-  LevelTagBg = "level_tag_bg"
+  LevelTagBg = "level_tag_bg",
 }
 
 export enum ReelStatus {
@@ -115,18 +115,20 @@ export enum SocketChannels {
 }
 
 export enum SocketAudioChannels {
-  CreateAudioRoom = 'create-audio-room',
-  GetAllAudioRooms = 'get-all-audio-rooms',
-  JoinAudioRoom = 'join-audio-room',
-  joinSeat= 'join-audio-seat',
-  RemoveFromSeat= 'remove-from-seat',
-  leaveSeat= 'leave-audio-seat',
-  SendMessage = 'send-audio-message',
-  RoomDetails = 'audio-room-details',
-  MuteUnmute = 'audio-mute-unmute',
-  LeaveAudioRoom = 'leave-audio-room',
-  userLeft = 'audio-user-left',
-  CloseRoom = 'close-audio-room',
+  CreateAudioRoom = "create-audio-room",
+  GetAllAudioRooms = "get-all-audio-rooms",
+  JoinAudioRoom = "join-audio-room",
+  joinSeat = "join-audio-seat",
+  RemoveFromSeat = "remove-from-seat",
+  leaveSeat = "leave-audio-seat",
+  SendMessage = "send-audio-message",
+  RoomDetails = "audio-room-details",
+  MuteUnmute = "audio-mute-unmute",
+  LeaveAudioRoom = "leave-audio-room",
+  userLeft = "audio-user-left",
+  CloseRoom = "close-audio-room",
+  BanUser = "ban-audio-user",
+  UnBanUser = "unban-audio-user",
 }
 
 export enum RoomTypes {
@@ -203,7 +205,6 @@ export enum WithdrawAccountTypes {
   Bank = "bank",
 }
 
-
 export enum StatusTypes {
   accepted = "accepted",
   rejected = "rejected",
@@ -211,9 +212,9 @@ export enum StatusTypes {
 }
 
 export enum AgencyJoinStatus {
-  List = 'list',
-  Pending = 'pending',
-  Congrats = 'congrats',
-  member = 'member',
-  error = 'error'
+  List = "list",
+  Pending = "pending",
+  Congrats = "congrats",
+  member = "member",
+  error = "error",
 }
