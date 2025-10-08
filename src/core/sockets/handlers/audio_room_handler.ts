@@ -170,9 +170,40 @@ export const registerAudioRoomHandler = async (
     });
   });
 
+  // get audio room details
+  socket.on(SocketAudioChannels.RoomDetails, ({ roomId }) => {
+    if (!audioRoomPolicy.ensureRoomExists(roomId)) return;  
+    const room = audioRoom[roomId];
+    const serializedRoom: ISearializedAudioRoom = {
+      title: room.title,
+      numberOfSeats: room.numberOfSeats,
+      roomId: room.roomId,
+      hostGifts: room.hostGifts,
+      hostBonus: room.hostBonus,
+      hostDetails: room.hostDetails,
+      premiumSeat: room.premiumSeat,
+      seats: room.seats,
+      messages: room.messages,
+      createdAt: room.createdAt,
+      bannedUsers: Array.from(room.bannedUsers),
+      members: Array.from(room.members),
+      membersDetails: room.membersDetails,
+      mutedUsers: Array.from(room.mutedUsers),
+      ranking: room.ranking,
+      duration: Math.floor(
+        (new Date().getTime() - room.createdAt.getTime()) / 1000
+      )
+    };
+    socketResponse(io, SocketAudioChannels.RoomDetails, socket.id, {
+      success: true,
+      message: "Successfully fetched room details",
+      data: serializedRoom,
+    });
+  });
+
   // user join audio room
   socket.on(SocketAudioChannels.JoinAudioRoom, ({ roomId }) => {
-    audioRoomPolicy.ensureUserCanJoin(roomId, userId);
+    if(!audioRoomPolicy.ensureUserCanJoin(roomId, userId)) return;
     const room = audioRoom[roomId];
     const membersDetails: IMemberDetails = {
       name: userDetails.name as string,
@@ -465,10 +496,13 @@ export const registerAudioRoomHandler = async (
     });
   });
 
+  // ban user
   socket.on(SocketAudioChannels.BanUser, ({ roomId, targetId }) => {
     if (!audioRoomPolicy.ensureIsHost(roomId, userId)) return;
     if (!audioRoomPolicy.ensureRoomExists(roomId)) return;
     if (!audioRoomPolicy.ensureHasMember(roomId, targetId)) return;
+    console.log(userId, targetId);
+    
     if (targetId === userId) {
       socketResponse(io, SocketChannels.error, socket.id, {
         success: false,
@@ -478,7 +512,6 @@ export const registerAudioRoomHandler = async (
     const room = audioRoom[roomId];
     room.bannedUsers.add(targetId);
     const socketInstance = SocketServer.getInstance();
-    socketInstance.handleAudioRoomDisconnect(userId, roomId, room);
     socketResponse(io, SocketAudioChannels.BanUser, roomId, {
       success: true,
       message: "Successfully banned the user",
@@ -486,7 +519,10 @@ export const registerAudioRoomHandler = async (
         bannedUsers: Array.from(room.bannedUsers),
       },
     });
+    socketInstance.handleAudioRoomDisconnect(targetId, roomId, room);
   });
+
+  // unban user
   socket.on(SocketAudioChannels.UnBanUser, ({ roomId, targetId }) => {
     if (!audioRoomPolicy.ensureIsHost(roomId, userId)) return;
     if (!audioRoomPolicy.ensureRoomExists(roomId)) return;

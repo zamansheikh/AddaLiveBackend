@@ -826,11 +826,11 @@ export default class AdminUserService implements IAdminUserService {
   }> {
     const today = new Date();
     const date = today.getDate();
-    if (date != 16 && date != 1)
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        `${date} is not salary day, 16th or the 1st day of the next month is`
-      );
+    // if (date != 16 && date != 1)
+    //   throw new AppError(
+    //     StatusCodes.BAD_REQUEST,
+    //     `${date} is not salary day, 16th or the 1st day of the next month is`
+    //   );
 
     const agencyArray =
       await this.WithdrawBonusRepository.getAgencyPerformance();
