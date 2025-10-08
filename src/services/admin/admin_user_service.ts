@@ -58,6 +58,8 @@ import {
   ILevelTagBgDocument,
 } from "../../models/user/level_tag_bg_model";
 import { ILevelTagBgRepository } from "../../repository/users/level_tag_bg_repository";
+import { IPoster, IPosterDocument } from "../../models/banner/posterModel";
+import { IPosterRepository } from "../../repository/banners/posterRepository";
 
 export interface IAdminUserService {
   loginAdmin(credentials: {
@@ -164,6 +166,20 @@ export interface IAdminUserService {
     file?: Express.Multer.File
   ): Promise<IBannerDocument>;
   deleteBanner(id: string): Promise<IBannerDocument>;
+  // posters
+  getPosters(): Promise<String[]>;
+  getRandomPosters(): Promise<IPosterDocument>;
+
+  createPoster(
+    alt: string,
+    file: Express.Multer.File
+  ): Promise<IPosterDocument>;
+  updatePoster(
+    id: string,
+    alt?: string,
+    file?: Express.Multer.File
+  ): Promise<IPosterDocument>;
+  deletePoster(id: string): Promise<IPosterDocument>;
   getCoinHistory(
     senderRole: UserRoles,
     senderId: string | null,
@@ -204,6 +220,7 @@ export default class AdminUserService implements IAdminUserService {
   CoinHistoryRepository: ICoinHistoryRepository;
   AgencyWithdrawRepository: IAgencyWithdrawRepository;
   LevelTagBgRepository: ILevelTagBgRepository;
+  PosterRepository: IPosterRepository;
 
   constructor(
     UserRepository: IUserRepository,
@@ -216,7 +233,8 @@ export default class AdminUserService implements IAdminUserService {
     BannerRepository: IBannerRepository,
     CoinHistoryRepository: ICoinHistoryRepository,
     AgencyWithdrawRepository: IAgencyWithdrawRepository,
-    LevelTagBgRepository: ILevelTagBgRepository
+    LevelTagBgRepository: ILevelTagBgRepository,
+    PosterRepository: IPosterRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
@@ -229,6 +247,7 @@ export default class AdminUserService implements IAdminUserService {
     this.CoinHistoryRepository = CoinHistoryRepository;
     this.AgencyWithdrawRepository = AgencyWithdrawRepository;
     this.LevelTagBgRepository = LevelTagBgRepository;
+    this.PosterRepository = PosterRepository;
   }
 
   async loginAdmin(credentials: {
@@ -1003,6 +1022,88 @@ export default class AdminUserService implements IAdminUserService {
     const deletedBanner = await this.BannerRepository.deleteBanner(id);
     return deletedBanner;
   }
+
+  // posters
+
+  async getPosters(): Promise<String[]> {
+    const posters = await this.PosterRepository.getPosters();
+    const postersArray = posters.map((poster) => poster.url);
+    return postersArray;
+  }
+
+  async getRandomPosters(): Promise<IPosterDocument> {
+    const posters = await this.PosterRepository.getRandomPoster();
+    return posters;
+  }
+
+  async createPoster(
+    alt: string,
+    file: Express.Multer.File
+  ): Promise<IPosterDocument> {
+    const posterUrl = await uploadFileToCloudinary({
+      isVideo: false,
+      folder: CloudinaryFolder.PosterAssets,
+      file: file,
+    });
+
+    const newPoster = await this.PosterRepository.createPoster({
+      url: posterUrl,
+      alt: alt,
+    });
+    return newPoster;
+  }
+
+  async updatePoster(
+    id: string,
+    alt?: string,
+    file?: Express.Multer.File
+  ): Promise<IPosterDocument> {
+    let url;
+    if (file) {
+      url = await uploadFileToCloudinary({
+        isVideo: false,
+        folder: CloudinaryFolder.PosterAssets,
+        file: file,
+      });
+    }
+    let updateObj: Partial<IPoster> = {};
+
+    if (url) updateObj["url"] = url as string;
+    if (alt) updateObj["alt"] = alt;
+
+    const updatedPoster = await this.PosterRepository.updatePoster(
+      id,
+      updateObj
+    );
+    return updatedPoster;
+  }
+
+  async deletePoster(id: string): Promise<IPosterDocument> {
+    const poster = await this.PosterRepository.getPosterById(id);
+
+    if (!poster) {
+      throw new AppError(StatusCodes.NOT_FOUND, "Banner not found");
+    }
+
+    const parts = new URL(poster.url).pathname.split("/");
+    const fileName = parts[parts.length - 1];
+    const folderName = parts[parts.length - 2];
+    const fileHash = fileName.substring(0, fileName.lastIndexOf("."));
+    const publicId = `${folderName}/${folderName}/${fileHash}`;
+
+    const deleteFile = await deleteFileFromCloudinary({
+      isVideo: false,
+      publicId: publicId,
+    });
+    if (!deleteFile)
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Failed to delete image from cloudinary"
+      );
+    const deletePoster = await this.PosterRepository.deletePoster(id);
+    return deletePoster;
+  }
+
 
   async getCoinHistory(
     senderRole: UserRoles,

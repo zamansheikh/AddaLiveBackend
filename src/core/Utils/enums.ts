@@ -34,6 +34,7 @@ export enum DatabaseNames {
   Salaries = "salaries",
   AgencyWithdraw = "agency-withdraw",
   Banners = "banners",
+  Posters = "posters",
   CoinHistory = "coin_histories",
   AgencyJoinRequest = "agency_join_requests",
   StoreCategory = "store_categories",
@@ -64,6 +65,7 @@ export enum CloudinaryFolder {
   messageVideos = "message_videos",
   giftAssets = "gift_assets",
   BannerAssets = "banner_assets",
+  PosterAssets = "poster_assets",
   LevelTagBgAssets = "level_tag_bg_assets",
 }
 

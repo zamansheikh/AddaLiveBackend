@@ -31,6 +31,8 @@ import AgencyWithdrawRepository from "../repository/room/agency_withdraw_reposit
 import AgencyWithdrawModel from "../models/room/agency_withdraw_model";
 import LevelTagBgRepository from "../repository/users/level_tag_bg_repository";
 import LevelTagBgModel from "../models/user/level_tag_bg_model";
+import PosterRepository from "../repository/banners/posterRepository";
+import PosterModel from "../models/banner/posterModel";
 
 const router = express.Router();
 
@@ -43,8 +45,12 @@ const bonusRepository = new WithdrawBonusRepository(WithdrawBonusModel);
 const salaryRepository = new SalaryRepository(SalaryModel);
 const bannerRepository = new BannerRepository(BannerModel);
 const coinHistoryRepository = new CoinHistoryRepository(CoinHistoryModel);
-const agencyWithdrawRepository = new AgencyWithdrawRepository(AgencyWithdrawModel);
+const agencyWithdrawRepository = new AgencyWithdrawRepository(
+  AgencyWithdrawModel
+);
 const tagBgRepository = new LevelTagBgRepository(LevelTagBgModel);
+
+const posterRepository = new PosterRepository(PosterModel);
 
 const adminUserService = new AdminUserService(
   userRepository,
@@ -57,7 +63,8 @@ const adminUserService = new AdminUserService(
   bannerRepository,
   coinHistoryRepository,
   agencyWithdrawRepository,
-  tagBgRepository
+  tagBgRepository,
+  posterRepository
 );
 const adminUserController = new AdminUserController(adminUserService);
 
@@ -138,7 +145,10 @@ router
 
 router
   .route("/create-role")
-  .post(authenticate([UserRoles.Admin, UserRoles.SubAdmin]), adminUserController.createPortalUser);
+  .post(
+    authenticate([UserRoles.Admin, UserRoles.SubAdmin]),
+    adminUserController.createPortalUser
+  );
 
 router
   .route("/role/:roleId")
@@ -230,6 +240,26 @@ router
   )
   .delete(authenticate([UserRoles.Admin]), adminUserController.deleteBanner);
 
+router
+  .route("/posters")
+  .post(
+    authenticate([UserRoles.Admin]),
+    upload.single("image"),
+    adminUserController.createPoster
+  )
+  .get(authenticate(), adminUserController.getPosters);
+  router
+  .route("/poster")
+  .get(authenticate(), adminUserController.getRandomPosters);
+
+router
+  .route("/posters/:id")
+  .put(
+    authenticate([UserRoles.Admin]),
+    upload.single("image"),
+    adminUserController.updatePoster
+  )
+  .delete(authenticate([UserRoles.Admin]), adminUserController.deletePoster);
 
 router
   .route("/transaction-admin")
@@ -245,21 +275,29 @@ router
     adminUserController.getPortalUserCoinHistory
   );
 
-
-
 router
   .route("/banners/docs")
   .get(authenticate([UserRoles.Admin]), adminUserController.getBannerDoc);
 
-router.route("/level-tags").post(authenticate([UserRoles.Admin]),  upload.fields([
+router
+  .route("/level-tags")
+  .post(
+    authenticate([UserRoles.Admin]),
+    upload.fields([
       { name: "tag", maxCount: 1 },
       { name: "bg", maxCount: 1 },
-    ]), adminUserController.createLevelTag)
-    .get(adminUserController.getLevelTags);
+    ]),
+    adminUserController.createLevelTag
+  )
+  .get(adminUserController.getLevelTags);
 
-router.route("/level-tags/:id").put(authenticate([UserRoles.Admin]), upload.fields([
-      { name: "tag", maxCount: 1 },
-      { name: "bg", maxCount: 1 },
-    ]), adminUserController.updateLeveltags);
+router.route("/level-tags/:id").put(
+  authenticate([UserRoles.Admin]),
+  upload.fields([
+    { name: "tag", maxCount: 1 },
+    { name: "bg", maxCount: 1 },
+  ]),
+  adminUserController.updateLeveltags
+);
 
 export default router;

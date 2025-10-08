@@ -621,6 +621,66 @@ export default class AdminUserController {
       message: "Banners retrieved successfully",
     });
   });
+  // posters
+  createPoster = catchAsync(async (req: Request, res: Response) => {
+    const { alt } = req.body;
+    const file = req.file as Express.Multer.File;
+    if (!file) throw new AppError(StatusCodes.BAD_REQUEST, "Image is required");
+    if (!alt) throw new AppError(StatusCodes.BAD_REQUEST, "Alt is required");
+    const result = await this.AdminUserService.createPoster(alt, file);
+    sendResponse(res, {
+      statusCode: StatusCodes.CREATED,
+      success: true,
+      result: result,
+      message: "Poster created successfully",
+    });
+  });
+
+  getPosters = catchAsync(async (req: Request, res: Response) => {
+    const Posters = await this.AdminUserService.getPosters();
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: Posters,
+      message: "Posters retrieved successfully",
+    });
+  });
+
+  getRandomPosters = catchAsync(async (req: Request, res: Response) => {
+    const Posters = await this.AdminUserService.getRandomPosters();
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: Posters,
+      message: "Posters retrieved successfully",
+    });
+  });
+
+  updatePoster = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { alt } = req.body;
+    const file = req.file as Express.Multer.File;
+    if (!alt && !file)
+      throw new AppError(StatusCodes.BAD_REQUEST, "Data is required");
+    const result = await this.AdminUserService.updatePoster(id, alt, file);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Poster updated successfully",
+    });
+  });
+
+  deletePoster = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const result = await this.AdminUserService.deletePoster(id);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Poster deleted successfully",
+    });
+  });
 
   getAdminCoinHistory = catchAsync(async (req: Request, res: Response) => {
     const result = await this.AdminUserService.getCoinHistory(
