@@ -11,8 +11,8 @@ import { IUserRepository } from "../../repository/users/user_repository";
 export interface IFollowerService {
     createFollower(follow: IFollower): Promise<IFollowerDocument | null>;
     deleteFollower(follow: IFollower): Promise<IFollowerDocument | null>;
-    followingList(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IFollowerDocument[] } | null>;
-    followerList(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IFollowerDocument[] } | null>;
+    followingList(myId: string,userId: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IFollowerDocument[] } | null>;
+    followerList(myId: string,userId: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IFollowerDocument[] } | null>;
     friendList(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IFriendshipDocument[] } | null>;
     getFollowerAndFollowingCount(userId: string): Promise<{ followerCount: number, followingCount: number; friendshipCount: number;  }>;
 }
@@ -103,22 +103,22 @@ export default class FollowerService implements IFollowerService {
     }
 
 
-    async followerList(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IFollowerDocument[]; } | null> {
+    async followerList(myId: string,  userId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IFollowerDocument[]; } | null> {
         const user = await this.UserRepository.findUserById(userId);
-        if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
-
-        const followers = await this.FollowerRepository.getFollowerLists({ myId: userId }, query);
+        const myself = await this.UserRepository.findUserById(myId);
+        if (!user || !myself) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+        const followers = await this.FollowerRepository.getFollowerLists(myId,{ myId: userId }, query);
         if (!followers) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Something went wrong while fetching the followers list");
         return followers;
 
     }
 
 
-    async followingList(userId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IFollowerDocument[]; } | null> {
+    async followingList(myId:string, userId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IFollowerDocument[]; } | null> {
         const user = await this.UserRepository.findUserById(userId);
-        if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
-
-        const following = await this.FollowerRepository.getFollowerLists({ followerId: userId }, query);
+        const myself = await this.UserRepository.findUserById(myId);
+        if (!user|| !myself) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+        const following = await this.FollowerRepository.getFollowerLists(myId, { followerId: userId }, query);
         if (!following) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Something went wrong while fetching the following list");
         return following;
     }

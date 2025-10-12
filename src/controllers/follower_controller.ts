@@ -30,7 +30,7 @@ export default class FollowerController {
     myFollowingList = catchAsync(
         async (req: Request, res: Response) => {
             const { id } = req.user!;
-            const followingList = await this.Service.followingList(id, req.query as Record<string, any>);
+            const followingList = await this.Service.followingList(id, id,  req.query as Record<string, any>);
             sendResponseEnhanced(res, followingList);
         }
     );
@@ -38,7 +38,7 @@ export default class FollowerController {
     myFollowerList = catchAsync(
         async (req: Request, res: Response) => {
             const { id } = req.user!;
-            const followerList = await this.Service.followerList(id, req.query as Record<string, any>);
+            const followerList = await this.Service.followerList(id, id, req.query as Record<string, any>);
             sendResponseEnhanced(res, followerList);
         }
     );
@@ -74,16 +74,18 @@ export default class FollowerController {
 
     getUserFollowerList= catchAsync(
         async (req: Request, res: Response) => {
+            const { id } = req.user!;
             const { userId } = req.params;
-            const followerList = await this.Service.followerList(userId, req.query as Record<string, any>);
+            const followerList = await this.Service.followerList(id, userId, req.query as Record<string, any>);
             sendResponseEnhanced(res, followerList);
         }
     );
 
     getUserFollowingList = catchAsync(
         async (req: Request, res: Response) => {
+            const { id } = req.user!;
             const { userId } = req.params;
-            const followingList = await this.Service.followingList(userId, req.query as Record<string, any>);
+            const followingList = await this.Service.followingList(id, userId, req.query as Record<string, any>);
             sendResponseEnhanced(res, followingList);
         }
     );
