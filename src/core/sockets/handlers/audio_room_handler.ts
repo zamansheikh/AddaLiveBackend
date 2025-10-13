@@ -26,6 +26,7 @@ import {
 import { AudioRoomPolicy } from "../policies/audio_room_policy";
 import { ISerializedRoomData } from "./group_room_handler";
 import SocketServer from "../socket_server";
+import sendResponse from "../../Utils/send_response";
 
 export const registerAudioRoomHandler = async (
   io: Server,
@@ -55,7 +56,13 @@ export const registerAudioRoomHandler = async (
     categoryRepository,
     userId
   );
-  if (!userId) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+  if (!userId) {
+    socketResponse(io, SocketChannels.error, socket.id, {
+      success: false,
+      message: "User ID is required",
+    });
+    return;
+  }
 
   // creating policy object
   const audioRoomPolicy = new AudioRoomPolicy(audioRoom, io, socket);
@@ -172,7 +179,7 @@ export const registerAudioRoomHandler = async (
 
   // get audio room details
   socket.on(SocketAudioChannels.RoomDetails, ({ roomId }) => {
-    if (!audioRoomPolicy.ensureRoomExists(roomId)) return;  
+    if (!audioRoomPolicy.ensureRoomExists(roomId)) return;
     const room = audioRoom[roomId];
     const serializedRoom: ISearializedAudioRoom = {
       title: room.title,
@@ -192,7 +199,7 @@ export const registerAudioRoomHandler = async (
       ranking: room.ranking,
       duration: Math.floor(
         (new Date().getTime() - room.createdAt.getTime()) / 1000
-      )
+      ),
     };
     socketResponse(io, SocketAudioChannels.RoomDetails, socket.id, {
       success: true,
@@ -203,7 +210,7 @@ export const registerAudioRoomHandler = async (
 
   // user join audio room
   socket.on(SocketAudioChannels.JoinAudioRoom, ({ roomId }) => {
-    if(!audioRoomPolicy.ensureUserCanJoin(roomId, userId)) return;
+    if (!audioRoomPolicy.ensureUserCanJoin(roomId, userId)) return;
     const room = audioRoom[roomId];
     const membersDetails: IMemberDetails = {
       name: userDetails.name as string,
@@ -502,7 +509,7 @@ export const registerAudioRoomHandler = async (
     if (!audioRoomPolicy.ensureRoomExists(roomId)) return;
     if (!audioRoomPolicy.ensureHasMember(roomId, targetId)) return;
     console.log(userId, targetId);
-    
+
     if (targetId === userId) {
       socketResponse(io, SocketChannels.error, socket.id, {
         success: false,

@@ -166,7 +166,6 @@ export default class ConversationRepository implements IConversationRepostiry {
           $project: {
             senderInfo: 0,
             receiverInfo: 0,
-            lstMsg: 0,
           },
         },
       ])
