@@ -3,6 +3,7 @@ import { IMessage, IMessageDocument, IMessageModel } from "../../../entities/cha
 import { IPagination, QueryBuilder } from "../../../core/Utils/query_builder";
 import AppError from "../../../core/errors/app_errors";
 import { StatusCodes } from "http-status-codes";
+import mongoose from "mongoose";
 
 
 export default class MessageRepository implements IMessageRepository {
@@ -46,8 +47,9 @@ export default class MessageRepository implements IMessageRepository {
         return await this.model.findByIdAndUpdate(messageId, updates, { new: true });
     }
 
-    async updateSeenStatus(roomId: string): Promise<IUpdateResult | null> {
-        return await this.model.updateMany({ roomId: roomId, seen: false }, { seen: true });
+    async updateSeenStatus(roomId: string, recieverId: string): Promise<IUpdateResult | null> {
+        const recieverObjectId = new mongoose.Types.ObjectId(recieverId);
+        return await this.model.updateMany({ roomId: roomId, recieverId: recieverObjectId, seen: false }, { seen: true });
     }
 
     async deleteAllMessage(roomId: string): Promise<boolean | null> {

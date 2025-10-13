@@ -22,8 +22,9 @@ export default class ChatController {
 
     updateSeenStatus = catchAsync(async (req: Request, res: Response) => {
         const { sender, reciever } = req.body;
+        const {id} = req.user!;
         const roomId = [sender, reciever].sort().join("-");
-        const updated = await this.service.updateSeenStatus(roomId);
+        const updated = await this.service.updateSeenStatus(roomId, id);
         sendResponseEnhanced(res, updated);
     });
 

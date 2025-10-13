@@ -67,6 +67,7 @@ export default class ChatService implements IChatService {
                 }
             }
             prevConversation.lastMessage = sendMessage.text;
+            prevConversation.seenStatus = true;
             conversation = await prevConversation.save();
             if (!conversation) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update conversation");
         } else {
@@ -85,8 +86,8 @@ export default class ChatService implements IChatService {
         return sendMessage;
     }
 
-    async updateSeenStatus(roomId: string): Promise<IUpdateResult | null> {
-        return await this.msgRepo.updateSeenStatus(roomId);
+    async updateSeenStatus(roomId: string, myId: string): Promise<IUpdateResult | null> {
+        return await this.msgRepo.updateSeenStatus(roomId, myId);
     }
 
     async deleteMessage(messageId: string, myId: string): Promise<IMessageDocument | null> {

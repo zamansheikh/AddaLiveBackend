@@ -6,7 +6,7 @@ import { IUpdateResult } from "../../repository/chats/messages/message_repositor
 export default interface IChatService {
     sendMessage(message: IMessage, file?: Express.Multer.File): Promise<IMessageDocument | null>
 
-    updateSeenStatus(roomId: string): Promise<IUpdateResult | null>;
+    updateSeenStatus(roomId: string, myId: string): Promise<IUpdateResult | null>;
 
     editMessage(myId: string, nessageId: string, message: Partial<IMessage>): Promise<IMessageDocument | null>
 

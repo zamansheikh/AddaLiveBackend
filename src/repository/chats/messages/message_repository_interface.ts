@@ -5,7 +5,7 @@ export default interface IMessageRepository {
 
     createMessage(message: IMessage): Promise<IMessageDocument | null>
 
-    updateSeenStatus(roomId: string): Promise<IUpdateResult | null>
+    updateSeenStatus(roomId: string, recieverId: string): Promise<IUpdateResult | null>
 
     getMessages(roomId: string, query: Record<string, any>, textFrom?: string): Promise<{ pagination: IPagination, data: IMessageDocument[] }>
 
