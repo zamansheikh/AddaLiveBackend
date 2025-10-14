@@ -4,11 +4,7 @@ import {
   SocketAudioChannels,
   SocketChannels,
 } from "../../Utils/enums";
-import { REQUEST_URI_TOO_LONG, StatusCodes } from "http-status-codes";
-import AppError from "../../errors/app_errors";
-import { IUserDocument } from "../../../models/user/user_model_interface";
 import { IUserRepository } from "../../../repository/users/user_repository";
-import mongoose from "mongoose";
 import { IMyBucketRepository } from "../../../repository/store/my_bucket_repository";
 import { IStoreCategoryRepository } from "../../../repository/store/store_category_repository";
 import {
@@ -24,9 +20,7 @@ import {
   ISearializedAudioRoom,
 } from "../interface/socket_interface";
 import { AudioRoomPolicy } from "../policies/audio_room_policy";
-import { ISerializedRoomData } from "./group_room_handler";
 import SocketServer from "../socket_server";
-import sendResponse from "../../Utils/send_response";
 
 export const registerAudioRoomHandler = async (
   io: Server,
