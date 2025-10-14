@@ -41,6 +41,7 @@ router.get("/all-conversation", authenticate(), chatController.getAllConversatio
 router.delete("/delete-conversation/:conversationId", authenticate(), chatController.deleteConversations);
 
 router.route("/block-user/:recieverId").post(authenticate(), chatController.blockUser).delete(authenticate(), chatController.unblockUser);
+router.route("/block-status/:recieverId").get(authenticate(), chatController.blockStatus);
 
 
 export default router;

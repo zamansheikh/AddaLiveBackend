@@ -20,7 +20,9 @@ export default interface IChatService {
     deleteConversations(myId: string, roomId: string): Promise<IConversationDocument | null>
 
     blockUser(myId: string, recieverId: string): Promise<IBlockChatDocument>;
-    
+
     unblockUser(myId: string, recieverId: string): Promise<IBlockChatDocument>;
+
+    getBlockStatus(myId: string, recieverId: string): Promise<boolean>;
 
 }

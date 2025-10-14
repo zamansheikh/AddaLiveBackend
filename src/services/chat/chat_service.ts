@@ -189,4 +189,9 @@ export default class ChatService implements IChatService {
         return deletedBlock;
     }
 
+    async getBlockStatus(myId: string, recieverId: string): Promise<boolean> {
+        const isBlocked = await this.BlockRepository.isBlocked(myId, recieverId);
+        return isBlocked;
+    }
+
 }

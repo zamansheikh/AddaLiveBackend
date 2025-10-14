@@ -79,5 +79,12 @@ export default class ChatController {
         const unblocked = await this.service.unblockUser(id, recieverId);
         sendResponseEnhanced(res, unblocked);
     });
+
+    blockStatus = catchAsync(async (req: Request, res: Response) => {
+        const { id } = req.user!;
+        const { recieverId } = req.params;
+        const status = await this.service.getBlockStatus(id, recieverId);
+        sendResponseEnhanced(res, { isBlocked: status });
+    });
     
 }
