@@ -43,6 +43,7 @@ export enum DatabaseNames {
   StoreItemDeleteHistory = "store_item_delete_history",
   RoomBonusRecord = "room_bonus_records",
   LevelTagBg = "level_tag_bg",
+  BlockDocs = "block_docs",
 }
 
 export enum ReelStatus {

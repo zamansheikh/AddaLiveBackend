@@ -14,6 +14,8 @@ import UserRepository from '../repository/users/user_repository';
 import User from '../models/user/user_model';
 import FollowerRepository from '../repository/follower/follower_repository';
 import Follower from '../models/followers/followers_model';
+import { BlockChatRepository } from '../repository/chats/blockRepository';
+import ChatBlockModel from '../models/chats/block_model';
 
 
 const router = express.Router();
@@ -22,8 +24,9 @@ const messageRepo = new MessageRepository(Messages);
 const conversationRepo = new ConversationRepository(conversation);
 const userRepository = new UserRepository(User);
 const followerRepository = new FollowerRepository(Follower);
+const blockChatRepository = new BlockChatRepository(ChatBlockModel);
 
-const chatSerive = new ChatService(messageRepo, conversationRepo, userRepository, followerRepository);
+const chatSerive = new ChatService(messageRepo, conversationRepo, userRepository, followerRepository, blockChatRepository);
 const chatController = new ChatController(chatSerive);
 
 
@@ -36,6 +39,8 @@ router.get("/all-message/:recieverId", authenticate(), chatController.getAllMess
 
 router.get("/all-conversation", authenticate(), chatController.getAllConversations);
 router.delete("/delete-conversation/:conversationId", authenticate(), chatController.deleteConversations);
+
+router.route("/block-user/:recieverId").post(authenticate(), chatController.blockUser).delete(authenticate(), chatController.unblockUser);
 
 
 export default router;

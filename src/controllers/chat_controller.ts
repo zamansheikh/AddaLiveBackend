@@ -65,4 +65,19 @@ export default class ChatController {
         const deleted = await this.service.deleteConversations(id, conversationId);
         sendResponseEnhanced(res, deleted);
     });
+
+    blockUser = catchAsync(async (req: Request, res: Response) => {
+        const { id } = req.user!;
+        const { recieverId } = req.params;
+        const blocked = await this.service.blockUser(id, recieverId);
+        sendResponseEnhanced(res, blocked);
+    });
+
+    unblockUser = catchAsync(async (req: Request, res: Response) => {
+        const { id } = req.user!;
+        const { recieverId } = req.params;
+        const unblocked = await this.service.unblockUser(id, recieverId);
+        sendResponseEnhanced(res, unblocked);
+    });
+    
 }

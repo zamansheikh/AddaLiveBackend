@@ -13,24 +13,31 @@ import SocketServer from "../../core/sockets/socket_server";
 import mongoose, { Types } from "mongoose";
 import { IUserRepository } from "../../repository/users/user_repository";
 import { IFollowerRepository } from "../../repository/follower/follower_repository";
+import { IBlockChatRepository } from "../../repository/chats/blockRepository";
+import { IBlockChatDocument } from "../../models/chats/block_model";
 
 export default class ChatService implements IChatService {
     msgRepo: IMessageRepository;
     converseRepo: IConversationRepostiry;
     userRepo: IUserRepository
     followerRepo: IFollowerRepository;
+    BlockRepository: IBlockChatRepository;
 
-    constructor(msgRepo: IMessageRepository, converseRepo: IConversationRepostiry, userRepo: IUserRepository, followerRepo: IFollowerRepository) {
+    constructor(msgRepo: IMessageRepository, converseRepo: IConversationRepostiry, userRepo: IUserRepository, followerRepo: IFollowerRepository, BlockRepository: IBlockChatRepository) {
         this.msgRepo = msgRepo;
         this.converseRepo = converseRepo;
         this.userRepo = userRepo;
         this.followerRepo = followerRepo;
+        this.BlockRepository = BlockRepository;
     }
 
     async sendMessage(message: IMessage, file?: Express.Multer.File): Promise<IMessageDocument | null> {
         let messageBody: Record<string, any> = message;
         if(message.senderId.toString() == message.recieverId.toString()) 
             throw new AppError(StatusCodes.BAD_REQUEST, "You cannot send message to yourself");
+        // checking block status
+        const isBlocked = await this.BlockRepository.isBlocked(message.senderId.toString(), message.recieverId.toString());
+        if(isBlocked) throw new AppError(StatusCodes.BAD_REQUEST, "You are blocked by this user");
         const sender = await this.userRepo.findUserById(message.senderId.toString());
         const reciever = await this.userRepo.findUserById(message.recieverId.toString());
         if (!reciever) throw new AppError(StatusCodes.NOT_FOUND, "Reciever not found");
@@ -162,6 +169,24 @@ export default class ChatService implements IChatService {
     async getAllConversations(myId: string, query: Record<string, any>): Promise<{ pagination: IPagination; data: IConversationDocument[]; }> {
         const allConversations = await this.converseRepo.getAllConversatins(myId, query);
         return allConversations;
+    }
+
+    async blockUser(myId: string, recieverId: string): Promise<IBlockChatDocument> {
+        const isBlocked = await this.BlockRepository.isBlocked(myId, recieverId);
+        if(isBlocked) throw new AppError(StatusCodes.BAD_REQUEST, "You are already blocked by this user");
+        const newBlock = await this.BlockRepository.createBlock({blockerId: myId, blockedId: recieverId});
+        if(!newBlock) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to block the user");
+        return newBlock;
+    }
+
+    async unblockUser(myId: string, recieverId: string): Promise<IBlockChatDocument> {
+        if(myId == recieverId) throw new AppError(StatusCodes.BAD_REQUEST, "You cannot unblock yourself");
+        const myBlock = await this.BlockRepository.isMyBlocked(myId, recieverId);
+        const isBlocked = await this.BlockRepository.isBlocked(myId, recieverId);
+        if(!myBlock && isBlocked) throw new AppError(StatusCodes.BAD_REQUEST, "You did not block this user");
+        if(!myBlock && !isBlocked) throw new AppError(StatusCodes.BAD_REQUEST, "this conversation is not blocked");
+        const deletedBlock = await this.BlockRepository.deleteBlock(myBlock);
+        return deletedBlock;
     }
 
 }

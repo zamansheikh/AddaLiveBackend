@@ -1,6 +1,7 @@
 import { IPagination } from "../../core/Utils/query_builder";
 import { IConversationDocument } from "../../entities/chats/conversation_interface";
 import { IMessage, IMessageDocument } from "../../entities/chats/message_interface";
+import { IBlockChat, IBlockChatDocument } from "../../models/chats/block_model";
 import { IUpdateResult } from "../../repository/chats/messages/message_repository_interface";
 
 export default interface IChatService {
@@ -17,5 +18,9 @@ export default interface IChatService {
     getAllConversations(myId: string, query: Record<string, any>): Promise<{ pagination: IPagination, data: IConversationDocument[] }>
 
     deleteConversations(myId: string, roomId: string): Promise<IConversationDocument | null>
+
+    blockUser(myId: string, recieverId: string): Promise<IBlockChatDocument>;
+    
+    unblockUser(myId: string, recieverId: string): Promise<IBlockChatDocument>;
 
 }
