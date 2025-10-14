@@ -18,7 +18,7 @@ export interface IUserRepository {
   getUserDetailsSelectedField(
     id: string,
     fields: string[]
-  ): Promise<IUserDocument>;
+  ): Promise<IUserDocument | null>;
   getPopulatedUserById(
     id: string,
     populateFields: string
@@ -92,9 +92,8 @@ export default class UserRepository implements IUserRepository {
   async getUserDetailsSelectedField(
     id: string,
     fields: string[]
-  ): Promise<IUserDocument> {
+  ): Promise<IUserDocument|null> {
     const user = await this.UserModel.findById(id, fields);
-    if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
     return user;
   }
 

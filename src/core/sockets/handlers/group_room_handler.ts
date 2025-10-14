@@ -7,7 +7,10 @@ import { IUserRepository } from "../../../repository/users/user_repository";
 import mongoose from "mongoose";
 import { IMyBucketRepository } from "../../../repository/store/my_bucket_repository";
 import { IStoreCategoryRepository } from "../../../repository/store/store_category_repository";
-import { getEquipedItemObjects } from "../../Utils/helper_functions";
+import {
+  getEquipedItemObjects,
+  socketResponse,
+} from "../../Utils/helper_functions";
 import { IMemberDetails, RoomData } from "../interface/socket_interface";
 
 export interface ISerializedRoomData {
@@ -63,6 +66,13 @@ export async function registerGroupRoomHandler(
     "level",
   ]);
 
+  if (!userDetails) {
+    socketResponse(io, SocketChannels.error, socket.id, {
+      success: false,
+      message: "User ID is required",
+    });
+    return;
+  }
 
   const userObj = userDetails.toObject();
   userObj.equipedStoreItems = await getEquipedItemObjects(
@@ -71,7 +81,13 @@ export async function registerGroupRoomHandler(
     userId
   );
 
-  if (!userId) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+  if (!userId) {
+    socketResponse(io, SocketChannels.error, socket.id, {
+      success: false,
+      message: "User ID is required",
+    });
+    return;
+  }
 
   // send message
 
@@ -168,7 +184,7 @@ export async function registerGroupRoomHandler(
           currentTag: userDetails.currentLevelTag as string,
           currentLevel: userDetails.level as number,
           equipedStoreItems: userObj.equipedStoreItems,
-          totalGiftSent: 0
+          totalGiftSent: 0,
         },
       ],
       title: title,
@@ -336,6 +352,13 @@ export async function registerGroupRoomHandler(
       targetId,
       ["name", "avatar", "uid", "country"]
     );
+    if (!targetIdDetails) {
+      socketResponse(io, SocketChannels.error, socket.id, {
+        success: false,
+        message: "User ID is required",
+      });
+      return;
+    }
     const targetEquipedStoreItems = await getEquipedItemObjects(
       bucketRepository,
       categoryRepository,
@@ -548,6 +571,15 @@ export async function registerGroupRoomHandler(
         "level",
       ]
     );
+
+    if (!targetUser) {
+      socketResponse(io, SocketChannels.error, socket.id, {
+        success: false,
+        message: "User ID is required",
+      });
+      return;
+    }
+
     const targetEquipedStoreItems = await getEquipedItemObjects(
       bucketRepository,
       categoryRepository,
@@ -570,6 +602,14 @@ export async function registerGroupRoomHandler(
       targetId,
       ["name", "avatar", "uid", "country"]
     );
+
+    if (!targetIdDetails) {
+      socketResponse(io, SocketChannels.error, socket.id, {
+        success: false,
+        message: "User ID is required",
+      });
+      return;
+    }
 
     const message = {
       name: targetIdDetails.name as string,
@@ -687,6 +727,14 @@ export async function registerGroupRoomHandler(
       targetId,
       ["name", "avatar", "uid", "country"]
     );
+
+    if (!targetIdDetails) {
+      socketResponse(io, SocketChannels.error, socket.id, {
+        success: false,
+        message: "User ID is required",
+      });
+      return;
+    }
     const targetEquipedStoreItems = await getEquipedItemObjects(
       bucketRepository,
       categoryRepository,
@@ -701,6 +749,7 @@ export async function registerGroupRoomHandler(
       text: `Has been removed from call`,
       equipedStoreItems: targetEquipedStoreItems,
     };
+
     io.to(roomId).emit(SocketChannels.sendMessage, message);
     const targetSocketId = onlineUsers.get(targetId);
     if (targetSocketId) {
@@ -929,6 +978,14 @@ export async function registerGroupRoomHandler(
       targetId,
       ["name", "avatar", "uid", "country"]
     );
+
+    if (!targetIdDetails) {
+      socketResponse(io, SocketChannels.error, socket.id, {
+        success: false,
+        message: "User ID is required",
+      });
+      return;
+    }
 
     const targetEquipedStoreItems = await getEquipedItemObjects(
       bucketRepository,

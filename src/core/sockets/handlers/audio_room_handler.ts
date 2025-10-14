@@ -39,6 +39,14 @@ export const registerAudioRoomHandler = async (
 ) => {
   // userId -> mongoose object_id
   const userId = socket.handshake.query.userId as string;
+  if (!userId) {
+    socketResponse(io, SocketChannels.error, socket.id, {
+      success: false,
+      message: "User ID is required",
+    });
+    return;
+  }
+
   // fetching the relavent informations
   const userDetails = await userRepository.getUserDetailsSelectedField(userId, [
     "name",
@@ -49,6 +57,13 @@ export const registerAudioRoomHandler = async (
     "currentLevelTag",
     "level",
   ]);
+  if (!userDetails) {
+    socketResponse(io, SocketChannels.error, socket.id, {
+      success: false,
+      message: "User ID is required",
+    });
+    return;
+  }
   // attaching the equiped items from the store.
   const userObj = userDetails.toObject();
   userObj.equipedStoreItems = await getEquipedItemObjects(
@@ -56,13 +71,6 @@ export const registerAudioRoomHandler = async (
     categoryRepository,
     userId
   );
-  if (!userId) {
-    socketResponse(io, SocketChannels.error, socket.id, {
-      success: false,
-      message: "User ID is required",
-    });
-    return;
-  }
 
   // creating policy object
   const audioRoomPolicy = new AudioRoomPolicy(audioRoom, io, socket);

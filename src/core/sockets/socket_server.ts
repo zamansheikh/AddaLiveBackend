@@ -22,6 +22,7 @@ import { registerAudioRoomHandler } from "./handlers/audio_room_handler";
 import { isEmptyObject, socketResponse } from "../Utils/helper_functions";
 
 export default class SocketServer {
+  
   private static instance: SocketServer;
   private io: Server;
   private onlineUsers = new Map<string, string>(); // Map<userId, socketId>

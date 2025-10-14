@@ -185,7 +185,7 @@ export default class ChatService implements IChatService {
         const isBlocked = await this.BlockRepository.isBlocked(myId, recieverId);
         if(!myBlock && isBlocked) throw new AppError(StatusCodes.BAD_REQUEST, "You did not block this user");
         if(!myBlock && !isBlocked) throw new AppError(StatusCodes.BAD_REQUEST, "this conversation is not blocked");
-        const deletedBlock = await this.BlockRepository.deleteBlock(myBlock);
+        const deletedBlock = await this.BlockRepository.deleteBlock((myBlock as any)._id.toString());
         return deletedBlock;
     }
 
