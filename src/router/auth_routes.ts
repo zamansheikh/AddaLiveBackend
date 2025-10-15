@@ -49,7 +49,8 @@ import StoreCategoryRepository from "../repository/store/store_category_reposito
 import StoreCategoryModel from "../models/store/store_category_model";
 import RoomBonusRecordRepository from "../repository/room/room_bonus_records_repository";
 import RoomBonusRecordsModel from "../models/room/bonus_records_model";
-import { UserRoles } from "../core/Utils/enums";
+import { DatabaseNames, UserRoles } from "../core/Utils/enums";
+import mongoose from "mongoose";
 
 const router = express.Router();
 
@@ -80,7 +81,9 @@ const bucketRepository = new MyBucketRepository(MyBucketModel);
 const categoryRepository = new StoreCategoryRepository(StoreCategoryModel);
 
 const portalUserRepository = new PortalUserRepository(PortalUser);
-const roomBonousRepository = new RoomBonusRecordRepository(RoomBonusRecordsModel);
+const roomBonousRepository = new RoomBonusRecordRepository(
+  RoomBonusRecordsModel
+);
 
 const authService = new AuthService(
   userRepository,
@@ -144,8 +147,14 @@ router
   .post(authenticate(), authController.addDailtyBonus);
 router
   .route("/withdraw-bonus")
-  .post(authenticate([UserRoles.User, UserRoles.Host]), authController.withdrawBonus)
-  .get(authenticate([UserRoles.User, UserRoles.Host]), authController.getMyBonus);
+  .post(
+    authenticate([UserRoles.User, UserRoles.Host]),
+    authController.withdrawBonus
+  )
+  .get(
+    authenticate([UserRoles.User, UserRoles.Host]),
+    authController.getMyBonus
+  );
 
 router.post(
   "/generate-token",
@@ -154,12 +163,79 @@ router.post(
   authController.generateToken
 );
 
-router.route("/agency-join").post(authenticate(), authController.agencyJoinRequest)
-    .get(authenticate(), authController.agencyJoinRequestStatus)
-    .delete(authenticate(), authController.agencyCancelRequest);
+router
+  .route("/agency-join")
+  .post(authenticate(), authController.agencyJoinRequest)
+  .get(authenticate(), authController.agencyJoinRequestStatus)
+  .delete(authenticate(), authController.agencyCancelRequest);
 
-router.route("/live-count/:hostId").get(authenticate(), authController.getLiveCountStatus);
+router
+  .route("/live-count/:hostId")
+  .get(authenticate(), authController.getLiveCountStatus);
 
-
+router.route("/get-user-data").get(authenticate(), async (req, res) => {
+  const data = await User.aggregate([
+    {
+      $lookup: {
+        from: DatabaseNames.RoomBonusRecord,
+        let: { userId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$userId", "$$userId"] },
+                  { $eq: ["$readStatus", false] },
+                ],
+              },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalBonus: { $sum: "$bonusDiamonds" },
+            },
+          },
+        ],
+        as: "bonus",
+      },
+    },
+    {
+      $lookup: {
+        from: DatabaseNames.userStats,
+        let: { userId: "$_id" },
+        pipeline: [
+          {
+            $match: { $expr: { $eq: ["$userId", "$$userId"] } },
+          },
+        ],
+        as: "stats",
+      },
+    },
+    {      $unwind: {
+        path: "$bonus",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $unwind: {
+        path: "$stats",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $project: {
+        name: 1,
+        email: 1,
+        uid: 1,
+        userRole: 1,
+        "bonus.totalBonus": 1,
+        "stats.diamonds": 1,
+        "stats.coins": 1,
+      },
+    },
+  ]);
+  res.send(data);
+});
 
 export default router;
