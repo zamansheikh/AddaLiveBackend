@@ -73,7 +73,7 @@ export const registerAudioRoomHandler = async (
     SocketAudioChannels.CreateAudioRoom,
     ({ roomId, title, numberOfSeats }) => {
       // validating input data
-      audioRoomPolicy.ensureCreateRoomPolicy(roomId, title, numberOfSeats);
+      if(!audioRoomPolicy.ensureCreateRoomPolicy(roomId, title, numberOfSeats)) return false;
       const membersDetails: IMemberDetails = {
         name: userDetails.name as string,
         avatar: userDetails.avatar as string,

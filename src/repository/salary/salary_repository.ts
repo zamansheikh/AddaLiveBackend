@@ -28,7 +28,7 @@ export default class SalaryRepository implements ISalaryRepository {
   }
 
   async getAllSalaries(): Promise<ISalaryDocument[]> {
-    return await this.Model.find({ type: StreamType.Audio });
+    return await this.Model.find();
   }
 
   async getSalaryById(id: string): Promise<ISalaryDocument | null> {
