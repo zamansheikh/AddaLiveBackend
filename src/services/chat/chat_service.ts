@@ -74,7 +74,6 @@ export default class ChatService implements IChatService {
                 }
             }
             prevConversation.lastMessage = sendMessage.text;
-            prevConversation.seenStatus = true;
             conversation = await prevConversation.save();
             if (!conversation) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update conversation");
         } else {

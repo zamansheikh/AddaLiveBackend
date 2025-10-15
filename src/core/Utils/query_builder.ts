@@ -79,7 +79,7 @@ export class QueryBuilder<T> {
   }
 
   sort() {
-    let sortBy = "-createdAt";
+    let sortBy = "-updatedAt";
 
     if (this.query?.sortBy) {
       const order = (this.query.sortOrder as string) === "desc" ? "-" : "";
