@@ -70,24 +70,23 @@ export default class ConversationRepository implements IConversationRepostiry {
                   ],
                 },
                 {
-                  $not: {
-                    $in: [
-                      true,
-                      {
-                        $map: {
-                          input: {
-                            $filter: {
-                              input: "$deletedFor",
-                              as: "item",
-                              cond: { $eq: ["$$item.userId", myId] },
-                            },
+                  $eq: [
+                    {
+                      $size: {
+                        $filter: {
+                          input: "$deletedFor",
+                          as: "item",
+                          cond: {
+                            $and: [
+                              { $eq: ["$$item.userId", new mongoose.Types.ObjectId(myId)] },
+                              { $eq: ["$$item.isActive", true] },
+                            ],
                           },
-                          as: "filtered",
-                          in: "$$filtered.isActive",
                         },
                       },
-                    ],
-                  },
+                    },
+                    0,
+                  ],
                 },
               ],
             },
@@ -108,59 +107,57 @@ export default class ConversationRepository implements IConversationRepostiry {
           },
         },
         {
-            $lookup: {
-                from: DatabaseNames.User,
-                localField: "receiverId",
-                foreignField: "_id",
-                as: "receiverInfo", 
-            },
+          $lookup: {
+            from: DatabaseNames.User,
+            localField: "receiverId",
+            foreignField: "_id",
+            as: "receiverInfo",
+          },
         },
         {
-            $unwind: {
-                path: "$receiverInfo",
-                preserveNullAndEmptyArrays: true,
-            },
+          $unwind: {
+            path: "$receiverInfo",
+            preserveNullAndEmptyArrays: true,
+          },
         },
         {
-            $lookup: {
-                from: DatabaseNames.messages,
-                let: { roomId: "$roomId" },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ["$roomId", "$$roomId"] },
-                                ],
-                            },
-                        },
-                    },
-                    { $sort: { createdAt: -1 } },
-                    { $limit: 1 },
-                ],
-                as: "lstMsg",
-            }
-        },
-        {
-            $unwind: {
-                path: "$lstMsg",
-                preserveNullAndEmptyArrays: true,
-            },
-        },
-        {
-            $set:{
-                senderId: {
-                    name: "$senderInfo.name",
-                    id: "$senderInfo._id",
-                    avatar: "$senderInfo.avatar",
+          $lookup: {
+            from: DatabaseNames.messages,
+            let: { roomId: "$roomId" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [{ $eq: ["$roomId", "$$roomId"] }],
+                  },
                 },
-                receiverId: {
-                    name: "$receiverInfo.name",
-                    id: "$receiverInfo._id",
-                    avatar: "$receiverInfo.avatar",
-                },
-                seenStatus: "$lstMsg.seen",
-            }
+              },
+              { $sort: { createdAt: -1 } },
+              { $limit: 1 },
+            ],
+            as: "lstMsg",
+          },
+        },
+        {
+          $unwind: {
+            path: "$lstMsg",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $set: {
+            senderId: {
+              name: "$senderInfo.name",
+              id: "$senderInfo._id",
+              avatar: "$senderInfo.avatar",
+            },
+            receiverId: {
+              name: "$receiverInfo.name",
+              id: "$receiverInfo._id",
+              avatar: "$receiverInfo.avatar",
+            },
+            seenStatus: "$lstMsg.seen",
+          },
         },
         {
           $project: {

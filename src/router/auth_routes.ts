@@ -209,7 +209,7 @@ router.route("/get-user-data").get(authenticate(), async (req, res) => {
             $match: { $expr: { $eq: ["$userId", "$$userId"] } },
           },
         ],
-        as: "stats",
+        as: "stats", 
       },
     },
     {      $unwind: {
