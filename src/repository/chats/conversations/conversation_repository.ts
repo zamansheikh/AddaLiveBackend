@@ -176,6 +176,8 @@ export default class ConversationRepository implements IConversationRepostiry {
   async getConversationByRoomId(
     id: string
   ): Promise<IConversationDocument | null> {
+    console.log(id);
+    
     return await this.model.findOne({ roomId: id });
   }
 

@@ -45,9 +45,8 @@ export default class ChatController {
     });
 
     getAllMessages = catchAsync(async (req: Request, res: Response) => {
-        const { recieverId } = req.params;
+        const { roomId } = req.params;
         const { id } = req.user!;
-        const roomId = [recieverId, id].sort().join("-");
         const query = req.query;
         const messages = await this.service.getAllMessage(roomId, query, id);
         sendResponseEnhanced(res, messages);

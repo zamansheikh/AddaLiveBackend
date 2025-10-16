@@ -128,6 +128,8 @@ export default class ChatService implements IChatService {
     async getAllMessage(roomId: string, query: Record<string, any>, myId: string): Promise<{ pagination: IPagination; data: IMessageDocument[]; }> {
         query["myId"] = myId;
         const conversation = await this.converseRepo.getConversationByRoomId(roomId);
+        console.log(conversation);
+        
         if (!conversation) throw new AppError(StatusCodes.NOT_FOUND, "Conversation not found");
         if (conversation.deletedFor && conversation.deletedFor.length > 0) {
             const length = conversation.deletedFor.length;

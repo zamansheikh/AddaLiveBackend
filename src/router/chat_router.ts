@@ -35,7 +35,7 @@ router.post("/send-message", authenticate(), upload.single("file"), validateRequ
 router.put("/seen-message", authenticate(), validateRequest(ChatDto), chatController.updateSeenStatus);
 router.delete("/delete-message/:messageId", authenticate(), chatController.deleteMessage);
 router.put("/edit-message/:messageId", authenticate(), validateRequest(EditMessageDto), chatController.editMessage);
-router.get("/all-message/:recieverId", authenticate(), chatController.getAllMessages);
+router.get("/all-message/:roomId", authenticate(), chatController.getAllMessages);
 
 router.get("/all-conversation", authenticate(), chatController.getAllConversations);
 router.delete("/delete-conversation/:conversationId", authenticate(), chatController.deleteConversations);
