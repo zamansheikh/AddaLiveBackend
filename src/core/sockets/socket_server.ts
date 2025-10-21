@@ -22,7 +22,6 @@ import { registerAudioRoomHandler } from "./handlers/audio_room_handler";
 import { isEmptyObject, socketResponse } from "../Utils/helper_functions";
 
 export default class SocketServer {
-  
   private static instance: SocketServer;
   private io: Server;
   private onlineUsers = new Map<string, string>(); // Map<userId, socketId>
@@ -33,6 +32,7 @@ export default class SocketServer {
   private hostedRooms = {} as Record<string, RoomData>;
   private hostedAudioRooms = {} as Record<string, IAudioRoomData>;
   private userRepo = new UserRepository(User);
+  
   private bucketRepo = new MyBucketRepository(MyBucketModel);
   private categoryRepo = new StoreCategoryRepository(StoreCategoryModel);
 
@@ -96,12 +96,24 @@ export default class SocketServer {
           this.onlineUsers.delete(userId);
           console.log(`User ${userId} disconnected`);
         }
+        // persist video room connection
         for (const [roomId, roomData] of Object.entries(this.hostedRooms)) {
           if (!roomData.members.has(userId)) continue;
           const timeOut = setTimeout(() => {
             this.disconnectedUsers.delete(userId);
             this.hanldeUserDisconnect(userId, roomId, roomData);
           }, 30000);
+          this.disconnectedUsers.set(userId, { timeOut, roomId });
+          socket.leave(roomId);
+        }
+
+        // persist audio room connection
+        for (const [roomId, roomData] of Object.entries(this.hostedAudioRooms)) {
+          if (!roomData.members.has(userId)) continue;
+          const timeOut = setTimeout(()=> {
+            this.disconnectedUsers.delete(userId);
+            this.handleAudioRoomDisconnect(userId, roomId, roomData);
+          }, 5000);
           this.disconnectedUsers.set(userId, { timeOut, roomId });
           socket.leave(roomId);
         }
@@ -367,5 +379,3 @@ export default class SocketServer {
     }
   }
 }
-
-

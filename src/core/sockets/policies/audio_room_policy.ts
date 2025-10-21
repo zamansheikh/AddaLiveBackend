@@ -177,6 +177,27 @@ export class AudioRoomPolicy {
     return true;
   }
 
+  ensureUserIsNotOnAnySeat(roomId: string, userId: string): boolean {
+    const room = this.hostestRooms[roomId];
+    if(!isEmptyObject(room.premiumSeat.member) && (room.premiumSeat.member as IMemberDetails)._id == userId) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "You are already on the premium seat",
+      });
+      return false;
+    };
+    for (const [seatKey, seat] of Object.entries(room.seats)) {
+      if (!isEmptyObject(seat.member) && (seat.member as IMemberDetails)._id == userId) {
+        socketResponse(this.io, SocketChannels.error, this.socket.id, {
+          success: false,
+          message: `You are already on ${seatKey}`,
+        });
+        return false;
+      }
+    }
+    return true;
+  }
+
   async ensureJoinSeat(
     roomId: string,
     userId: string,
@@ -192,6 +213,7 @@ export class AudioRoomPolicy {
       return false;
     }
     if (!this.ensureSeatAvailable(roomId, seatKey)) return false;
+    if(!this.ensureUserIsNotOnAnySeat(roomId, userId)) return false;
     if (seatKey === "premiumSeat") {
       return await this.ensurePremiumUser(
         userId,

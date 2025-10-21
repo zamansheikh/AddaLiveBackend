@@ -13,7 +13,6 @@ import { UserRoles } from "../core/Utils/enums";
 import AdminRepository from "../repository/admin/admin_repository";
 import Admin from "../models/admin/admin_model";
 import { CreateGiftDto } from "../dtos/admin/create_gift_dto";
-import multer from "multer";
 import { upload } from "../core/middlewares/multer";
 import { GiftRepository } from "../repository/gifts/gifts_repositories";
 import Gifts from "../models/gifts/gifts_model";
@@ -248,7 +247,7 @@ router
     adminUserController.createPoster
   )
   .get(authenticate(), adminUserController.getPosters);
-  router
+router
   .route("/poster")
   .get(authenticate(), adminUserController.getRandomPosters);
 
@@ -299,5 +298,6 @@ router.route("/level-tags/:id").put(
   ]),
   adminUserController.updateLeveltags
 );
+
 
 export default router;
