@@ -78,8 +78,8 @@ export interface IAudioRoomData {
   title: string;
   numberOfSeats: number;
   roomId: string;
-  hostGifts: number;
-  hostBonus: number;
+  hostGifts: number; // host sent amount (used for ranking)
+  hostBonus: number;  // host recieved amount (used to display the gifts)
   hostDetails?: IMemberDetails;
   premiumSeat: IAudioSeats;
   seats: Record<string, IAudioSeats>;

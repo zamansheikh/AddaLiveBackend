@@ -138,10 +138,16 @@ export default class SocketServer {
     coin: number,
     targetUserIds: string[]
   ): void {
-    const room = this.hostedRooms[roomId];
-    if (room) {
-      const hasHostId = targetUserIds.filter((id) => id == room.hostId);
-      if (hasHostId.length > 0) room.hostCoins += coin;
+    const videoRoom: RoomData | undefined= this.hostedRooms[roomId];
+    const audioRoom: IAudioRoomData | undefined = this.hostedAudioRooms[roomId];
+    if (videoRoom) {
+      const hasHostId = targetUserIds.filter((id) => id == videoRoom.hostId);
+      if (hasHostId.length > 0) videoRoom.hostCoins += coin;
+    }
+
+    if(audioRoom) {
+      const hasHostId = targetUserIds.filter((id) => id == audioRoom.hostDetails?._id);
+      if (hasHostId.length > 0) audioRoom.hostBonus += coin;
     }
   }
 
@@ -151,13 +157,24 @@ export default class SocketServer {
     gifts: number,
     targetUserIds: string[]
   ) {
-    const room = this.hostedRooms[roomId];
-    if (room) {
-      const hasHostId = targetUserIds.filter((id) => id == room.hostId);
+    const videoRoom: RoomData | undefined= this.hostedRooms[roomId];
+    const audioRoom: IAudioRoomData | undefined = this.hostedAudioRooms[roomId];
+    if (videoRoom) {
+      const hasHostId = targetUserIds.filter((id) => id == videoRoom.hostId);
       if (hasHostId.length > 0)
-        for (let i = 0; i < room.ranking.length; i++) {
-          if (room.ranking[i]._id.toString() === userId) {
-            room.ranking[i].totalGiftSent! += gifts;
+        for (let i = 0; i < videoRoom.ranking.length; i++) {
+          if (videoRoom.ranking[i]._id.toString() === userId) {
+            videoRoom.ranking[i].totalGiftSent! += gifts;
+            break;
+          }
+        }
+    }
+    if(audioRoom){
+      const hasHostId = targetUserIds.filter((id) => id == audioRoom.hostDetails?._id);
+      if (hasHostId.length > 0)
+        for (let i = 0; i < audioRoom.ranking.length; i++) {
+          if (audioRoom.ranking[i]._id.toString() === userId) {
+            audioRoom.ranking[i].totalGiftSent! += gifts;
             break;
           }
         }
