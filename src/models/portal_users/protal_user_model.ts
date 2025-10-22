@@ -48,7 +48,7 @@ const portaLUserSchema = new mongoose.Schema<IPortalUserDocument>(
       },
       createdAt: { type: Date },
       expire: { type: Date },
-    },
+  },
     userRole: {
       type: String,
       required: true,

@@ -73,7 +73,7 @@ export const registerAudioRoomHandler = async (
     SocketAudioChannels.CreateAudioRoom,
     ({ roomId, title, numberOfSeats }) => {
       // validating input data
-      if(!audioRoomPolicy.ensureCreateRoomPolicy(roomId, title, numberOfSeats)) return false;
+      if(!audioRoomPolicy.ensureCreateRoomPolicy(roomId, title, numberOfSeats)) return;
       const membersDetails: IMemberDetails = {
         name: userDetails.name as string,
         avatar: userDetails.avatar as string,
@@ -545,4 +545,7 @@ export const registerAudioRoomHandler = async (
       },
     });
   });
+
+  // get ranked users
+  
 };
