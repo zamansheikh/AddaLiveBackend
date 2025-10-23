@@ -142,11 +142,45 @@ export const registerAudioRoomHandler = async (
           (new Date().getTime() - createdRoom.createdAt.getTime()) / 1000
         ),
       };
+
+      const allRoomSerialized: ISearializedAudioRoom[] = [];
+      
+      for (const [room, roomData] of Object.entries(audioRoom)) {
+        const obj = {
+          title: roomData.title,
+        numberOfSeats: roomData.numberOfSeats,
+        roomId: roomData.roomId,
+        hostGifts: roomData.hostGifts,
+        hostBonus: roomData.hostBonus,
+        hostDetails: roomData.hostDetails,
+        premiumSeat: roomData.premiumSeat,
+        seats: roomData.seats,
+        messages: roomData.messages,
+        createdAt: roomData.createdAt,
+        members: Array.from(roomData.members),
+        membersDetails: roomData.membersDetails,
+        bannedUsers: Array.from(roomData.bannedUsers),
+        mutedUsers: Array.from(roomData.mutedUsers),
+        ranking: roomData.ranking,
+        duration: Math.floor(
+          (new Date().getTime() - roomData.createdAt.getTime()) / 1000
+        ),
+        };
+        allRoomSerialized.push(obj);
+      }
+
       socketResponse(io, SocketAudioChannels.CreateAudioRoom, socket.id, {
         success: true,
         message: "Successfully room created",
         data: serializedRoom,
       });
+
+      io.emit(SocketAudioChannels.GetAllAudioRooms, {
+        success: true,
+        message: "Successfully room created",
+        data: allRoomSerialized,
+      })
+
     }
   );
 
