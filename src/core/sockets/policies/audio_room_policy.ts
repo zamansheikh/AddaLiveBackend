@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { IAudioRoomData, IMemberDetails } from "../interface/socket_interface";
-import { SocketChannels } from "../../Utils/enums";
+import { ActivityZoneState, SocketChannels } from "../../Utils/enums";
 import { StatusCodes } from "http-status-codes";
 import {
   checkPremiumItem,
@@ -11,6 +11,7 @@ import MyBucketRepository, {
   IMyBucketRepository,
 } from "../../../repository/store/my_bucket_repository";
 import MyBucketModel from "../../../models/store/my_bucket_model";
+import { IUserDocument } from "../../../models/user/user_model_interface";
 
 export class AudioRoomPolicy {
   hostestRooms: Record<string, IAudioRoomData>;
@@ -24,6 +25,32 @@ export class AudioRoomPolicy {
     this.io = io;
     this.socket = socket;
     this.hostestRooms = hostedRooms;
+  }
+
+  ensureUserIsNotBlocked(details: IUserDocument): boolean {
+    if (
+      details.activityZone &&
+      details.activityZone.zone === ActivityZoneState.permanentBlock
+    ) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "You are permanently blocked from this platform",
+      });
+      return false;
+    }
+
+    if (
+      details.activityZone &&
+      details.activityZone.zone === ActivityZoneState.temporaryBlock &&
+      details.activityZone.expire!.toISOString() > new Date().toISOString()
+    ) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: `You are temporarily blocked from this platform until ${details.activityZone.expire?.toLocaleString()}`,
+      });
+      return false;
+    }
+    return true;
   }
 
   ensureCreateRoomPolicy(
@@ -179,15 +206,21 @@ export class AudioRoomPolicy {
 
   ensureUserIsNotOnAnySeat(roomId: string, userId: string): boolean {
     const room = this.hostestRooms[roomId];
-    if(!isEmptyObject(room.premiumSeat.member) && (room.premiumSeat.member as IMemberDetails)._id == userId) {
+    if (
+      !isEmptyObject(room.premiumSeat.member) &&
+      (room.premiumSeat.member as IMemberDetails)._id == userId
+    ) {
       socketResponse(this.io, SocketChannels.error, this.socket.id, {
         success: false,
         message: "You are already on the premium seat",
       });
       return false;
-    };
+    }
     for (const [seatKey, seat] of Object.entries(room.seats)) {
-      if (!isEmptyObject(seat.member) && (seat.member as IMemberDetails)._id == userId) {
+      if (
+        !isEmptyObject(seat.member) &&
+        (seat.member as IMemberDetails)._id == userId
+      ) {
         socketResponse(this.io, SocketChannels.error, this.socket.id, {
           success: false,
           message: `You are already on ${seatKey}`,
@@ -213,7 +246,7 @@ export class AudioRoomPolicy {
       return false;
     }
     if (!this.ensureSeatAvailable(roomId, seatKey)) return false;
-    if(!this.ensureUserIsNotOnAnySeat(roomId, userId)) return false;
+    if (!this.ensureUserIsNotOnAnySeat(roomId, userId)) return false;
     if (seatKey === "premiumSeat") {
       return await this.ensurePremiumUser(
         userId,

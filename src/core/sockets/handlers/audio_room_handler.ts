@@ -50,6 +50,7 @@ export const registerAudioRoomHandler = async (
     "currentLevelBackground",
     "currentLevelTag",
     "level",
+    "activityZone",
   ]);
   if (!userDetails) {
     socketResponse(io, SocketChannels.error, socket.id, {
@@ -58,6 +59,7 @@ export const registerAudioRoomHandler = async (
     });
     return;
   }
+
   // attaching the equiped items from the store.
   const userObj = userDetails.toObject();
   userObj.equipedStoreItems = await getEquipedItemObjects(
@@ -73,7 +75,9 @@ export const registerAudioRoomHandler = async (
     SocketAudioChannels.CreateAudioRoom,
     ({ roomId, title, numberOfSeats }) => {
       // validating input data
-      if(!audioRoomPolicy.ensureCreateRoomPolicy(roomId, title, numberOfSeats)) return;
+      if(!audioRoomPolicy.ensureUserIsNotBlocked(userDetails)) return;
+      if (!audioRoomPolicy.ensureCreateRoomPolicy(roomId, title, numberOfSeats))
+        return;
       const membersDetails: IMemberDetails = {
         name: userDetails.name as string,
         avatar: userDetails.avatar as string,
@@ -547,5 +551,17 @@ export const registerAudioRoomHandler = async (
   });
 
   // get ranked users
-  
+
+  // get all audio hosts
+    socket.on(SocketAudioChannels.GetAudioHosts, () => {
+    let hosts = [];
+    for (const [room, roomData] of Object.entries(audioRoom)) {
+      hosts.push(roomData.hostDetails);
+    }
+    socketResponse(io, SocketAudioChannels.GetAudioHosts, socket.id, {
+      success: true,
+      message: "Successfully fetched all audio hosts",
+      data: hosts,
+    });
+  });
 };

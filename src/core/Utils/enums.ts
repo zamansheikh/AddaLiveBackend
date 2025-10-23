@@ -109,12 +109,11 @@ export enum SocketChannels {
   invited = "invited",
   getRooms = "get-rooms",
   error = "error-message",
-
   sendGift = "sent-gift",
   sendMessage = "sent-message",
-
   updateHostBonus = "update-host-bonus",
   updateHostCoins = "update-host-coins",
+  GetVideoHosts = "get-video-hosts",
 }
 
 export enum SocketAudioChannels {
@@ -132,6 +131,7 @@ export enum SocketAudioChannels {
   CloseRoom = "close-audio-room",
   BanUser = "ban-audio-user",
   UnBanUser = "unban-audio-user",
+  GetAudioHosts = "get-audio-hosts",
 }
 
 export enum RoomTypes {

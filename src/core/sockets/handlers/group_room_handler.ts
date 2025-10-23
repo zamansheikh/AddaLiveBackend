@@ -1,5 +1,9 @@
 import { Socket, Server } from "socket.io";
-import { RoomTypes, SocketChannels } from "../../Utils/enums";
+import {
+  ActivityZoneState,
+  RoomTypes,
+  SocketChannels,
+} from "../../Utils/enums";
 import { StatusCodes } from "http-status-codes";
 import AppError from "../../errors/app_errors";
 import { IUserDocument } from "../../../models/user/user_model_interface";
@@ -56,6 +60,14 @@ export async function registerGroupRoomHandler(
   categoryRepository: IStoreCategoryRepository
 ) {
   const userId = socket.handshake.query.userId as string;
+
+  if (!userId) {
+    socketResponse(io, SocketChannels.error, socket.id, {
+      success: false,
+      message: "User ID is required",
+    });
+    return;
+  }
   const userDetails = await userRepository.getUserDetailsSelectedField(userId, [
     "name",
     "avatar",
@@ -64,6 +76,7 @@ export async function registerGroupRoomHandler(
     "currentLevelBackground",
     "currentLevelTag",
     "level",
+    "activityZone",
   ]);
 
   if (!userDetails) {
@@ -80,14 +93,6 @@ export async function registerGroupRoomHandler(
     categoryRepository,
     userId
   );
-
-  if (!userId) {
-    socketResponse(io, SocketChannels.error, socket.id, {
-      success: false,
-      message: "User ID is required",
-    });
-    return;
-  }
 
   // send message
 
@@ -125,17 +130,40 @@ export async function registerGroupRoomHandler(
 
   // host
   socket.on(SocketChannels.createRoom, ({ roomId, title, roomType }) => {
-    if (!roomId || !title || !roomType)
+    if (
+      userDetails.activityZone &&
+      userDetails.activityZone.zone === ActivityZoneState.permanentBlock
+    ) {
+      socketResponse(io, SocketChannels.error, socket.id, {
+        success: false,
+        message: "You are permanently blocked from this platform",
+      });
+      return false;
+    }
+
+    if (
+      userDetails.activityZone &&
+      userDetails.activityZone.zone === ActivityZoneState.temporaryBlock &&
+      userDetails.activityZone.expire!.toISOString() > new Date().toISOString()
+    ) {
+      socketResponse(io, SocketChannels.error, socket.id, {
+        success: false,
+        message: `You are temporarily blocked from this platform until ${userDetails.activityZone.expire?.toLocaleString()}`,
+      });
+      return false;
+    }
+
+    if (!roomId || !title)
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.BAD_REQUEST,
         message: "roomId, title and roomType are required",
       });
 
-    if (!Object.values(RoomTypes).includes(roomType))
-      return io.to(socket.id).emit(SocketChannels.error, {
-        status: StatusCodes.BAD_REQUEST,
-        message: "Invalid Room Type",
-      });
+    // if (!Object.values(RoomTypes).includes(roomType))
+    //   return io.to(socket.id).emit(SocketChannels.error, {
+    //     status: StatusCodes.BAD_REQUEST,
+    //     message: "Invalid Room Type",
+    //   });
 
     const room = hostedRooms[roomId];
     if (room)
@@ -1089,4 +1117,15 @@ export async function registerGroupRoomHandler(
   });
 
   socket.on(SocketChannels.inviteUser, ({ roomId, targetId }) => {});
+
+  socket.on(SocketChannels.GetVideoHosts, () => {
+    let hosts = [];
+    for (const [room, roomData] of Object.entries(hostedRooms)) {
+      hosts.push(roomData.hostDetails);
+    }
+    io.to(socket.id).emit(SocketChannels.GetVideoHosts, {
+      status: StatusCodes.ACCEPTED,
+      hosts: hosts,
+    });
+  });
 }
