@@ -308,7 +308,7 @@ export const registerAudioRoomHandler = async (
         (new Date().getTime() - room.createdAt.getTime()) / 1000
       ),
     };
-    socketResponse(io, SocketAudioChannels.JoinAudioRoom, socket.id, {
+    socketResponse(io, SocketAudioChannels.JoinAudioRoom, roomId, {
       success: true,
       message: "Successfully joined the room",
       data: serializedRoom,
