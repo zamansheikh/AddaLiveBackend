@@ -288,30 +288,45 @@ export const registerAudioRoomHandler = async (
       message: "Successfully joined the room",
       data: message,
     });
-    const serializedRoom: ISearializedAudioRoom = {
-      title: room.title,
-      numberOfSeats: room.numberOfSeats,
-      roomId: room.roomId,
-      hostGifts: room.hostGifts,
-      hostBonus: room.hostBonus,
-      hostDetails: room.hostDetails,
-      premiumSeat: room.premiumSeat,
-      seats: room.seats,
-      messages: room.messages,
-      createdAt: room.createdAt,
-      members: Array.from(room.members),
-      membersDetails: room.membersDetails,
-      bannedUsers: Array.from(room.bannedUsers),
-      mutedUsers: Array.from(room.mutedUsers),
-      ranking: room.ranking,
-      duration: Math.floor(
-        (new Date().getTime() - room.createdAt.getTime()) / 1000
-      ),
-    };
+    // const serializedRoom: ISearializedAudioRoom = {
+    //   title: room.title,
+    //   numberOfSeats: room.numberOfSeats,
+    //   roomId: room.roomId,
+    //   hostGifts: room.hostGifts,
+    //   hostBonus: room.hostBonus,
+    //   hostDetails: room.hostDetails,
+    //   premiumSeat: room.premiumSeat,
+    //   seats: room.seats,
+    //   messages: room.messages,
+    //   createdAt: room.createdAt,
+    //   members: Array.from(room.members),
+    //   membersDetails: room.membersDetails,
+    //   bannedUsers: Array.from(room.bannedUsers),
+    //   mutedUsers: Array.from(room.mutedUsers),
+    //   ranking: room.ranking,
+    //   duration: Math.floor(
+    //     (new Date().getTime() - room.createdAt.getTime()) / 1000
+    //   ),
+    // };
+
+    const userDetailsToSend:IMemberDetails = {
+      name: userDetails.name as string,
+      avatar: userDetails.avatar as string,
+      uid: userDetails.uid as string,
+      country: userDetails.country as string,
+      _id: userDetails._id as string,
+      currentBackground: userDetails.currentLevelBackground as string,
+      currentTag: userDetails.currentLevelTag as string,
+      currentLevel: userDetails.level as number,
+      equipedStoreItems: userObj.equipedStoreItems,
+      totalGiftSent: 0,
+      isMuted: false,
+    }
+
     socketResponse(io, SocketAudioChannels.JoinAudioRoom, roomId, {
       success: true,
       message: "Successfully joined the room",
-      data: serializedRoom,
+      data: userDetailsToSend,
     });
   });
 
