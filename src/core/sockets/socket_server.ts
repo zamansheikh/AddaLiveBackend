@@ -302,6 +302,7 @@ export default class SocketServer {
     }
     if (roomData.members.has(userId)) {
       // message body
+      
       const leftUserDetails = roomData.membersDetails.filter(
         (member) => member._id == userId
       );
@@ -396,3 +397,4 @@ export default class SocketServer {
     }
   }
 }
+

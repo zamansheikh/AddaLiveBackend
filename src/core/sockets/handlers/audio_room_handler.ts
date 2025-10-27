@@ -75,9 +75,16 @@ export const registerAudioRoomHandler = async (
     SocketAudioChannels.CreateAudioRoom,
     ({ roomId, title, numberOfSeats }) => {
       // validating input data
-      if(!audioRoomPolicy.ensureUserIsNotBlocked(userDetails)) return;
-      if (!audioRoomPolicy.ensureCreateRoomPolicy(roomId, title, numberOfSeats))
-        return;
+      const ensureUserIsNotBlocked =
+        audioRoomPolicy.ensureUserIsNotBlocked(userDetails);
+      const ensureCreateRoom = audioRoomPolicy.ensureCreateRoomPolicy(
+        roomId,
+        title,
+        numberOfSeats
+      );
+      if (ensureUserIsNotBlocked == false) return;
+      if (ensureCreateRoom == false) return;
+
       const membersDetails: IMemberDetails = {
         name: userDetails.name as string,
         avatar: userDetails.avatar as string,
@@ -144,27 +151,27 @@ export const registerAudioRoomHandler = async (
       };
 
       const allRoomSerialized: ISearializedAudioRoom[] = [];
-      
+
       for (const [room, roomData] of Object.entries(audioRoom)) {
         const obj = {
           title: roomData.title,
-        numberOfSeats: roomData.numberOfSeats,
-        roomId: roomData.roomId,
-        hostGifts: roomData.hostGifts,
-        hostBonus: roomData.hostBonus,
-        hostDetails: roomData.hostDetails,
-        premiumSeat: roomData.premiumSeat,
-        seats: roomData.seats,
-        messages: roomData.messages,
-        createdAt: roomData.createdAt,
-        members: Array.from(roomData.members),
-        membersDetails: roomData.membersDetails,
-        bannedUsers: Array.from(roomData.bannedUsers),
-        mutedUsers: Array.from(roomData.mutedUsers),
-        ranking: roomData.ranking,
-        duration: Math.floor(
-          (new Date().getTime() - roomData.createdAt.getTime()) / 1000
-        ),
+          numberOfSeats: roomData.numberOfSeats,
+          roomId: roomData.roomId,
+          hostGifts: roomData.hostGifts,
+          hostBonus: roomData.hostBonus,
+          hostDetails: roomData.hostDetails,
+          premiumSeat: roomData.premiumSeat,
+          seats: roomData.seats,
+          messages: roomData.messages,
+          createdAt: roomData.createdAt,
+          members: Array.from(roomData.members),
+          membersDetails: roomData.membersDetails,
+          bannedUsers: Array.from(roomData.bannedUsers),
+          mutedUsers: Array.from(roomData.mutedUsers),
+          ranking: roomData.ranking,
+          duration: Math.floor(
+            (new Date().getTime() - roomData.createdAt.getTime()) / 1000
+          ),
         };
         allRoomSerialized.push(obj);
       }
@@ -179,8 +186,7 @@ export const registerAudioRoomHandler = async (
         success: true,
         message: "Successfully room created",
         data: allRoomSerialized,
-      })
-
+      });
     }
   );
 
@@ -219,7 +225,8 @@ export const registerAudioRoomHandler = async (
 
   // get audio room details
   socket.on(SocketAudioChannels.RoomDetails, ({ roomId }) => {
-    if (!audioRoomPolicy.ensureRoomExists(roomId)) return;
+    const ensureRoomExists = audioRoomPolicy.ensureRoomExists(roomId);
+    if (ensureRoomExists == false) return;
     const room = audioRoom[roomId];
     const serializedRoom: ISearializedAudioRoom = {
       title: room.title,
@@ -250,7 +257,8 @@ export const registerAudioRoomHandler = async (
 
   // user join audio room
   socket.on(SocketAudioChannels.JoinAudioRoom, ({ roomId }) => {
-    if (!audioRoomPolicy.ensureUserCanJoin(roomId, userId)) return;
+    const ensureUserCanJoin = audioRoomPolicy.ensureUserCanJoin(roomId, userId);
+    if (ensureUserCanJoin == false) return;
     const room = audioRoom[roomId];
     const membersDetails: IMemberDetails = {
       name: userDetails.name as string,
@@ -309,7 +317,7 @@ export const registerAudioRoomHandler = async (
     //   ),
     // };
 
-    const userDetailsToSend:IMemberDetails = {
+    const userDetailsToSend: IMemberDetails = {
       name: userDetails.name as string,
       avatar: userDetails.avatar as string,
       uid: userDetails.uid as string,
@@ -321,7 +329,7 @@ export const registerAudioRoomHandler = async (
       equipedStoreItems: userObj.equipedStoreItems,
       totalGiftSent: 0,
       isMuted: false,
-    }
+    };
 
     socketResponse(io, SocketAudioChannels.JoinAudioRoom, roomId, {
       success: true,
@@ -332,9 +340,15 @@ export const registerAudioRoomHandler = async (
 
   // join seats
   socket.on(SocketAudioChannels.joinSeat, async ({ roomId, seatKey }) => {
-    if (!audioRoomPolicy.ensureRoomExists(roomId)) return;
-    if (!(await audioRoomPolicy.ensureJoinSeat(roomId, userId, seatKey)))
-      return;
+    const ensureRoomExists = audioRoomPolicy.ensureRoomExists(roomId);
+    const ensureJoinSeat = await audioRoomPolicy.ensureJoinSeat(
+      roomId,
+      userId,
+      seatKey
+    );
+    if (ensureRoomExists == false) return;
+    if (ensureJoinSeat == false) return;
+
     const room = audioRoom[roomId];
     const member = room.membersDetails.find(
       (member) => member._id.toString() === userId
@@ -375,9 +389,17 @@ export const registerAudioRoomHandler = async (
 
   // leave seat
   socket.on(SocketAudioChannels.leaveSeat, async ({ roomId, seatKey }) => {
-    if (!audioRoomPolicy.ensureRightSeatType(seatKey)) return;
-    if (!audioRoomPolicy.ensureRoomExists(roomId)) return;
-    if (!audioRoomPolicy.ensureLeaveSeat(roomId, userId, seatKey)) return;
+    const ensureRightSeatType = audioRoomPolicy.ensureRightSeatType(seatKey);
+    const ensureRoomExists = audioRoomPolicy.ensureRoomExists(roomId);
+    const ensureLeaveSeat = audioRoomPolicy.ensureLeaveSeat(
+      roomId,
+      userId,
+      seatKey
+    );
+    if (ensureRightSeatType == false) return;
+    if (ensureRoomExists == false) return;
+    if (ensureLeaveSeat == false) return;
+
     if (seatKey == "premiumSeat") audioRoom[roomId].premiumSeat.member = {};
     else audioRoom[roomId].seats[seatKey].member = {};
 
@@ -413,8 +435,12 @@ export const registerAudioRoomHandler = async (
 
   // remove user from seat
   socket.on(SocketAudioChannels.RemoveFromSeat, ({ roomId, seatKey }) => {
-    if (!audioRoomPolicy.ensureRightSeatType(seatKey)) return;
-    if (!audioRoomPolicy.ensureIsHost(roomId, userId)) return;
+    const ensureRightSeatType = audioRoomPolicy.ensureRightSeatType(seatKey);
+    const ensureRoomExists = audioRoomPolicy.ensureRoomExists(roomId);
+    const ensureIsHost = audioRoomPolicy.ensureIsHost(roomId, userId);
+    if (ensureRightSeatType == false) return;
+    if (ensureRoomExists == false) return;
+    if (ensureIsHost == false) return;
     const room = audioRoom[roomId];
     let details: IMemberDetails;
     if (seatKey === "premiumSeat") {
@@ -460,10 +486,15 @@ export const registerAudioRoomHandler = async (
 
   // mute unmute user
   socket.on(SocketAudioChannels.MuteUnmute, ({ roomId, targetId }) => {
-    if (!audioRoomPolicy.ensureIsHost(roomId, userId)) return;
-    if (!audioRoomPolicy.ensureRoomExists(roomId)) return;
-    if (!audioRoomPolicy.ensureHasMember(roomId, targetId)) return;
-    if (!audioRoomPolicy.ensureIsOnSeat(roomId, targetId)) return;
+    const ensureIsHost = audioRoomPolicy.ensureIsHost(roomId, userId);
+    const ensureRoomExists = audioRoomPolicy.ensureRoomExists(roomId);
+    const ensureHasMember = audioRoomPolicy.ensureHasMember(roomId, targetId);
+    const ensureIsOnSeat = audioRoomPolicy.ensureIsOnSeat(roomId, targetId);
+    if (ensureIsHost == false) return;
+    if (ensureRoomExists == false) return;
+    if (ensureHasMember == false) return;
+    if (ensureIsOnSeat == false) return;
+
     const room = audioRoom[roomId];
     const targetSocketId = onlineUsers.get(targetId);
     if (!targetSocketId) return;
@@ -525,8 +556,11 @@ export const registerAudioRoomHandler = async (
 
   // take leave from room
   socket.on(SocketAudioChannels.LeaveAudioRoom, ({ roomId }) => {
-    if (!audioRoomPolicy.ensureRoomExists(roomId)) return;
-    if (!audioRoomPolicy.ensureHasMember(roomId, userId)) return;
+    const ensureRoomExists = audioRoomPolicy.ensureRoomExists(roomId);
+    const ensureHasMember = audioRoomPolicy.ensureHasMember(roomId, userId);
+    if (ensureRoomExists == false) return;
+    if (ensureHasMember == false) return;
+
     const room = audioRoom[roomId];
     const socketInstance = SocketServer.getInstance();
     socketInstance.handleAudioRoomDisconnect(userId, roomId, room);
@@ -534,8 +568,11 @@ export const registerAudioRoomHandler = async (
 
   // send message
   socket.on(SocketAudioChannels.SendMessage, ({ roomId, text }) => {
-    if (!audioRoomPolicy.ensureRoomExists(roomId)) return;
-    if (!audioRoomPolicy.ensureHasMember(roomId, userId)) return;
+    const ensureRoomExists = audioRoomPolicy.ensureRoomExists(roomId);
+    const ensureHasMember = audioRoomPolicy.ensureHasMember(roomId, userId);
+    if (ensureRoomExists == false) return;
+    if (ensureHasMember == false) return;
+
     const room = audioRoom[roomId];
     const message: IRoomMessage = {
       name: userDetails.name as string,
@@ -560,10 +597,14 @@ export const registerAudioRoomHandler = async (
 
   // ban user
   socket.on(SocketAudioChannels.BanUser, ({ roomId, targetId }) => {
-    if (!audioRoomPolicy.ensureIsHost(roomId, userId)) return;
-    if (!audioRoomPolicy.ensureRoomExists(roomId)) return;
-    if (!audioRoomPolicy.ensureHasMember(roomId, targetId)) return;
-    console.log(userId, targetId);
+
+    const ensureIsHost = audioRoomPolicy.ensureIsHost(roomId, userId);
+    const ensureRoomExists = audioRoomPolicy.ensureRoomExists(roomId);
+    const ensureHasMember = audioRoomPolicy.ensureHasMember(roomId, targetId);
+
+    if(ensureIsHost == false) return;
+    if(ensureRoomExists == false) return;
+    if(ensureHasMember == false) return;
 
     if (targetId === userId) {
       socketResponse(io, SocketChannels.error, socket.id, {
@@ -586,8 +627,11 @@ export const registerAudioRoomHandler = async (
 
   // unban user
   socket.on(SocketAudioChannels.UnBanUser, ({ roomId, targetId }) => {
-    if (!audioRoomPolicy.ensureIsHost(roomId, userId)) return;
-    if (!audioRoomPolicy.ensureRoomExists(roomId)) return;
+    const ensureIsHost = audioRoomPolicy.ensureIsHost(roomId, userId);
+    const ensureRoomExists = audioRoomPolicy.ensureRoomExists(roomId);
+    if(ensureIsHost == false) return;
+    if(ensureRoomExists == false) return;
+
     const room = audioRoom[roomId];
     if (room.bannedUsers.has(targetId)) room.bannedUsers.delete(targetId);
     socketResponse(io, SocketAudioChannels.UnBanUser, roomId, {
@@ -602,7 +646,7 @@ export const registerAudioRoomHandler = async (
   // get ranked users
 
   // get all audio hosts
-    socket.on(SocketAudioChannels.GetAudioHosts, () => {
+  socket.on(SocketAudioChannels.GetAudioHosts, () => {
     let hosts = [];
     for (const [room, roomData] of Object.entries(audioRoom)) {
       hosts.push(roomData.hostDetails);
