@@ -16,6 +16,7 @@ import {
   IAudioRoomData,
   IMemberDetails,
   IRoomMessage,
+  ISearializedAudioRoom,
   RoomData,
 } from "./interface/socket_interface";
 import { registerAudioRoomHandler } from "./handlers/audio_room_handler";
@@ -32,7 +33,7 @@ export default class SocketServer {
   private hostedRooms = {} as Record<string, RoomData>;
   private hostedAudioRooms = {} as Record<string, IAudioRoomData>;
   private userRepo = new UserRepository(User);
-  
+
   private bucketRepo = new MyBucketRepository(MyBucketModel);
   private categoryRepo = new StoreCategoryRepository(StoreCategoryModel);
 
@@ -108,9 +109,11 @@ export default class SocketServer {
         }
 
         // persist audio room connection
-        for (const [roomId, roomData] of Object.entries(this.hostedAudioRooms)) {
+        for (const [roomId, roomData] of Object.entries(
+          this.hostedAudioRooms
+        )) {
           if (!roomData.members.has(userId)) continue;
-          const timeOut = setTimeout(()=> {
+          const timeOut = setTimeout(() => {
             this.disconnectedUsers.delete(userId);
             this.handleAudioRoomDisconnect(userId, roomId, roomData);
           }, 5000);
@@ -138,15 +141,17 @@ export default class SocketServer {
     coin: number,
     targetUserIds: string[]
   ): void {
-    const videoRoom: RoomData | undefined= this.hostedRooms[roomId];
+    const videoRoom: RoomData | undefined = this.hostedRooms[roomId];
     const audioRoom: IAudioRoomData | undefined = this.hostedAudioRooms[roomId];
     if (videoRoom) {
       const hasHostId = targetUserIds.filter((id) => id == videoRoom.hostId);
       if (hasHostId.length > 0) videoRoom.hostCoins += coin;
     }
 
-    if(audioRoom) {
-      const hasHostId = targetUserIds.filter((id) => id == audioRoom.hostDetails?._id);
+    if (audioRoom) {
+      const hasHostId = targetUserIds.filter(
+        (id) => id == audioRoom.hostDetails?._id
+      );
       if (hasHostId.length > 0) audioRoom.hostBonus += coin;
     }
   }
@@ -157,7 +162,7 @@ export default class SocketServer {
     gifts: number,
     targetUserIds: string[]
   ) {
-    const videoRoom: RoomData | undefined= this.hostedRooms[roomId];
+    const videoRoom: RoomData | undefined = this.hostedRooms[roomId];
     const audioRoom: IAudioRoomData | undefined = this.hostedAudioRooms[roomId];
     if (videoRoom) {
       const hasHostId = targetUserIds.filter((id) => id == videoRoom.hostId);
@@ -169,8 +174,10 @@ export default class SocketServer {
           }
         }
     }
-    if(audioRoom){
-      const hasHostId = targetUserIds.filter((id) => id == audioRoom.hostDetails?._id);
+    if (audioRoom) {
+      const hasHostId = targetUserIds.filter(
+        (id) => id == audioRoom.hostDetails?._id
+      );
       if (hasHostId.length > 0)
         for (let i = 0; i < audioRoom.ranking.length; i++) {
           if (audioRoom.ranking[i]._id.toString() === userId) {
@@ -286,6 +293,7 @@ export default class SocketServer {
         message: "Room has been closed by the host",
         data: {},
       });
+
       const membersArray = Array.from(roomData.members);
       for (let i = 0; i < membersArray.length; i++) {
         const member = membersArray[i];
@@ -298,11 +306,43 @@ export default class SocketServer {
         }
       }
       delete this.hostedAudioRooms[roomId];
+
+      const allRoomSerialized: ISearializedAudioRoom[] = [];
+
+      for (const [room, roomData] of Object.entries(this.hostedAudioRooms)) {
+        const obj = {
+          title: roomData.title,
+          numberOfSeats: roomData.numberOfSeats,
+          roomId: roomData.roomId,
+          hostGifts: roomData.hostGifts,
+          hostBonus: roomData.hostBonus,
+          hostDetails: roomData.hostDetails,
+          premiumSeat: roomData.premiumSeat,
+          seats: roomData.seats,
+          messages: roomData.messages,
+          createdAt: roomData.createdAt,
+          members: Array.from(roomData.members),
+          membersDetails: roomData.membersDetails,
+          bannedUsers: Array.from(roomData.bannedUsers),
+          mutedUsers: Array.from(roomData.mutedUsers),
+          ranking: roomData.ranking,
+          duration: Math.floor(
+            (new Date().getTime() - roomData.createdAt.getTime()) / 1000
+          ),
+        };
+        allRoomSerialized.push(obj);
+      }
+
+      this.io.emit(SocketAudioChannels.GetAllAudioRooms, {
+        success: true,
+        message: "Successfully room created",
+        data: allRoomSerialized,
+      });
       return;
     }
     if (roomData.members.has(userId)) {
       // message body
-      
+
       const leftUserDetails = roomData.membersDetails.filter(
         (member) => member._id == userId
       );
@@ -397,4 +437,3 @@ export default class SocketServer {
     }
   }
 }
-
