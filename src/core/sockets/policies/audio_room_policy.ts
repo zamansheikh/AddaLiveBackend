@@ -109,7 +109,8 @@ export class AudioRoomPolicy {
   }
 
   ensureUserCanJoin(roomId: string, userId: string): boolean {
-    if (!this.ensureRoomExists(roomId)) return false;
+    const ensureRoomExists = this.ensureRoomExists(roomId);
+    if (ensureRoomExists == false) return false;
 
     const room = this.hostestRooms[roomId];
     if (room.members.has(userId)) {
@@ -143,7 +144,8 @@ export class AudioRoomPolicy {
   }
 
   ensureSeatAvailable(roomId: string, seatKey: string): boolean {
-    if (!this.ensureRightSeatType(seatKey)) return false;
+    const ensureRightSeatType = this.ensureRightSeatType(seatKey);
+    if (ensureRightSeatType == false) return false;
     const seatNumber = seatKey.split("-")[1];
     const room = this.hostestRooms[roomId];
     if (room.numberOfSeats < Number(seatNumber)) {
@@ -236,7 +238,8 @@ export class AudioRoomPolicy {
     userId: string,
     seatKey: string
   ): Promise<boolean> {
-    if (!this.ensureRoomExists(roomId)) return false;
+    const ensureRoomExists = this.ensureRoomExists(roomId);
+    if (ensureRoomExists == false) return false;
     const room = this.hostestRooms[roomId];
     if (!room.members.has(userId)) {
       socketResponse(this.io, SocketChannels.error, this.socket.id, {
@@ -245,8 +248,13 @@ export class AudioRoomPolicy {
       });
       return false;
     }
-    if (!this.ensureSeatAvailable(roomId, seatKey)) return false;
-    if (!this.ensureUserIsNotOnAnySeat(roomId, userId)) return false;
+    const ensureSeatAvailable = this.ensureSeatAvailable(roomId, seatKey);
+    const ensureUserIsNotOnAnySeat = this.ensureUserIsNotOnAnySeat(
+      roomId,
+      userId
+    );
+    if (ensureSeatAvailable == false) return false;
+    if (ensureUserIsNotOnAnySeat == false) return false;
     if (seatKey === "premiumSeat") {
       return await this.ensurePremiumUser(
         userId,
@@ -257,7 +265,8 @@ export class AudioRoomPolicy {
   }
 
   ensureLeaveSeat(roomId: string, userId: string, seatKey: string): boolean {
-    if (!this.ensureRoomExists(roomId)) return false;
+    const ensureRoomExists = this.ensureRoomExists(roomId);
+    if (ensureRoomExists == false) return false;
     const room = this.hostestRooms[roomId];
     if (!room.members.has(userId)) {
       socketResponse(this.io, SocketChannels.error, this.socket.id, {
@@ -301,7 +310,8 @@ export class AudioRoomPolicy {
   }
 
   ensureIsHost(roomId: string, userId: string): boolean {
-    if (!this.ensureRoomExists(roomId)) return false;
+    const ensureRoomExists = this.ensureRoomExists(roomId);
+    if (ensureRoomExists == false) return false;
     const room = this.hostestRooms[roomId];
     if (room.hostDetails?._id != userId) {
       socketResponse(this.io, SocketChannels.error, this.socket.id, {
@@ -314,7 +324,8 @@ export class AudioRoomPolicy {
   }
 
   ensureHasMember(roomId: string, userId: string): boolean {
-    if (!this.ensureRoomExists(roomId)) return false;
+    const ensureRoomExists = this.ensureRoomExists(roomId);
+    if (ensureRoomExists == false) return false;
     const room = this.hostestRooms[roomId];
     if (!room.members.has(userId)) {
       socketResponse(this.io, SocketChannels.error, this.socket.id, {
@@ -327,7 +338,8 @@ export class AudioRoomPolicy {
   }
 
   ensureIsOnSeat(roomId: string, userId: string): boolean {
-    if (!this.ensureRoomExists(roomId)) return false;
+    const ensureRoomExists = this.ensureRoomExists(roomId);
+    if (ensureRoomExists == false) return false;
     const room = this.hostestRooms[roomId];
     let isOnSeat = false;
     if (
