@@ -11,7 +11,7 @@ import {
 import { IUserDocument } from "../../models/user/user_model_interface";
 import { IAdminDocument } from "../../entities/admin/admin_interface";
 import { IPortalUserDocument } from "../../entities/portal_users/portal_user_interface";
-import { stat } from "fs";
+import { appendFile, stat } from "fs";
 import { IMyBucketRepository } from "../../repository/store/my_bucket_repository";
 import { Types } from "mongoose";
 import { IStoreItem } from "../../models/store/store_item_model";
@@ -242,7 +242,7 @@ export async function checkPremiumItem(
   userId: string
 ): Promise<boolean> {
   const equipedBuccket = await repository.getEquipedBuckets(userId);
-  
+
   if (equipedBuccket.length != 1) return false;
 
   if (
@@ -251,7 +251,7 @@ export async function checkPremiumItem(
   )
     throw new AppError(StatusCodes.CONFLICT, "itemId is not populated");
   const item = equipedBuccket[0].itemId as IStoreItem;
-  if(item.isPremium) return true;
+  if (item.isPremium) return true;
   return false;
 }
 
@@ -298,6 +298,71 @@ export function socketResponse(
   });
 }
 
-export function isEmptyObject(obj: object): boolean {  
+export function isEmptyObject(obj: object): boolean {
   return Object.keys(obj).length === 0;
+}
+
+export function validateGiftAudioRocket(
+  body: Record<string, unknown>,
+  isUpdate: boolean = false
+) {
+  const { cooldown, milestones, giftPercentage } = body;
+  if (isUpdate) {
+    if (!cooldown && !milestones && !giftPercentage)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "At least one of cooldown, milestones, or giftPercentage is required for update"
+      );
+    if (cooldown && isNaN(Number(cooldown)))
+      throw new AppError(StatusCodes.BAD_REQUEST, "cooldown must be a number");
+    if (milestones && !Array.isArray(milestones))
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "milestones must be an array"
+      );
+    if (milestones && Array.isArray(milestones) && milestones.length < 1)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "milestones must contain at least one milestone"
+      );
+    if (milestones && Array.isArray(milestones)) {
+      for (let i = 0; i < milestones.length; i++) {
+        if (isNaN(Number(milestones[i])))
+          throw new AppError(
+            StatusCodes.BAD_REQUEST,
+            `milestones[${i}] must be a number`
+          );
+      }
+    }
+    if (giftPercentage && isNaN(Number(giftPercentage)))
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "giftPercentage must be a number"
+      );
+  } else {
+    if (!cooldown || !milestones || !giftPercentage)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "cooldown, milestones, and giftPercentage are required"
+      );
+    if (isNaN(Number(cooldown)))
+      throw new AppError(StatusCodes.BAD_REQUEST, "cooldown must be a number");
+    if (!Array.isArray(milestones))
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "milestones must be an array"
+      );
+    if (milestones.length < 1)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "milestones must contain at least one milestone"
+      );
+    for (let i = 0; i < milestones.length; i++) {
+      if (isNaN(Number(milestones[i])))
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          `milestones[${i}] must be a number`
+        );
+    }
+  }
 }

@@ -44,6 +44,7 @@ export enum DatabaseNames {
   RoomBonusRecord = "room_bonus_records",
   LevelTagBg = "level_tag_bg",
   BlockDocs = "block_docs",
+  GiftAudioRoomRockets = 'gift_audio_room_rockets'
 }
 
 export enum ReelStatus {
@@ -114,6 +115,8 @@ export enum SocketChannels {
   updateHostBonus = "update-host-bonus",
   updateHostCoins = "update-host-coins",
   GetVideoHosts = "get-video-hosts",
+  UpdateHostCoin = "update-host-coin",
+  
 }
 
 export enum SocketAudioChannels {
@@ -132,6 +135,9 @@ export enum SocketAudioChannels {
   BanUser = "ban-audio-user",
   UnBanUser = "unban-audio-user",
   GetAudioHosts = "get-audio-hosts",
+  UpdateAudioHostCoins = "update-audio-host-coins",
+  NewRocketFuelPercentage = 'new-rocket-fuel-percentage',
+  LaunchRocket = 'rocket-launch',
 }
 
 export enum RoomTypes {

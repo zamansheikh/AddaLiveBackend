@@ -15,12 +15,14 @@ import {
 import {
   IAudioRoomData,
   IAudioSeats,
+  ILaunchRocketInfo,
   IMemberDetails,
   IRoomMessage,
   ISearializedAudioRoom,
 } from "../interface/socket_interface";
 import { AudioRoomPolicy } from "../policies/audio_room_policy";
 import SocketServer from "../socket_server";
+import { IGiftAudioRocket } from "../../../models/gifts/gift_audio_rocket_model";
 
 export const registerAudioRoomHandler = async (
   io: Server,
@@ -29,7 +31,9 @@ export const registerAudioRoomHandler = async (
   audioRoom: Record<string, IAudioRoomData>,
   userRepository: IUserRepository,
   bucketRepository: IMyBucketRepository,
-  categoryRepository: IStoreCategoryRepository
+  categoryRepository: IStoreCategoryRepository,
+  rocketInfo: Partial<IGiftAudioRocket>,
+  launchRocketInfo: Record<string, ILaunchRocketInfo>
 ) => {
   // userId -> mongoose object_id
   const userId = socket.handshake.query.userId as string;
@@ -55,7 +59,7 @@ export const registerAudioRoomHandler = async (
   if (!userDetails) {
     socketResponse(io, SocketChannels.error, socket.id, {
       success: false,
-      message: "User ID is required",
+      message: "User does not exist",
     });
     return;
   }
@@ -110,6 +114,10 @@ export const registerAudioRoomHandler = async (
         hostDetails: membersDetails,
         title: title,
         numberOfSeats: numberOfSeats,
+        currentRocketMilestone: isEmptyObject(rocketInfo)
+          ? 0
+          : rocketInfo.milestones![0],
+        currentRocketFuel: 0,
         roomId: roomId,
         hostGifts: 0,
         hostBonus: 0,
@@ -126,12 +134,25 @@ export const registerAudioRoomHandler = async (
         mutedUsers: new Set(),
         ranking: [membersDetails],
       };
-
       audioRoom[roomId] = createdRoom;
+
+      // to track rocket status
+      if (!isEmptyObject(rocketInfo)) {
+        launchRocketInfo[roomId] = {
+          roomId,
+          cooldownTill: new Date(),
+          currentDay: new Date(),
+          currentIterationIdx: 0,
+        };
+      }
+
       socket.join(roomId);
       const serializedRoom: ISearializedAudioRoom = {
         title: createdRoom.title,
         numberOfSeats: createdRoom.numberOfSeats,
+        currentRocketMilestone: createdRoom.currentRocketMilestone,
+        currentRocketFuel: createdRoom.currentRocketFuel,
+        fuelPercentage: 0,
         roomId: createdRoom.roomId,
         hostGifts: createdRoom.hostGifts,
         hostBonus: createdRoom.hostBonus,
@@ -156,6 +177,13 @@ export const registerAudioRoomHandler = async (
         const obj = {
           title: roomData.title,
           numberOfSeats: roomData.numberOfSeats,
+          currentRocketMilestone: roomData.currentRocketMilestone,
+          currentRocketFuel: roomData.currentRocketFuel,
+          fuelPercentage:
+            roomData.currentRocketMilestone === 0
+              ? 0
+              : (roomData.currentRocketFuel / roomData.currentRocketMilestone) *
+                100,
           roomId: roomData.roomId,
           hostGifts: roomData.hostGifts,
           hostBonus: roomData.hostBonus,
@@ -197,6 +225,13 @@ export const registerAudioRoomHandler = async (
       const obj = {
         title: roomData.title,
         numberOfSeats: roomData.numberOfSeats,
+        currentRocketMilestone: roomData.currentRocketMilestone,
+        currentRocketFuel: roomData.currentRocketFuel,
+        fuelPercentage:
+          roomData.currentRocketMilestone === 0
+            ? 0
+            : (roomData.currentRocketFuel / roomData.currentRocketMilestone) *
+              100,
         roomId: roomData.roomId,
         hostGifts: roomData.hostGifts,
         hostBonus: roomData.hostBonus,
@@ -216,6 +251,7 @@ export const registerAudioRoomHandler = async (
       };
       serializedRooms.push(obj);
     }
+
     socketResponse(io, SocketAudioChannels.GetAllAudioRooms, socket.id, {
       success: true,
       message: "Successfully fetched all audio rooms",
@@ -231,6 +267,12 @@ export const registerAudioRoomHandler = async (
     const serializedRoom: ISearializedAudioRoom = {
       title: room.title,
       numberOfSeats: room.numberOfSeats,
+      currentRocketMilestone: room.currentRocketMilestone,
+      currentRocketFuel: room.currentRocketFuel,
+      fuelPercentage:
+        room.currentRocketMilestone === 0
+          ? 0
+          : (room.currentRocketFuel / room.currentRocketMilestone) * 100,
       roomId: room.roomId,
       hostGifts: room.hostGifts,
       hostBonus: room.hostBonus,
@@ -529,6 +571,12 @@ export const registerAudioRoomHandler = async (
     const serializedRoom: ISearializedAudioRoom = {
       title: room.title,
       numberOfSeats: room.numberOfSeats,
+      currentRocketMilestone: room.currentRocketMilestone,
+      currentRocketFuel: room.currentRocketFuel,
+      fuelPercentage:
+        room.currentRocketMilestone === 0
+          ? 0
+          : (room.currentRocketFuel / room.currentRocketMilestone) * 100,
       roomId: room.roomId,
       hostGifts: room.hostGifts,
       hostBonus: room.hostBonus,
@@ -597,14 +645,13 @@ export const registerAudioRoomHandler = async (
 
   // ban user
   socket.on(SocketAudioChannels.BanUser, ({ roomId, targetId }) => {
-
     const ensureIsHost = audioRoomPolicy.ensureIsHost(roomId, userId);
     const ensureRoomExists = audioRoomPolicy.ensureRoomExists(roomId);
     const ensureHasMember = audioRoomPolicy.ensureHasMember(roomId, targetId);
 
-    if(ensureIsHost == false) return;
-    if(ensureRoomExists == false) return;
-    if(ensureHasMember == false) return;
+    if (ensureIsHost == false) return;
+    if (ensureRoomExists == false) return;
+    if (ensureHasMember == false) return;
 
     if (targetId === userId) {
       socketResponse(io, SocketChannels.error, socket.id, {
@@ -629,8 +676,8 @@ export const registerAudioRoomHandler = async (
   socket.on(SocketAudioChannels.UnBanUser, ({ roomId, targetId }) => {
     const ensureIsHost = audioRoomPolicy.ensureIsHost(roomId, userId);
     const ensureRoomExists = audioRoomPolicy.ensureRoomExists(roomId);
-    if(ensureIsHost == false) return;
-    if(ensureRoomExists == false) return;
+    if (ensureIsHost == false) return;
+    if (ensureRoomExists == false) return;
 
     const room = audioRoom[roomId];
     if (room.bannedUsers.has(targetId)) room.bannedUsers.delete(targetId);

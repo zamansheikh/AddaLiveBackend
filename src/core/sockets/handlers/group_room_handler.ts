@@ -61,6 +61,8 @@ export async function registerGroupRoomHandler(
 ) {
   const userId = socket.handshake.query.userId as string;
 
+  console.log(userId);
+  
   if (!userId) {
     socketResponse(io, SocketChannels.error, socket.id, {
       success: false,
@@ -82,7 +84,7 @@ export async function registerGroupRoomHandler(
   if (!userDetails) {
     socketResponse(io, SocketChannels.error, socket.id, {
       success: false,
-      message: "User ID is required",
+      message: "User does not exist",
     });
     return;
   }

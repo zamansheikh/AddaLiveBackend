@@ -14,6 +14,7 @@ import StoreCategoryRepository from "../../repository/store/store_category_repos
 import StoreCategoryModel from "../../models/store/store_category_model";
 import {
   IAudioRoomData,
+  ILaunchRocketInfo,
   IMemberDetails,
   IRoomMessage,
   ISearializedAudioRoom,
@@ -21,6 +22,10 @@ import {
 } from "./interface/socket_interface";
 import { registerAudioRoomHandler } from "./handlers/audio_room_handler";
 import { isEmptyObject, socketResponse } from "../Utils/helper_functions";
+import { GiftAudioRocketRepository } from "../../repository/gifts/gift_audio_rocket_repository";
+import GiftAudioRoomRocketModel, {
+  IGiftAudioRocket,
+} from "../../models/gifts/gift_audio_rocket_model";
 
 export default class SocketServer {
   private static instance: SocketServer;
@@ -33,9 +38,14 @@ export default class SocketServer {
   private hostedRooms = {} as Record<string, RoomData>;
   private hostedAudioRooms = {} as Record<string, IAudioRoomData>;
   private userRepo = new UserRepository(User);
-
   private bucketRepo = new MyBucketRepository(MyBucketModel);
   private categoryRepo = new StoreCategoryRepository(StoreCategoryModel);
+  // for rocket fetures
+  private giftAudioRocketRepo = new GiftAudioRocketRepository(
+    GiftAudioRoomRocketModel
+  );
+  private rocketInfo: Partial<IGiftAudioRocket> = {};
+  private launchRocketInfo: Record<string, ILaunchRocketInfo> = {};
 
   // Private constructor: enforce singleton usage
   private constructor(server: HttpServer) {
@@ -48,10 +58,12 @@ export default class SocketServer {
     this.initialize();
   }
 
-  public static initialize(server: HttpServer): SocketServer {
+  public static async initialize(server: HttpServer): Promise<SocketServer> {
     if (!SocketServer.instance) {
       SocketServer.instance = new SocketServer(server);
     }
+    this.instance.rocketInfo =
+      await this.instance.giftAudioRocketRepo.getRocketInfoForAudioRoom();
     return SocketServer.instance;
   }
 
@@ -88,7 +100,9 @@ export default class SocketServer {
         this.hostedAudioRooms,
         this.userRepo,
         this.bucketRepo,
-        this.categoryRepo
+        this.categoryRepo,
+        this.rocketInfo,
+        this.launchRocketInfo
       );
 
       socket.on("disconnect", () => {
@@ -116,7 +130,7 @@ export default class SocketServer {
           const timeOut = setTimeout(() => {
             this.disconnectedUsers.delete(userId);
             this.handleAudioRoomDisconnect(userId, roomId, roomData);
-          }, 5000);
+          }, 30000);
           this.disconnectedUsers.set(userId, { timeOut, roomId });
           socket.leave(roomId);
         }
@@ -152,7 +166,107 @@ export default class SocketServer {
       const hasHostId = targetUserIds.filter(
         (id) => id == audioRoom.hostDetails?._id
       );
-      if (hasHostId.length > 0) audioRoom.hostBonus += coin;
+      if (hasHostId.length > 0) {
+        audioRoom.hostBonus += coin;
+        socketResponse(
+          this.io,
+          SocketAudioChannels.UpdateAudioHostCoins,
+          audioRoom.roomId,
+          {
+            success: true,
+            message: "Successfully updated host coins",
+            data: {
+              hostBonus: audioRoom.hostBonus,
+            },
+          }
+        );
+        if (isEmptyObject(this.rocketInfo)) return;
+
+        const rocketFuel = this.rocketInfo.giftPercentage! * coin;
+        const launchDetails = this.launchRocketInfo[audioRoom.roomId];
+
+        // fuel milestone reset
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const lastResetDay = new Date(launchDetails.currentDay);
+        lastResetDay.setHours(0, 0, 0, 0);
+
+        if (lastResetDay < today) {
+          launchDetails.currentDay = new Date();
+          launchDetails.currentIterationIdx = 0;
+        }
+
+        // checking if cool down period is going on
+        if (launchDetails.cooldownTill > new Date()) return;
+
+        // when all the milestones are reached
+        if (
+          launchDetails.currentIterationIdx >=
+          this.rocketInfo.milestones!.length
+        )
+          return;
+        // when fuel is full
+        if (
+          audioRoom.currentRocketFuel + rocketFuel >
+          this.rocketInfo.milestones![launchDetails.currentIterationIdx]
+        ) {
+          audioRoom.currentRocketFuel = 0;
+          launchDetails.currentIterationIdx++;
+          audioRoom.currentRocketMilestone =
+            launchDetails.currentIterationIdx >=
+            this.rocketInfo.milestones!.length
+              ? 0
+              : this.rocketInfo.milestones![launchDetails.currentIterationIdx];
+          launchDetails.cooldownTill = new Date(
+            Date.now() + this.rocketInfo.cooldown! * 1000
+          );
+
+          socketResponse(
+            this.io,
+            SocketAudioChannels.NewRocketFuelPercentage,
+            audioRoom.roomId,
+            {
+              success: true,
+              message: "Rocket fuel status",
+              data: {
+                percentage: 100,
+              },
+            }
+          );
+
+          socketResponse(
+            this.io,
+            SocketAudioChannels.LaunchRocket,
+            audioRoom.roomId,
+            {
+              success: true,
+              message: "Rocket is being launched",
+              data: {
+                launch: true,
+              },
+            }
+          );
+          return;
+        }
+        // when the fuel is incresed but not full
+        audioRoom.currentRocketFuel += rocketFuel;
+
+        socketResponse(
+          this.io,
+          SocketAudioChannels.NewRocketFuelPercentage,
+          audioRoom.roomId,
+          {
+            success: true,
+            message: "Rocket fuel status",
+            data: {
+              percentage:
+                (audioRoom.currentRocketFuel /
+                  audioRoom.currentRocketMilestone) *
+                100,
+            },
+          }
+        );
+      }
     }
   }
 
@@ -313,6 +427,13 @@ export default class SocketServer {
         const obj = {
           title: roomData.title,
           numberOfSeats: roomData.numberOfSeats,
+          currentRocketMilestone: roomData.currentRocketMilestone,
+          currentRocketFuel: roomData.currentRocketFuel,
+          fuelPercentage:
+            roomData.currentRocketMilestone === 0
+              ? 0
+              : (roomData.currentRocketFuel / roomData.currentRocketMilestone) *
+                100,
           roomId: roomData.roomId,
           hostGifts: roomData.hostGifts,
           hostBonus: roomData.hostBonus,

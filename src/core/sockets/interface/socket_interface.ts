@@ -77,6 +77,8 @@ export interface IAudioSeats {
 export interface IAudioRoomData {
   title: string;
   numberOfSeats: number;
+  currentRocketMilestone: number; // fuel needed to fire the rocket
+  currentRocketFuel: number; // current fuel level
   roomId: string;
   hostGifts: number; // host sent amount (used for ranking)
   hostBonus: number;  // host recieved amount (used to display the gifts)
@@ -96,6 +98,9 @@ export interface IAudioRoomData {
 export interface ISearializedAudioRoom {
   title: string;
   numberOfSeats: number;
+  currentRocketMilestone: number;
+  currentRocketFuel: number;
+  fuelPercentage: number;
   roomId: string;
   hostGifts: number;
   hostBonus: number;
@@ -110,4 +115,12 @@ export interface ISearializedAudioRoom {
   mutedUsers: string[];
   ranking: IMemberDetails[];
   duration: number;
+}
+
+
+export interface ILaunchRocketInfo {
+  roomId: string,
+  currentIterationIdx: number; // current milestone to launch the rocket
+  currentDay: Date; // to keep track of the day (since each day it gets reset)
+  cooldownTill: Date; 
 }
