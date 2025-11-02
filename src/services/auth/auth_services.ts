@@ -3,6 +3,7 @@ import AppError from "../../core/errors/app_errors";
 import {
   AgencyJoinStatus,
   CloudinaryFolder,
+  SocketAudioChannels,
   SocketChannels,
   StatusTypes,
   StreamType,
@@ -389,6 +390,15 @@ export default class AuthService implements IAuthService {
       gift: exisitngGift,
     });
 
+    ioInstance.to(roomId).emit(SocketAudioChannels.SentAudioGift, {
+      avatar: myUser.avatar,
+      name: myUser.name,
+      recieverIds: targetUserIds,
+      diamonds: exisitngGift.diamonds,
+      qty: qty,
+      gift: exisitngGift,
+    });
+
     const firstRecievedUser = await this.UserRepository.findUserById(
       targetUserIds[0]
     );
@@ -409,7 +419,9 @@ export default class AuthService implements IAuthService {
           : `and ${targetUserIds.length - 1} more`
       } `,
     };
+    
     ioInstance.to(roomId).emit(SocketChannels.sendMessage, message);
+    ioInstance.to(roomId).emit(SocketAudioChannels.SendMessage, message);
 
     if (!updateStats)
       throw new AppError(

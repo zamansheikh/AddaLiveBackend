@@ -138,6 +138,7 @@ export enum SocketAudioChannels {
   UpdateAudioHostCoins = "update-audio-host-coins",
   NewRocketFuelPercentage = 'new-rocket-fuel-percentage',
   LaunchRocket = 'rocket-launch',
+  SentAudioGift = 'sent-audio-gift'
 }
 
 export enum RoomTypes {
