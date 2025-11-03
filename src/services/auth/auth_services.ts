@@ -56,6 +56,7 @@ import {
 } from "../../core/Utils/helper_functions";
 import { IRoomBonusRecords } from "../../models/room/bonus_records_model";
 import { IRoomBonusRecordsRepository } from "../../repository/room/room_bonus_records_repository";
+import { IRoomMessage } from "../../core/sockets/interface/socket_interface";
 
 export default class AuthService implements IAuthService {
   UserRepository: IUserRepository;
@@ -380,6 +381,7 @@ export default class AuthService implements IAuthService {
       exisitngGift.diamonds * qty,
       targetUserIds
     );
+    
 
     ioInstance.to(roomId).emit(SocketChannels.sendGift, {
       avatar: myUser.avatar,
@@ -405,7 +407,7 @@ export default class AuthService implements IAuthService {
     if (!firstRecievedUser)
       throw new AppError(StatusCodes.NOT_FOUND, "reciever not found");
 
-    const message = {
+    const message:IRoomMessage = {
       name: myUser.name as string,
       avatar: myUser.avatar as string,
       uid: myUser.uid as string,
@@ -418,6 +420,14 @@ export default class AuthService implements IAuthService {
           ? ""
           : `and ${targetUserIds.length - 1} more`
       } `,
+      currentBackground: myUser.currentLevelBackground as string,
+      currentTag: myUser.currentLevelTag as string,
+      currentLevel: myUser.level as number,
+      equipedStoreItems: await getEquipedItemObjects(
+        this.BucketRepository,
+        this.CategoryRepository,
+        myId
+      ),
     };
     
     ioInstance.to(roomId).emit(SocketChannels.sendMessage, message);
