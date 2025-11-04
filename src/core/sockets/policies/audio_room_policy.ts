@@ -355,6 +355,9 @@ export class AudioRoomPolicy {
       )
         isOnSeat = true;
     }
+    
+    if (room.hostDetails?._id == userId) isOnSeat = true;
+
     if (!isOnSeat) {
       socketResponse(this.io, SocketChannels.error, this.socket.id, {
         success: false,

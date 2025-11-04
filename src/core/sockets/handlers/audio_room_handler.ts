@@ -528,11 +528,9 @@ export const registerAudioRoomHandler = async (
 
   // mute unmute user
   socket.on(SocketAudioChannels.MuteUnmute, ({ roomId, targetId }) => {
-    const ensureIsHost = audioRoomPolicy.ensureIsHost(roomId, userId);
     const ensureRoomExists = audioRoomPolicy.ensureRoomExists(roomId);
     const ensureHasMember = audioRoomPolicy.ensureHasMember(roomId, targetId);
     const ensureIsOnSeat = audioRoomPolicy.ensureIsOnSeat(roomId, targetId);
-    if (ensureIsHost == false) return;
     if (ensureRoomExists == false) return;
     if (ensureHasMember == false) return;
     if (ensureIsOnSeat == false) return;
@@ -540,11 +538,21 @@ export const registerAudioRoomHandler = async (
     const room = audioRoom[roomId];
     const targetSocketId = onlineUsers.get(targetId);
     if (!targetSocketId) return;
-    const targetMember = room.membersDetails.find(
+    let targetMember = room.membersDetails.find(
       (member) => member._id.toString() === targetId
     );
+    
+    if (targetId == room.hostDetails?._id) targetMember = room.hostDetails;
     if (!targetMember) return;
+
     if (room.mutedUsers.has(targetId)) {
+      if (userId != targetId) {
+        socketResponse(io, SocketChannels.error, socket.id, {
+          success: false,
+          message: "you can only unmute yourself",
+        });
+        return;
+      }
       room.mutedUsers.delete(targetId);
       targetMember.isMuted = false;
       socketResponse(io, SocketAudioChannels.MuteUnmute, targetSocketId, {
@@ -556,6 +564,13 @@ export const registerAudioRoomHandler = async (
         },
       });
     } else {
+      if (userId != targetId && userId != room.hostDetails?._id) {
+        socketResponse(io, SocketChannels.error, socket.id, {
+          success: false,
+          message: "only the host and you can mute yourself",
+        });
+        return;
+      }
       room.mutedUsers.add(targetId);
       targetMember.isMuted = true;
       socketResponse(io, SocketAudioChannels.MuteUnmute, targetSocketId, {
