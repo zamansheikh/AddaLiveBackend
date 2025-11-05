@@ -26,6 +26,8 @@ import { GiftAudioRocketRepository } from "../../repository/gifts/gift_audio_roc
 import GiftAudioRoomRocketModel, {
   IGiftAudioRocket,
 } from "../../models/gifts/gift_audio_rocket_model";
+import AdminRepository from "../../repository/admin/admin_repository";
+import Admin from "../../models/admin/admin_model";
 
 export default class SocketServer {
   private static instance: SocketServer;
@@ -38,6 +40,7 @@ export default class SocketServer {
   private hostedRooms = {} as Record<string, RoomData>;
   private hostedAudioRooms = {} as Record<string, IAudioRoomData>;
   private userRepo = new UserRepository(User);
+  private adminRepo = new AdminRepository(Admin);
   private bucketRepo = new MyBucketRepository(MyBucketModel);
   private categoryRepo = new StoreCategoryRepository(StoreCategoryModel);
   // for rocket fetures
@@ -89,6 +92,7 @@ export default class SocketServer {
         this.onlineUsers,
         this.hostedRooms,
         this.userRepo,
+        this.adminRepo,
         this.bucketRepo,
         this.categoryRepo
       );
@@ -99,6 +103,7 @@ export default class SocketServer {
         this.onlineUsers,
         this.hostedAudioRooms,
         this.userRepo,
+        this.adminRepo,
         this.bucketRepo,
         this.categoryRepo,
         this.rocketInfo,

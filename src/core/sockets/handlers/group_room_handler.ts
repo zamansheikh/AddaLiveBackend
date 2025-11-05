@@ -16,6 +16,7 @@ import {
   socketResponse,
 } from "../../Utils/helper_functions";
 import { IMemberDetails, RoomData } from "../interface/socket_interface";
+import { IAdminRepository } from "../../../repository/admin/admin_repository";
 
 export interface ISerializedRoomData {
   hostId: string;
@@ -56,6 +57,7 @@ export async function registerGroupRoomHandler(
   onlineUsers: Map<string, string>,
   hostedRooms: Record<string, RoomData>,
   userRepository: IUserRepository,
+  adminRepository: IAdminRepository,
   bucketRepository: IMyBucketRepository,
   categoryRepository: IStoreCategoryRepository
 ) {
@@ -70,6 +72,21 @@ export async function registerGroupRoomHandler(
     });
     return;
   }
+
+  const adminDetails = await adminRepository.getAdminById(userId);
+
+    socket.on(SocketChannels.GetVideoHosts, () => {
+    let hosts = [];
+    for (const [room, roomData] of Object.entries(hostedRooms)) {
+      hosts.push(roomData.hostDetails);
+    }
+    io.to(socket.id).emit(SocketChannels.GetVideoHosts, {
+      status: StatusCodes.ACCEPTED,
+      hosts: hosts,
+    });
+  });
+
+  
   const userDetails = await userRepository.getUserDetailsSelectedField(userId, [
     "name",
     "avatar",
@@ -89,7 +106,7 @@ export async function registerGroupRoomHandler(
     return;
   }
 
-  const userObj = userDetails.toObject();
+  const userObj = userDetails!.toObject();
   userObj.equipedStoreItems = await getEquipedItemObjects(
     bucketRepository,
     categoryRepository,
@@ -1120,14 +1137,5 @@ export async function registerGroupRoomHandler(
 
   socket.on(SocketChannels.inviteUser, ({ roomId, targetId }) => {});
 
-  socket.on(SocketChannels.GetVideoHosts, () => {
-    let hosts = [];
-    for (const [room, roomData] of Object.entries(hostedRooms)) {
-      hosts.push(roomData.hostDetails);
-    }
-    io.to(socket.id).emit(SocketChannels.GetVideoHosts, {
-      status: StatusCodes.ACCEPTED,
-      hosts: hosts,
-    });
-  });
+
 }

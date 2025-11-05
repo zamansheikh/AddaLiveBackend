@@ -23,6 +23,7 @@ import {
 import { AudioRoomPolicy } from "../policies/audio_room_policy";
 import SocketServer from "../socket_server";
 import { IGiftAudioRocket } from "../../../models/gifts/gift_audio_rocket_model";
+import AdminRepository from "../../../repository/admin/admin_repository";
 
 export const registerAudioRoomHandler = async (
   io: Server,
@@ -30,6 +31,7 @@ export const registerAudioRoomHandler = async (
   onlineUsers: Map<string, string>,
   audioRoom: Record<string, IAudioRoomData>,
   userRepository: IUserRepository,
+  adminRepository: AdminRepository,
   bucketRepository: IMyBucketRepository,
   categoryRepository: IStoreCategoryRepository,
   rocketInfo: Partial<IGiftAudioRocket>,
@@ -44,6 +46,26 @@ export const registerAudioRoomHandler = async (
     });
     return;
   }
+
+  // admin details
+  const adminDetails = await adminRepository.getAdminById(userId);
+
+  if(adminDetails){
+
+  }
+  // get all audio hosts
+  socket.on(SocketAudioChannels.GetAudioHosts, () => {
+    let hosts = [];
+    for (const [room, roomData] of Object.entries(audioRoom)) {
+      hosts.push(roomData.hostDetails);
+    }
+    socketResponse(io, SocketAudioChannels.GetAudioHosts, socket.id, {
+      success: true,
+      message: "Successfully fetched all audio hosts",
+      data: hosts,
+    });
+  });
+
 
   // fetching the relavent informations
   const userDetails = await userRepository.getUserDetailsSelectedField(userId, [
@@ -541,7 +563,7 @@ export const registerAudioRoomHandler = async (
     let targetMember = room.membersDetails.find(
       (member) => member._id.toString() === targetId
     );
-    
+
     if (targetId == room.hostDetails?._id) targetMember = room.hostDetails;
     if (!targetMember) return;
 
@@ -706,17 +728,4 @@ export const registerAudioRoomHandler = async (
   });
 
   // get ranked users
-
-  // get all audio hosts
-  socket.on(SocketAudioChannels.GetAudioHosts, () => {
-    let hosts = [];
-    for (const [room, roomData] of Object.entries(audioRoom)) {
-      hosts.push(roomData.hostDetails);
-    }
-    socketResponse(io, SocketAudioChannels.GetAudioHosts, socket.id, {
-      success: true,
-      message: "Successfully fetched all audio hosts",
-      data: hosts,
-    });
-  });
 };
