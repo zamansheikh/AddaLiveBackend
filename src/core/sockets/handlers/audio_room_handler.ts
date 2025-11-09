@@ -47,12 +47,6 @@ export const registerAudioRoomHandler = async (
     return;
   }
 
-  // admin details
-  const adminDetails = await adminRepository.getAdminById(userId);
-
-  if(adminDetails){
-
-  }
   // get all audio hosts
   socket.on(SocketAudioChannels.GetAudioHosts, () => {
     let hosts = [];

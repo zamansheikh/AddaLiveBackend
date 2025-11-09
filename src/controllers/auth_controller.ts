@@ -234,4 +234,10 @@ export default class AuthController {
     const counts = await this.authService.getLiveStatusCounts(hostId);
     sendResponseEnhanced(res, counts);
   });
+
+  isPremiumUser = catchAsync(async (req: Request, res: Response) => {
+    const {id} = req.user!;
+    const isPremium = await this.authService.isPremiumUser(id);
+    sendResponseEnhanced(res, {isPremium});
+  });
 }

@@ -73,8 +73,6 @@ export async function registerGroupRoomHandler(
     return;
   }
 
-  const adminDetails = await adminRepository.getAdminById(userId);
-
     socket.on(SocketChannels.GetVideoHosts, () => {
     let hosts = [];
     for (const [room, roomData] of Object.entries(hostedRooms)) {

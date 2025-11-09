@@ -173,69 +173,73 @@ router
   .route("/live-count/:hostId")
   .get(authenticate(), authController.getLiveCountStatus);
 
-router.route("/get-user-data").get(authenticate(), async (req, res) => {
-  const data = await User.aggregate([
-    {
-      $lookup: {
-        from: DatabaseNames.RoomBonusRecord,
-        let: { userId: "$_id" },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $and: [
-                  { $eq: ["$userId", "$$userId"] },
-                  { $eq: ["$readStatus", false] },
-                ],
-              },
-            },
-          },
-          {
-            $group: {
-              _id: null,
-              totalBonus: { $sum: "$bonusDiamonds" },
-            },
-          },
-        ],
-        as: "bonus",
-      },
-    },
-    {
-      $lookup: {
-        from: DatabaseNames.userStats,
-        let: { userId: "$_id" },
-        pipeline: [
-          {
-            $match: { $expr: { $eq: ["$userId", "$$userId"] } },
-          },
-        ],
-        as: "stats", 
-      },
-    },
-    {      $unwind: {
-        path: "$bonus",
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    {
-      $unwind: {
-        path: "$stats",
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    {
-      $project: {
-        name: 1,
-        email: 1,
-        uid: 1,
-        userRole: 1,
-        "bonus.totalBonus": 1,
-        "stats.diamonds": 1,
-        "stats.coins": 1,
-      },
-    },
-  ]);
-  res.send(data);
-});
+
+
+router.route("/is-premium").get(authenticate(), authController.isPremiumUser)
+
+// router.route("/get-user-data").get(authenticate(), async (req, res) => {
+//   const data = await User.aggregate([
+//     {
+//       $lookup: {
+//         from: DatabaseNames.RoomBonusRecord,
+//         let: { userId: "$_id" },
+//         pipeline: [
+//           {
+//             $match: {
+//               $expr: {
+//                 $and: [
+//                   { $eq: ["$userId", "$$userId"] },
+//                   { $eq: ["$readStatus", false] },
+//                 ],
+//               },
+//             },
+//           },
+//           {
+//             $group: {
+//               _id: null,
+//               totalBonus: { $sum: "$bonusDiamonds" },
+//             },
+//           },
+//         ],
+//         as: "bonus",
+//       },
+//     },
+//     {
+//       $lookup: {
+//         from: DatabaseNames.userStats,
+//         let: { userId: "$_id" },
+//         pipeline: [
+//           {
+//             $match: { $expr: { $eq: ["$userId", "$$userId"] } },
+//           },
+//         ],
+//         as: "stats", 
+//       },
+//     },
+//     {      $unwind: {
+//         path: "$bonus",
+//         preserveNullAndEmptyArrays: true,
+//       },
+//     },
+//     {
+//       $unwind: {
+//         path: "$stats",
+//         preserveNullAndEmptyArrays: true,
+//       },
+//     },
+//     {
+//       $project: {
+//         name: 1,
+//         email: 1,
+//         uid: 1,
+//         userRole: 1,
+//         "bonus.totalBonus": 1,
+//         "stats.diamonds": 1,
+//         "stats.coins": 1,
+//       },
+//     },
+//   ]);
+//   res.send(data);
+// });
 
 export default router;

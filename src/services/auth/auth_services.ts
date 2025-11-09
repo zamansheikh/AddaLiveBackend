@@ -51,6 +51,7 @@ import { IMyBucketRepository } from "../../repository/store/my_bucket_repository
 import { IStoreCategoryRepository } from "../../repository/store/store_category_repository";
 import { IStoreItem } from "../../models/store/store_item_model";
 import {
+  checkPremiumItem,
   getEquipedItemObjects,
   getNextSalaryDate,
 } from "../../core/Utils/helper_functions";
@@ -827,5 +828,11 @@ export default class AuthService implements IAuthService {
       audioHour: audioTimeCount,
       videoHour: videoTimeCount,
     };
+  }
+
+  async isPremiumUser(userId: string): Promise<boolean> {
+    const user = await this.UserRepository.findUserById(userId);
+    if (!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
+    return  await checkPremiumItem(this.BucketRepository, userId);
   }
 }

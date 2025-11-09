@@ -93,4 +93,6 @@ export interface IAuthService {
     audioHour: number;
     videoHour: number;
   }>;
+
+  isPremiumUser(userId: string): Promise<boolean>;
 }
