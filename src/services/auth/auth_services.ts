@@ -432,7 +432,11 @@ export default class AuthService implements IAuthService {
     };
     
     ioInstance.to(roomId).emit(SocketChannels.sendMessage, message);
-    ioInstance.to(roomId).emit(SocketAudioChannels.SendMessage, message);
+    ioInstance.to(roomId).emit(SocketAudioChannels.SendMessage, {
+      success: true,
+      message: "",
+      data: message,
+    });
 
     if (!updateStats)
       throw new AppError(
