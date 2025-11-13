@@ -173,6 +173,7 @@ export const registerAudioRoomHandler = async (
         hostGifts: createdRoom.hostGifts,
         hostBonus: createdRoom.hostBonus,
         hostDetails: createdRoom.hostDetails,
+        adminDetails: createdRoom.adminDetails,
         premiumSeat: createdRoom.premiumSeat,
         seats: createdRoom.seats,
         messages: createdRoom.messages,
@@ -190,7 +191,7 @@ export const registerAudioRoomHandler = async (
       const allRoomSerialized: ISearializedAudioRoom[] = [];
 
       for (const [room, roomData] of Object.entries(audioRoom)) {
-        const obj = {
+        const obj: ISearializedAudioRoom = {
           title: roomData.title,
           numberOfSeats: roomData.numberOfSeats,
           currentRocketMilestone: roomData.currentRocketMilestone,
@@ -204,6 +205,7 @@ export const registerAudioRoomHandler = async (
           hostGifts: roomData.hostGifts,
           hostBonus: roomData.hostBonus,
           hostDetails: roomData.hostDetails,
+          adminDetails: roomData.adminDetails,
           premiumSeat: roomData.premiumSeat,
           seats: roomData.seats,
           messages: roomData.messages,
@@ -238,7 +240,7 @@ export const registerAudioRoomHandler = async (
   socket.on(SocketAudioChannels.GetAllAudioRooms, () => {
     const serializedRooms: ISearializedAudioRoom[] = [];
     for (const [room, roomData] of Object.entries(audioRoom)) {
-      const obj = {
+      const obj: ISearializedAudioRoom = {
         title: roomData.title,
         numberOfSeats: roomData.numberOfSeats,
         currentRocketMilestone: roomData.currentRocketMilestone,
@@ -252,6 +254,7 @@ export const registerAudioRoomHandler = async (
         hostGifts: roomData.hostGifts,
         hostBonus: roomData.hostBonus,
         hostDetails: roomData.hostDetails,
+        adminDetails: roomData.adminDetails,
         premiumSeat: roomData.premiumSeat,
         seats: roomData.seats,
         messages: roomData.messages,
@@ -293,6 +296,7 @@ export const registerAudioRoomHandler = async (
       hostGifts: room.hostGifts,
       hostBonus: room.hostBonus,
       hostDetails: room.hostDetails,
+      adminDetails: room.adminDetails,
       premiumSeat: room.premiumSeat,
       seats: room.seats,
       messages: room.messages,
@@ -352,6 +356,7 @@ export const registerAudioRoomHandler = async (
     socketResponse(io, SocketAudioChannels.SendMessage, roomId, {
       success: true,
       message: "Successfully joined the room",
+      
       data: message,
     });
     // const serializedRoom: ISearializedAudioRoom = {
@@ -612,6 +617,7 @@ export const registerAudioRoomHandler = async (
       hostGifts: room.hostGifts,
       hostBonus: room.hostBonus,
       hostDetails: room.hostDetails,
+      adminDetails: room.adminDetails,
       premiumSeat: room.premiumSeat,
       seats: room.seats,
       messages: room.messages,
@@ -717,6 +723,36 @@ export const registerAudioRoomHandler = async (
       message: "Successfully unbanned the user",
       data: {
         bannedUsers: Array.from(room.bannedUsers),
+      },
+    });
+  });
+
+  // Make admin
+  socket.on(SocketAudioChannels.MakeAdmin, ({roomId, targetId})=> {
+    const canMakeAdmin = audioRoomPolicy.ensureCanMakeAdmin(roomId, userId, targetId);
+    if(canMakeAdmin == false) return;
+    const room = audioRoom[roomId];
+    room.adminDetails =  room.membersDetails.find(member => member._id.toString() === targetId);
+    socketResponse(io, SocketAudioChannels.MakeAdmin, roomId, {
+      success: true,
+      message: "Successfully made admin",
+      data: {
+        adminDetails: room.adminDetails,
+      },
+    });
+  })
+
+  // Remove admin
+  socket.on(SocketAudioChannels.RemoveAdmin, ({roomId})=> {
+    const removeAdmin = audioRoomPolicy.ensureCanRemoveAdmin(roomId, userId);
+    if(removeAdmin == false) return;
+    const room = audioRoom[roomId];
+    room.adminDetails = undefined;
+    socketResponse(io, SocketAudioChannels.RemoveAdmin, roomId, {
+      success: true,
+      message: "Successfully removed admin",
+      data: {
+        adminDetails: room.adminDetails,
       },
     });
   });

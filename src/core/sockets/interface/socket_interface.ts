@@ -80,9 +80,10 @@ export interface IAudioRoomData {
   currentRocketMilestone: number; // fuel needed to fire the rocket
   currentRocketFuel: number; // current fuel level
   roomId: string;
+  adminDetails?: IMemberDetails;
+  hostDetails?: IMemberDetails;
   hostGifts: number; // host sent amount (used for ranking)
   hostBonus: number;  // host recieved amount (used to display the gifts)
-  hostDetails?: IMemberDetails;
   premiumSeat: IAudioSeats;
   seats: Record<string, IAudioSeats>;
   messages: IRoomMessage[];
@@ -105,6 +106,7 @@ export interface ISearializedAudioRoom {
   hostGifts: number;
   hostBonus: number;
   hostDetails?: IMemberDetails;
+  adminDetails?: IMemberDetails;
   premiumSeat: IAudioSeats;
   seats: Record<`seat-${number}`, IAudioSeats>;
   messages: IRoomMessage[];

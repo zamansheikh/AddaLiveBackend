@@ -12,6 +12,7 @@ import MyBucketRepository, {
 } from "../../../repository/store/my_bucket_repository";
 import MyBucketModel from "../../../models/store/my_bucket_model";
 import { IUserDocument } from "../../../models/user/user_model_interface";
+import { StoryReactionDto } from "../../../dtos/stories/story_react_dto";
 
 export class AudioRoomPolicy {
   hostestRooms: Record<string, IAudioRoomData>;
@@ -313,10 +314,14 @@ export class AudioRoomPolicy {
     const ensureRoomExists = this.ensureRoomExists(roomId);
     if (ensureRoomExists == false) return false;
     const room = this.hostestRooms[roomId];
-    if (room.hostDetails?._id != userId) {
+    const hostId = room.hostDetails?._id;
+    const adminId = room.adminDetails?._id;
+    const isHost = userId === hostId;
+    const isAdmin = adminId && userId === adminId;
+    if (!isHost && !isAdmin) {
       socketResponse(this.io, SocketChannels.error, this.socket.id, {
         success: false,
-        message: "You are not the host of this room",
+        message: "You are not authorized to perform this action",
       });
       return false;
     }
@@ -355,13 +360,72 @@ export class AudioRoomPolicy {
       )
         isOnSeat = true;
     }
-    
+
     if (room.hostDetails?._id == userId) isOnSeat = true;
 
     if (!isOnSeat) {
       socketResponse(this.io, SocketChannels.error, this.socket.id, {
         success: false,
         message: "user is not on any seat",
+      });
+      return false;
+    }
+    return true;
+  }
+
+  ensureCanMakeAdmin(
+    roomId: string,
+    userId: string,
+    targetId: string
+  ): boolean {
+    const isHost = this.ensureIsHost(roomId, userId);
+    if (isHost == false) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "Only the host can make someone admin",
+      });
+      return false;
+    }
+    const ensureHasMember = this.ensureHasMember(roomId, targetId);
+    if (ensureHasMember == false) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "Target user is not in this room",
+      });
+      return false;
+    }
+    const room = this.hostestRooms[roomId];
+    if (room.adminDetails) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "you can only have one admin",
+      });
+      return false;
+    }
+    if (room.hostDetails?._id == targetId) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "Host cannot be made admin",
+      });
+      return false;
+    }
+    return true;
+  }
+
+  ensureCanRemoveAdmin(roomId: string, userId: string): boolean {
+    const isHost = this.ensureIsHost(roomId, userId);
+    if (isHost == false) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "Only the host can remove an admin",
+      });
+      return false;
+    }
+    const room = this.hostestRooms[roomId];
+    if (!room.adminDetails) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "There is no admin to remove",
       });
       return false;
     }

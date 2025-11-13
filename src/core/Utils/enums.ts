@@ -138,7 +138,9 @@ export enum SocketAudioChannels {
   UpdateAudioHostCoins = "update-audio-host-coins",
   NewRocketFuelPercentage = 'new-rocket-fuel-percentage',
   LaunchRocket = 'rocket-launch',
-  SentAudioGift = 'sent-audio-gift'
+  SentAudioGift = 'sent-audio-gift',
+  MakeAdmin = 'make-audio-admin',
+  RemoveAdmin = 'remove-audio-admin'
 }
 
 export enum RoomTypes {
