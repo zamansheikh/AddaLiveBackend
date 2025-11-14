@@ -134,6 +134,13 @@ export class AudioRoomPolicy {
   }
 
   ensureRightSeatType(seatKey: string): boolean {
+    if(seatKey == undefined || seatKey == null || seatKey == "" || !seatKey) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "seatKey is required",
+      });  
+      return false;
+    }
     if (seatKey != "premiumSeat" && !seatKey.startsWith("seat-")) {
       socketResponse(this.io, SocketChannels.error, this.socket.id, {
         success: false,
@@ -316,8 +323,8 @@ export class AudioRoomPolicy {
     const room = this.hostestRooms[roomId];
     const hostId = room.hostDetails?._id;
     const adminId = room.adminDetails?._id;
-    const isHost = userId === hostId;
-    const isAdmin = adminId && userId === adminId;
+    const isHost = userId.toString() === hostId?.toString();
+    const isAdmin = adminId && userId.toString() === adminId.toString();
     if (!isHost && !isAdmin) {
       socketResponse(this.io, SocketChannels.error, this.socket.id, {
         success: false,
