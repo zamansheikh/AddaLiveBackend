@@ -809,6 +809,12 @@ export default class AdminUserService implements IAdminUserService {
   }
 
   async createSalary(salary: ISalary): Promise<ISalaryDocument> {
+    const existingSalary = await this.SalaryRepository.findSalary({
+      diamondCount: salary.diamondCount,
+      type: salary.type,
+    });
+    if(existingSalary && existingSalary.length > 0)
+      throw new AppError(StatusCodes.CONFLICT, "Salary already exists, try editing the exisiting one");
     const newSalary = await this.SalaryRepository.createSalary(salary);
     return newSalary;
   }
@@ -882,7 +888,6 @@ export default class AdminUserService implements IAdminUserService {
         agencyAcc.diamonds += diamondBonus;
         await agencyAcc.save({ session });
         paid += 1;
-        total += 1;
       }
       total += 1;
     }
@@ -1104,7 +1109,6 @@ export default class AdminUserService implements IAdminUserService {
     return deletePoster;
   }
 
-
   async getCoinHistory(
     senderRole: UserRoles,
     senderId: string | null,
@@ -1121,12 +1125,22 @@ export default class AdminUserService implements IAdminUserService {
     };
     if (senderRole == UserRoles.Admin) {
       history = await this.CoinHistoryRepository.getAdminHistories(query);
-    } else if (senderRole == UserRoles.Merchant || senderRole == UserRoles.Reseller) {
+    } else if (
+      senderRole == UserRoles.Merchant ||
+      senderRole == UserRoles.Reseller
+    ) {
       const portalUser = await this.PortalUserRepository.getPortalUserById(
         senderId!
       );
-      if(!portalUser) throw new AppError(StatusCodes.NOT_FOUND, `Portal user with id -> ${senderId} not found`);
-      history = await this.CoinHistoryRepository.getPortalHistory(senderId!, query);
+      if (!portalUser)
+        throw new AppError(
+          StatusCodes.NOT_FOUND,
+          `Portal user with id -> ${senderId} not found`
+        );
+      history = await this.CoinHistoryRepository.getPortalHistory(
+        senderId!,
+        query
+      );
     }
     return history;
   }

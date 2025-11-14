@@ -14,6 +14,7 @@ export interface ISalaryRepository {
   updateSalary(id: string, salary: Partial<ISalary>): Promise<ISalaryDocument>;
   deleteSalary(id: string): Promise<ISalaryDocument>;
   getSalaryByAmount(amount: number): Promise<ISalaryDocument[]>;
+  findSalary(data: Partial<ISalary>): Promise<ISalaryDocument[]>;
 }
 
 export default class SalaryRepository implements ISalaryRepository {
@@ -24,7 +25,8 @@ export default class SalaryRepository implements ISalaryRepository {
   }
 
   async createSalary(salary: ISalary): Promise<ISalaryDocument> {
-    return await this.Model.create(salary);
+    const newSalary = new this.Model(salary);
+    return await newSalary.save();
   }
 
   async getAllSalaries(): Promise<ISalaryDocument[]> {
@@ -59,6 +61,11 @@ export default class SalaryRepository implements ISalaryRepository {
         StatusCodes.NOT_FOUND,
         `Salary with diamond count ${amount} not found`
       );
+    return salary;
+  }
+
+  async findSalary(data: Partial<ISalary>): Promise<ISalaryDocument[]> {
+    const salary = await this.Model.find(data);
     return salary;
   }
 }
