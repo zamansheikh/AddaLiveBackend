@@ -875,16 +875,14 @@ export default class AdminUserService implements IAdminUserService {
         const agencyAcc = await this.PortalUserRepository.getPortalUserById(
           agency.agencyId
         );
+        if (!agencyAcc)
+          continue;
+          // throw new AppError(StatusCodes.NOT_FOUND, "Agency not found");
         if (
           agencyAcc?.updatedAt.getDate() == 16 ||
           agencyAcc?.updatedAt.getDate() == 1
         )
-          throw new AppError(
-            StatusCodes.BAD_REQUEST,
-            "agencies already been paid"
-          );
-        if (!agencyAcc)
-          throw new AppError(StatusCodes.NOT_FOUND, "Agency not found");
+          continue;
         agencyAcc.diamonds += diamondBonus;
         await agencyAcc.save({ session });
         paid += 1;

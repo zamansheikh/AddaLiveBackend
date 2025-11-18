@@ -60,7 +60,6 @@ export const registerAudioRoomHandler = async (
     });
   });
 
-
   // fetching the relavent informations
   const userDetails = await userRepository.getUserDetailsSelectedField(userId, [
     "name",
@@ -356,7 +355,7 @@ export const registerAudioRoomHandler = async (
     socketResponse(io, SocketAudioChannels.SendMessage, roomId, {
       success: true,
       message: "Successfully joined the room",
-      
+
       data: message,
     });
     // const serializedRoom: ISearializedAudioRoom = {
@@ -680,6 +679,25 @@ export const registerAudioRoomHandler = async (
     });
   });
 
+  // send audio emoji
+  socket.on(
+    SocketAudioChannels.SendAudioEmoji,
+    ({ roomId, seatKey, emoji }) => {
+      const roomExists = audioRoomPolicy.ensureRoomExists(roomId);
+      if (roomExists == false) return;
+
+      socketResponse(io, SocketAudioChannels.SendAudioEmoji, roomId, {
+        success: true,
+        message: "Successfully sent emoji",
+        data: {
+          seatKey,
+          emoji,
+          sender: userDetails.name,
+        },
+      });
+    }
+  );
+
   // ban user
   socket.on(SocketAudioChannels.BanUser, ({ roomId, targetId }) => {
     const ensureIsHost = audioRoomPolicy.ensureIsHost(roomId, userId);
@@ -728,11 +746,17 @@ export const registerAudioRoomHandler = async (
   });
 
   // Make admin
-  socket.on(SocketAudioChannels.MakeAdmin, ({roomId, targetId})=> {
-    const canMakeAdmin = audioRoomPolicy.ensureCanMakeAdmin(roomId, userId, targetId);
-    if(canMakeAdmin == false) return;
+  socket.on(SocketAudioChannels.MakeAdmin, ({ roomId, targetId }) => {
+    const canMakeAdmin = audioRoomPolicy.ensureCanMakeAdmin(
+      roomId,
+      userId,
+      targetId
+    );
+    if (canMakeAdmin == false) return;
     const room = audioRoom[roomId];
-    room.adminDetails =  room.membersDetails.find(member => member._id.toString() === targetId);
+    room.adminDetails = room.membersDetails.find(
+      (member) => member._id.toString() === targetId
+    );
     socketResponse(io, SocketAudioChannels.MakeAdmin, roomId, {
       success: true,
       message: "Successfully made admin",
@@ -740,12 +764,12 @@ export const registerAudioRoomHandler = async (
         adminDetails: room.adminDetails,
       },
     });
-  })
+  });
 
   // Remove admin
-  socket.on(SocketAudioChannels.RemoveAdmin, ({roomId})=> {
+  socket.on(SocketAudioChannels.RemoveAdmin, ({ roomId }) => {
     const removeAdmin = audioRoomPolicy.ensureCanRemoveAdmin(roomId, userId);
-    if(removeAdmin == false) return;
+    if (removeAdmin == false) return;
     const room = audioRoom[roomId];
     room.adminDetails = undefined;
     socketResponse(io, SocketAudioChannels.RemoveAdmin, roomId, {
@@ -755,6 +779,39 @@ export const registerAudioRoomHandler = async (
         adminDetails: room.adminDetails,
       },
     });
+  });
+
+  // lock unlock seat
+  socket.on(SocketAudioChannels.LockUnLockAudioSeat, ({roomId, seatKey })=> {
+    const roomExists = audioRoomPolicy.ensureRoomExists(roomId);
+    const ensureIsHost = audioRoomPolicy.ensureIsHost(roomId, userId);
+    const rightSeatStype = audioRoomPolicy.ensureRightSeatType(seatKey);
+    if (roomExists == false) return;
+    if(ensureIsHost == false) return;
+    if(rightSeatStype == false) return;
+    const room = audioRoom[roomId];
+
+    if(seatKey === "premiumSeat") {
+      room.premiumSeat.available = !room.premiumSeat.available;
+      socketResponse(io, SocketAudioChannels.LockUnLockAudioSeat, roomId, {
+        success: true,
+        message: "Successfully updated premium seat availability",
+        data: {
+          seatKey,
+          available: room.premiumSeat.available,
+        },
+      });
+    } else {
+      room.seats[seatKey].available = !room.seats[seatKey].available;
+      socketResponse(io, SocketAudioChannels.LockUnLockAudioSeat, roomId, {
+        success: true,
+        message: `Successfully updated ${seatKey} availability`,
+        data: {
+          seatKey,
+          available: room.seats[seatKey].available,
+        },
+      });
+    }
   });
 
   // get ranked users

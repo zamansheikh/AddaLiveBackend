@@ -472,6 +472,7 @@ export default class AuthService implements IAuthService {
         isDone: false,
         type: type,
       });
+      
     if (!withdrawHistory)
       throw new AppError(
         StatusCodes.INTERNAL_SERVER_ERROR,
@@ -580,7 +581,7 @@ export default class AuthService implements IAuthService {
     );
 
     if (userstats.diamonds! + bonusDiamonds < totalSalary)
-      throw new AppError(StatusCodes.BAD_REQUEST, "not enough diamonds");
+      throw new AppError(StatusCodes.BAD_REQUEST, "not enough diamonds to withdraw");
 
     const dayCount = await this.WithDrawHistoryRepository.getDayCount(hostId);
     const hourCount = await this.WithDrawHistoryRepository.getTimeCount(hostId);

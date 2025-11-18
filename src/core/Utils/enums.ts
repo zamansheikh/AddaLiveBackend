@@ -140,7 +140,9 @@ export enum SocketAudioChannels {
   LaunchRocket = 'rocket-launch',
   SentAudioGift = 'sent-audio-gift',
   MakeAdmin = 'make-audio-admin',
-  RemoveAdmin = 'remove-audio-admin'
+  RemoveAdmin = 'remove-audio-admin',
+  SendAudioEmoji = 'send-audio-emoji',
+  LockUnLockAudioSeat = 'lock-unlock-audio-seat'
 }
 
 export enum RoomTypes {
