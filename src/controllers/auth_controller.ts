@@ -85,11 +85,11 @@ export default class AuthController {
   addDailtyBonus = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.user!;
     const { totalTime, type } = req.body;
-    if (type == StreamType.Audio)
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        "Audio stream type is not supported for daily bonus"
-      );
+    // if (type == StreamType.Audio)
+    //   throw new AppError(
+    //     StatusCodes.BAD_REQUEST,
+    //     "Audio stream type is not supported for daily bonus"
+    //   );
     if (!Object.values(StreamType).includes(type))
       throw new AppError(
         StatusCodes.BAD_REQUEST,

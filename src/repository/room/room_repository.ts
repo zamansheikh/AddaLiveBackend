@@ -117,7 +117,7 @@ export default class RoomHistoryRepository implements IRoomHistoryRepository {
         $match: {
           host: new mongoose.Types.ObjectId(id),
           createdAt: { $gte: gte, $lte: lte },
-          type: "audio",
+          type: StreamType.Audio,
         },
       },
       {
@@ -127,6 +127,7 @@ export default class RoomHistoryRepository implements IRoomHistoryRepository {
         },
       },
     ]);
+    
     return totalSum[0]?.totalHour ?? 0;
     
 
@@ -139,7 +140,7 @@ export default class RoomHistoryRepository implements IRoomHistoryRepository {
         $match: {
           host: new mongoose.Types.ObjectId(id),
           createdAt: { $gte: gte, $lte: lte },
-          type: "video",
+          type: StreamType.Video,
         },
       },
       {
@@ -149,6 +150,8 @@ export default class RoomHistoryRepository implements IRoomHistoryRepository {
         },
       },
     ]);
+    // console.log(totalSum);
+    
     return totalSum[0]?.totalHour ?? 0;
     
   }

@@ -472,6 +472,8 @@ export default class AuthService implements IAuthService {
         isDone: false,
         type: type,
       });
+
+    if(type == StreamType.Audio) return { bonus: 0 };
       
     if (!withdrawHistory)
       throw new AppError(
@@ -503,6 +505,7 @@ export default class AuthService implements IAuthService {
           firstEligible: totalTime >= 50,
           host: id,
           totalLive: totalTime,
+          type: type,
         });
         if (!newHistory)
           throw new AppError(
@@ -517,6 +520,7 @@ export default class AuthService implements IAuthService {
           host: id,
           totalLive: totalTime,
           isDone: true,
+          type: type,
         });
         if (!newHistory)
           throw new AppError(
@@ -533,6 +537,7 @@ export default class AuthService implements IAuthService {
         firstEligible: totalTime >= 50,
         host: id,
         totalLive: totalTime,
+        type: type,
       });
       if (!newHistory)
         throw new AppError(
