@@ -4,6 +4,7 @@ import { StatusCodes } from "http-status-codes";
 import {
   ActivityZoneState,
   AdminPowers,
+  AudioSeatTypes,
   StatusTypes,
   UserRoles,
   WithdrawAccountTypes,
@@ -18,7 +19,11 @@ import { IStoreItem } from "../../models/store/store_item_model";
 import { IStoreCategoryRepository } from "../../repository/store/store_category_repository";
 import { userLevels } from "./constants";
 import { Server } from "socket.io";
-import { ISearializedAudioRoom } from "../sockets/interface/socket_interface";
+import {
+  IAudioRoomData,
+  IMemberDetails,
+  ISearializedAudioRoom,
+} from "../sockets/interface/socket_interface";
 
 export const generateFileHash = (buffer: Buffer): string => {
   return crypto.createHash("sha256").update(buffer).digest("hex");
@@ -365,4 +370,26 @@ export function validateGiftAudioRocket(
         );
     }
   }
+}
+
+export function getAudioUserSeat(
+  userId: string,
+  roomData: IAudioRoomData
+): string {
+  if (
+    !isEmptyObject(roomData.premiumSeat.member) &&
+    (roomData.premiumSeat.member as IMemberDetails)._id == userId
+  ){
+    return AudioSeatTypes.Premium; 
+  }
+  if(roomData.hostDetails?._id == userId) return AudioSeatTypes.Host;
+  for (const [seatKey, seat] of Object.entries(roomData.seats)) {
+    if (
+      !isEmptyObject(seat.member) &&
+      (seat.member as IMemberDetails)._id == userId
+    ) {
+     return seatKey;
+    }
+  }
+  return AudioSeatTypes.Regular;
 }

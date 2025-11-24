@@ -116,6 +116,7 @@ export enum SocketChannels {
   updateHostCoins = "update-host-coins",
   GetVideoHosts = "get-video-hosts",
   UpdateHostCoin = "update-host-coin",
+  UserConnection = "user-connection",
   
 }
 
@@ -142,7 +143,8 @@ export enum SocketAudioChannels {
   MakeAdmin = 'make-audio-admin',
   RemoveAdmin = 'remove-audio-admin',
   SendAudioEmoji = 'send-audio-emoji',
-  LockUnLockAudioSeat = 'lock-unlock-audio-seat'
+  LockUnLockAudioSeat = 'lock-unlock-audio-seat',
+  AudioUserConnection = 'audio-user-connection',
 }
 
 export enum RoomTypes {
@@ -150,6 +152,12 @@ export enum RoomTypes {
   pk = "pk",
   audio = "audio",
   party = "party",
+}
+
+export enum AudioSeatTypes {
+  Regular = "regular",
+  Premium = "premium",
+  Host = "host",
 }
 
 export enum GiftTypes {

@@ -21,7 +21,11 @@ import {
   RoomData,
 } from "./interface/socket_interface";
 import { registerAudioRoomHandler } from "./handlers/audio_room_handler";
-import { isEmptyObject, socketResponse } from "../Utils/helper_functions";
+import {
+  getAudioUserSeat,
+  isEmptyObject,
+  socketResponse,
+} from "../Utils/helper_functions";
 import { GiftAudioRocketRepository } from "../../repository/gifts/gift_audio_rocket_repository";
 import GiftAudioRoomRocketModel, {
   IGiftAudioRocket,
@@ -119,6 +123,16 @@ export default class SocketServer {
         // persist video room connection
         for (const [roomId, roomData] of Object.entries(this.hostedRooms)) {
           if (!roomData.members.has(userId)) continue;
+          // // ! getting member details
+          // const disconnectedUserDetails = roomData.membersDetails.filter(
+          //   (member) => member._id.toString() === userId
+          // );
+          // // ! notifying the room that a user has been disconnected
+          // this.io.to(roomId).emit(SocketChannels.UserConnection, {
+          //   ...disconnectedUserDetails[0],
+          //   roomId,
+          //   roomType: RoomTypes.live,
+          // });
           const timeOut = setTimeout(() => {
             this.disconnectedUsers.delete(userId);
             this.hanldeUserDisconnect(userId, roomId, roomData);
@@ -132,6 +146,21 @@ export default class SocketServer {
           this.hostedAudioRooms
         )) {
           if (!roomData.members.has(userId)) continue;
+          // ! notifying the audio room that a user has been disconnected
+          socketResponse(
+            this.io,
+            SocketAudioChannels.AudioUserConnection,
+            roomId,
+            {
+              message: "User has been disconnected",
+              success: true,
+              data: {
+                connected: false,
+                id: userId,
+                seat: getAudioUserSeat(userId, roomData),
+              },
+            }
+          );
           const timeOut = setTimeout(() => {
             this.disconnectedUsers.delete(userId);
             this.handleAudioRoomDisconnect(userId, roomId, roomData);
@@ -311,7 +340,30 @@ export default class SocketServer {
     if (this.disconnectedUsers.has(userId)) {
       clearTimeout(this.disconnectedUsers.get(userId)?.timeOut);
       if (this.disconnectedUsers.get(userId)?.roomId) {
-        socket.join(this.disconnectedUsers.get(userId)?.roomId!);
+        // ? user reconnect message might fail if the room id is not there
+        const userRoomId = this.disconnectedUsers.get(userId)?.roomId!;
+        socket.join(userRoomId);
+        const audioRoom: undefined | IAudioRoomData =
+          this.hostedAudioRooms[userRoomId];
+        const videoRoom: undefined | RoomData = this.hostedRooms[userRoomId];
+        if (audioRoom) {
+          // user reconect event trigger
+          socketResponse(
+            this.io,
+            SocketAudioChannels.AudioUserConnection,
+            userRoomId,
+            {
+              success: true,
+              message: "User has been connected",
+              data: {
+                connected: true,
+                id: userId,
+                seat: getAudioUserSeat(userId, audioRoom),
+              }
+            });
+            
+        }
+        
       }
       this.disconnectedUsers.delete(userId);
     }
