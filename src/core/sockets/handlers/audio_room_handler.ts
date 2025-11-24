@@ -782,16 +782,16 @@ export const registerAudioRoomHandler = async (
   });
 
   // lock unlock seat
-  socket.on(SocketAudioChannels.LockUnLockAudioSeat, ({roomId, seatKey })=> {
+  socket.on(SocketAudioChannels.LockUnLockAudioSeat, ({ roomId, seatKey }) => {
     const roomExists = audioRoomPolicy.ensureRoomExists(roomId);
     const ensureIsHost = audioRoomPolicy.ensureIsHost(roomId, userId);
     const rightSeatStype = audioRoomPolicy.ensureRightSeatType(seatKey);
     if (roomExists == false) return;
-    if(ensureIsHost == false) return;
-    if(rightSeatStype == false) return;
+    if (ensureIsHost == false) return;
+    if (rightSeatStype == false) return;
     const room = audioRoom[roomId];
 
-    if(seatKey === "premiumSeat") {
+    if (seatKey === "premiumSeat") {
       room.premiumSeat.available = !room.premiumSeat.available;
       socketResponse(io, SocketAudioChannels.LockUnLockAudioSeat, roomId, {
         success: true,
@@ -813,6 +813,111 @@ export const registerAudioRoomHandler = async (
       });
     }
   });
+
+  // update seat count
+  socket.on(
+    SocketAudioChannels.UpdateAudioSeatCount,
+    ({ roomId, newSeatCount }) => {
+      const roomExists = audioRoomPolicy.ensureRoomExists(roomId);
+      if (roomExists == false) return;
+
+      const room = audioRoom[roomId];
+
+      // If the seat count is already the same → no update needed
+      if (room.numberOfSeats === newSeatCount) {
+        socketResponse(io, SocketChannels.error, roomId, {
+          success: false,
+          message: "Seat count is already updated.",
+          data: {},
+        });
+        return;
+      }
+
+      // Otherwise update & notify
+      // creating new empty seats
+      if (room.numberOfSeats < newSeatCount) {
+        for (let i = room.numberOfSeats + 1; i <= newSeatCount; i++) {
+          room.seats[`seat-${i}`] = {
+            member: {},
+            available: true,
+          };
+        }
+        room.numberOfSeats = newSeatCount;
+      } else {
+        for (let i = newSeatCount + 1; i <= room.numberOfSeats; i++) {
+          if (isEmptyObject(room.seats[`seat-${i}`].member)) {
+            delete room.seats[`seat-${i}`];
+            continue;
+          }
+          const leftUserDetails = room.membersDetails.filter(
+            (member) => member._id == (room.seats[`seat-${i}`].member as IMemberDetails)._id
+          );
+          let message: IRoomMessage = {
+            name: leftUserDetails[0].name as string,
+            avatar: leftUserDetails[0].avatar as string,
+            uid: leftUserDetails[0].uid as string,
+            country: leftUserDetails[0].country as string,
+            _id: leftUserDetails[0]._id as string,
+            text: "left the room",
+            currentBackground: leftUserDetails[0].currentBackground as string,
+            currentTag: leftUserDetails[0].currentTag as string,
+            currentLevel: leftUserDetails[0].currentLevel as number,
+            equipedStoreItems: leftUserDetails[0].equipedStoreItems,
+          };
+          message.text = `left seat-${i}`;
+          
+          socketResponse(io, SocketAudioChannels.SendMessage, roomId, {
+            success: true,
+            message: "Successfully left the seat",
+            data: message,
+          });
+          socketResponse(io, SocketAudioChannels.leaveSeat, roomId, {
+            success: true,
+            message: "Successfully left the seat",
+            data: {
+              seatKey: `seat-${i}`,
+              member: {},
+            },
+          });
+          delete room.seats[`seat-${i}`];
+          room.numberOfSeats = newSeatCount;
+        }
+      }
+
+      const serializedRoom: ISearializedAudioRoom = {
+        title: room.title,
+        numberOfSeats: room.numberOfSeats,
+        currentRocketMilestone: room.currentRocketMilestone,
+        currentRocketFuel: room.currentRocketFuel,
+        fuelPercentage:
+          room.currentRocketMilestone === 0
+            ? 0
+            : (room.currentRocketFuel / room.currentRocketMilestone) * 100,
+        roomId: room.roomId,
+        hostGifts: room.hostGifts,
+        hostBonus: room.hostBonus,
+        hostDetails: room.hostDetails,
+        adminDetails: room.adminDetails,
+        premiumSeat: room.premiumSeat,
+        seats: room.seats,
+        messages: room.messages,
+        createdAt: room.createdAt,
+        bannedUsers: Array.from(room.bannedUsers),
+        members: Array.from(room.members),
+        membersDetails: room.membersDetails,
+        mutedUsers: Array.from(room.mutedUsers),
+        ranking: room.ranking,
+        duration: Math.floor(
+          (new Date().getTime() - room.createdAt.getTime()) / 1000
+        ),
+      };
+      socketResponse(io, SocketAudioChannels.RoomDetails, socket.id, {
+        success: true,
+        message: "Successfully fetched room details",
+        data: serializedRoom,
+      });
+    }
+  );
 
   // get ranked users
 };

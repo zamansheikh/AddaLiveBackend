@@ -145,6 +145,8 @@ export enum SocketAudioChannels {
   SendAudioEmoji = 'send-audio-emoji',
   LockUnLockAudioSeat = 'lock-unlock-audio-seat',
   AudioUserConnection = 'audio-user-connection',
+  UpdateAudioSeatCount = 'update-audio-seat-count',
+  
 }
 
 export enum RoomTypes {

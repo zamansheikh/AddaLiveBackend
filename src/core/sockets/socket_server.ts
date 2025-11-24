@@ -361,7 +361,6 @@ export default class SocketServer {
                 seat: getAudioUserSeat(userId, audioRoom),
               }
             });
-            
         }
         
       }
