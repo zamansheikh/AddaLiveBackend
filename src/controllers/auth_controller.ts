@@ -12,7 +12,7 @@ import {
   WhoCanTextMe,
   WhoCanTextMeLevelTypes,
 } from "../core/Utils/enums";
-import { validateWithdrawBonus } from "../core/Utils/helper_functions";
+import { validateFieldExistance, validateWithdrawBonus } from "../core/Utils/helper_functions";
 import Stream from "stream";
 
 export default class AuthController {
@@ -239,5 +239,25 @@ export default class AuthController {
     const {id} = req.user!;
     const isPremium = await this.authService.isPremiumUser(id);
     sendResponseEnhanced(res, {isPremium});
+  });
+
+  loginWithEmailPassword = catchAsync(async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+    validateFieldExistance(email, "email");
+    validateFieldExistance(password, "password");
+    const user = await this.authService.loginWithEmailPassword(
+      email,
+      password,
+    );
+    sendResponseEnhanced(res, user);
+  });
+
+  setMyPassword = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const { password, newPassword } = req.body;
+    validateFieldExistance(password, "password");
+    validateFieldExistance(newPassword, "newPassword");
+    const user = await this.authService.setMyPassword(id, password, newPassword);
+    sendResponseEnhanced(res, user);
   });
 }

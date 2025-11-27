@@ -58,6 +58,7 @@ import {
 import { IRoomBonusRecords } from "../../models/room/bonus_records_model";
 import { IRoomBonusRecordsRepository } from "../../repository/room/room_bonus_records_repository";
 import { IRoomMessage } from "../../core/sockets/interface/socket_interface";
+import bcrypt from "bcrypt";
 
 export default class AuthService implements IAuthService {
   UserRepository: IUserRepository;
@@ -162,6 +163,48 @@ export default class AuthService implements IAuthService {
       return { user: userWithStats, token };
     }
 
+    let userStats = await this.UserStatsRepository.getUserStats(
+      existingUser._id as string
+    );
+    // every user should have their respective stats created
+
+    if (!userStats) {
+      userStats = await this.UserStatsRepository.createUserstats({
+        userId: existingUser._id as string,
+      });
+    }
+    const userWithStats = existingUser.toObject();
+    userWithStats.stats = userStats;
+    const token = jwt.sign(
+      {
+        id: existingUser._id,
+        role: existingUser.userRole,
+        permissions: existingUser.userPermissions,
+      },
+      SECRET
+    );
+    return { user: userWithStats, token };
+  }
+
+  async loginWithEmailPassword(
+    email: string,
+    password: string
+  ): Promise<{ user: IUserDocument; token: string }> {
+    const existingUser = await this.UserRepository.findUserByEmail(email);
+    if (!existingUser)
+      throw new AppError(StatusCodes.NOT_FOUND, "user not found");
+    if (!existingUser.password || existingUser.password == "")
+      throw new AppError(
+        StatusCodes.CONFLICT,
+        "You have not set a password yet"
+      );
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      existingUser.password
+    );
+    if (!isPasswordValid)
+      throw new AppError(StatusCodes.BAD_REQUEST, "incorrect password");
+    const SECRET = process.env.JWT_SECRET || "jwt_secret";
     let userStats = await this.UserStatsRepository.getUserStats(
       existingUser._id as string
     );
@@ -301,6 +344,27 @@ export default class AuthService implements IAuthService {
     return this.UserRepository.findUserByIdAndUpdate(id, updatePayload);
   }
 
+  async setMyPassword(
+    id: string,
+    password: string,
+    newPassword: string
+  ): Promise<IUserDocument> {
+    const existingUser = await this.UserRepository.findUserById(id);
+    if (!existingUser)
+      throw new AppError(StatusCodes.NOT_FOUND, "user not found");
+    if (
+      existingUser.password &&
+      existingUser.password != "" &&
+      !(await bcrypt.compare( password, existingUser.password))
+    )
+      throw new AppError(StatusCodes.BAD_REQUEST, "incorrect password");
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    existingUser.password = hashedPassword;
+    await existingUser.save();
+    return existingUser;
+  }
+
   async giftUser({
     targetUserIds,
     myId,
@@ -382,7 +446,6 @@ export default class AuthService implements IAuthService {
       exisitngGift.diamonds * qty,
       targetUserIds
     );
-    
 
     ioInstance.to(roomId).emit(SocketChannels.sendGift, {
       avatar: myUser.avatar,
@@ -408,7 +471,7 @@ export default class AuthService implements IAuthService {
     if (!firstRecievedUser)
       throw new AppError(StatusCodes.NOT_FOUND, "reciever not found");
 
-    const message:IRoomMessage = {
+    const message: IRoomMessage = {
       name: myUser.name as string,
       avatar: myUser.avatar as string,
       uid: myUser.uid as string,
@@ -430,7 +493,7 @@ export default class AuthService implements IAuthService {
         myId
       ),
     };
-    
+
     ioInstance.to(roomId).emit(SocketChannels.sendMessage, message);
     ioInstance.to(roomId).emit(SocketAudioChannels.SendMessage, {
       success: true,
@@ -473,8 +536,8 @@ export default class AuthService implements IAuthService {
         type: type,
       });
 
-    if(type == StreamType.Audio) return { bonus: 0 };
-      
+    if (type == StreamType.Audio) return { bonus: 0 };
+
     if (!withdrawHistory)
       throw new AppError(
         StatusCodes.INTERNAL_SERVER_ERROR,
@@ -586,7 +649,10 @@ export default class AuthService implements IAuthService {
     );
 
     if (userstats.diamonds! + bonusDiamonds < totalSalary)
-      throw new AppError(StatusCodes.BAD_REQUEST, "not enough diamonds to withdraw");
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "not enough diamonds to withdraw"
+      );
 
     const dayCount = await this.WithDrawHistoryRepository.getDayCount(hostId);
     const hourCount = await this.WithDrawHistoryRepository.getTimeCount(hostId);
@@ -843,6 +909,6 @@ export default class AuthService implements IAuthService {
   async isPremiumUser(userId: string): Promise<boolean> {
     const user = await this.UserRepository.findUserById(userId);
     if (!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
-    return  await checkPremiumItem(this.BucketRepository, userId);
+    return await checkPremiumItem(this.BucketRepository, userId);
   }
 }

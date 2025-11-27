@@ -24,6 +24,7 @@ export interface IUserRepository {
     populateFields: string
   ): Promise<IUserDocument | null>;
   findByUID(uid: string): Promise<IUserDocument | null>;
+  findUserByEmail(email: string): Promise<IUserDocument | null>;
   findAllUser(
     query: Record<string, any>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] }>;
@@ -86,7 +87,7 @@ export default class UserRepository implements IUserRepository {
   }
 
   async findUserById(id: string) {
-    return await this.UserModel.findById(id).select("-password");
+    return await this.UserModel.findById(id);
   }
 
   async getUserDetailsSelectedField(
@@ -107,6 +108,10 @@ export default class UserRepository implements IUserRepository {
   }
   async findByUID(uid: string) {
     return await this.UserModel.findOne({ uid }).select("-password");
+  }
+
+  async findUserByEmail(email: string): Promise<IUserDocument | null> {
+    return await this.UserModel.findOne({ email });
   }
 
   async findAllUser(

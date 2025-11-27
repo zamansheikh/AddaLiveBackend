@@ -173,9 +173,13 @@ router
   .route("/live-count/:hostId")
   .get(authenticate(), authController.getLiveCountStatus);
 
+router
+  .route("/email-password-login")
+  .post(authController.loginWithEmailPassword)
+  .put(authenticate(), authController.setMyPassword);
 
 
-router.route("/is-premium").get(authenticate(), authController.isPremiumUser)
+router.route("/is-premium").get(authenticate(), authController.isPremiumUser);
 
 // router.route("/get-user-data").get(authenticate(), async (req, res) => {
 //   const data = await User.aggregate([
@@ -213,7 +217,7 @@ router.route("/is-premium").get(authenticate(), authController.isPremiumUser)
 //             $match: { $expr: { $eq: ["$userId", "$$userId"] } },
 //           },
 //         ],
-//         as: "stats", 
+//         as: "stats",
 //       },
 //     },
 //     {      $unwind: {

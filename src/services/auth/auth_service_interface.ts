@@ -25,6 +25,7 @@ export interface IAuthService {
   registerWithGoogle(
     UserData: IUserEntity
   ): Promise<{ user: IUserDocument; token: string }>;
+  loginWithEmailPassword(email: string, password: string): Promise<{ user: IUserDocument; token: string }>;
   retrieveMyDetails(id: string): Promise<IUserDocument | null>;
   deleteMyAccount(id: string): Promise<IUserDocument | null>;
   retrieveUserDetails(id: string, myId: string): Promise<IUserDocument | null>;
@@ -39,6 +40,7 @@ export interface IAuthService {
     avatar?: Express.Multer.File;
     coverPicture?: Express.Multer.File;
   }): Promise<IUserDocument | null>;
+  setMyPassword(id: string, password: string, newPassword: string): Promise<IUserDocument>;
   giftUser({
     targetUserIds,
     myId,
