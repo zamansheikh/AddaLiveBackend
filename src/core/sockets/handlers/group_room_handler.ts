@@ -874,8 +874,21 @@ export async function registerGroupRoomHandler(
       currentLevel: userDetails.level as number,
       equipedStoreItems: userObj.equipedStoreItems,
     };
+    const details: IMemberDetails = {
+      name: userDetails.name as string,
+      avatar: userDetails.avatar as string,
+      uid: userDetails.uid as string,
+      country: userDetails.country as string,
+      _id: userDetails._id as string,
+      equipedStoreItems: userObj.equipedStoreItems,
+      currentBackground: userDetails.currentLevelBackground as string,
+      currentLevel: userDetails.level as number,
+      currentTag: userDetails.currentLevelTag as string,
+      totalGiftSent: 0,
+    
+    }
     io.to(roomId).emit(SocketChannels.sendMessage, message);
-    io.to(roomId).emit(SocketChannels.userJoined, userObj);
+    io.to(roomId).emit(SocketChannels.userJoined, details);
   });
 
   socket.on(SocketChannels.leaveRoom, ({ roomId }) => {
