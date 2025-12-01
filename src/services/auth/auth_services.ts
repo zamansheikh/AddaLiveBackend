@@ -131,6 +131,7 @@ export default class AuthService implements IAuthService {
     const SECRET = process.env.JWT_SECRET || "jwt_secret";
 
     if (!existingUser) {
+      UserData.userId = await this.UserRepository.getLatestUserId();
       const newUser = await this.UserRepository.create(UserData);
       // if a instance exists with this new _id that is a false data and is being purged.
       const stats = await this.UserStatsRepository.getUserStats(

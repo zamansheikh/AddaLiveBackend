@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import User from "../models/user/user_model";
 import UserRepository from "../repository/users/user_repository";
 import AuthService from "../services/auth/auth_services";
@@ -178,8 +178,46 @@ router
   .post(authController.loginWithEmailPassword)
   .put(authenticate(), authController.setMyPassword);
 
-
 router.route("/is-premium").get(authenticate(), authController.isPremiumUser);
+
+// const STARTING_ID = 100001;
+
+// router.route("/set-6-digit").put(async (req: Request, res: Response) => {
+//   try {
+    
+//     const users = await User.find({}).sort({ _id: 1 });
+
+//     if (!users || users.length === 0) {
+//       return res.status(404).json({ message: "No users found to update." });
+//     }
+
+//     let currentId = STARTING_ID;
+
+//     const updatePromises = [];
+
+//     for (const user of users) {
+//       if (!user.userId) {
+//         user.userId = currentId;
+//         updatePromises.push(user.save());
+//         currentId++;
+//       }
+//     }
+
+   
+//     await Promise.all(updatePromises);
+
+//     return res.status(200).json({
+//       message: `Successfully updated ${updatePromises.length} users.`,
+//       lastAssignedId: currentId - 1,
+//     });
+//   } catch (error: Error) {
+//     console.error("Error during batch userId update:", error);
+//     return res.status(500).json({
+//       message: "Failed to update users due to a server error.",
+//       error: error.message,
+//     });
+//   }
+// });
 
 // router.route("/get-user-data").get(authenticate(), async (req, res) => {
 //   const data = await User.aggregate([

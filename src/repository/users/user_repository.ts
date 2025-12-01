@@ -1,6 +1,10 @@
-import mongoose, { mongo } from "mongoose";
+import mongoose, { Model, mongo } from "mongoose";
 import { IUserEntity } from "../../entities/user_entity_interface";
-import { IUserDocument, IUserModel, UserData } from "../../models/user/user_model_interface";
+import {
+  IUserDocument,
+  IUserModel,
+  UserData,
+} from "../../models/user/user_model_interface";
 import { DatabaseNames, UserRoles } from "../../core/Utils/enums";
 import Friendship from "../../models/friendship/friendship_model";
 import { IPagination, QueryBuilder } from "../../core/Utils/query_builder";
@@ -24,7 +28,7 @@ export interface IUserRepository {
     populateFields: string
   ): Promise<IUserDocument | null>;
   findByUID(uid: string): Promise<IUserDocument | null>;
-  findUserByEmail(email: string): Promise<IUserDocument | null>;
+  findUserByEmail(identifier: string): Promise<IUserDocument | null>;
   findAllUser(
     query: Record<string, any>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] }>;
@@ -70,9 +74,10 @@ export interface IUserRepository {
     users: IUserDocument[];
   }>;
 
-
   getUserCounts(role: UserRoles): Promise<number>;
   getHostCounts(parentCreator: string): Promise<number>;
+
+  getLatestUserId(): Promise<number>;
 }
 
 export default class UserRepository implements IUserRepository {
@@ -93,7 +98,7 @@ export default class UserRepository implements IUserRepository {
   async getUserDetailsSelectedField(
     id: string,
     fields: string[]
-  ): Promise<IUserDocument|null> {
+  ): Promise<IUserDocument | null> {
     const user = await this.UserModel.findById(id, fields);
     return user;
   }
@@ -110,8 +115,16 @@ export default class UserRepository implements IUserRepository {
     return await this.UserModel.findOne({ uid }).select("-password");
   }
 
-  async findUserByEmail(email: string): Promise<IUserDocument | null> {
-    return await this.UserModel.findOne({ email });
+  async findUserByEmail(identifier: string): Promise<IUserDocument | null> {
+    const query = {
+      $or: [
+        { email: identifier },
+        { uid: identifier },
+        { userId: identifier },
+        { premiumId: identifier },
+      ],
+    };
+    return await this.UserModel.findOne(query);
   }
 
   async findAllUser(
@@ -168,11 +181,15 @@ export default class UserRepository implements IUserRepository {
     return await this.UserModel.find({ [field]: value }).select("-password");
   }
 
-  async findUserByIdAndUpdate(id: string, payload: Partial<UserData>, session?: mongoose.ClientSession) {
-    const udpated =  await this.UserModel.findByIdAndUpdate(id, payload, {
+  async findUserByIdAndUpdate(
+    id: string,
+    payload: Partial<UserData>,
+    session?: mongoose.ClientSession
+  ) {
+    const udpated = await this.UserModel.findByIdAndUpdate(id, payload, {
       new: true,
     }).select("-password");
-    if(!udpated) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+    if (!udpated) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
     return udpated;
   }
 
@@ -387,13 +404,22 @@ export default class UserRepository implements IUserRepository {
     return { users, pagination };
   }
 
-
-
-  async getUserCounts(role: UserRoles): Promise<number> { 
+  async getUserCounts(role: UserRoles): Promise<number> {
     return await this.UserModel.countDocuments({ userRole: role });
   }
 
   async getHostCounts(parentCreator: string): Promise<number> {
-    return await this.UserModel.countDocuments({ parentCreator: parentCreator });
+    return await this.UserModel.countDocuments({
+      parentCreator: parentCreator,
+    });
+  }
+
+  async getLatestUserId(): Promise<number> {
+    const latestUser = await this.UserModel.findOne({})
+      .sort({ userId: -1 }) // Sorts by userId in descending order (highest first)
+      .select("userId") // Only retrieve the userId field to keep the document small
+      .exec(); // Execute the query
+
+    return latestUser ? latestUser.userId + 1 : 100001;
   }
 }

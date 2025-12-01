@@ -169,9 +169,9 @@ export enum GiftTypes {
 }
 
 export enum Gender {
-  male = "male",
-  female = "female",
-  other = "other",
+  male = "Male",
+  female = "Female",
+  other = "Other",
 }
 
 export enum ActivityZoneState {

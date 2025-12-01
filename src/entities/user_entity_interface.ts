@@ -15,6 +15,8 @@ export interface IUserEntity {
     id: string;
     username: string;
     email: string;
+    userId: number;
+    premiumId?: number;
     password: string;
     lastOnline?: Date;
     userStateInApp?: "Online" | "Offline";

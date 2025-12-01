@@ -8,6 +8,8 @@ export interface UserData {
     username: string;
     email: string;
     password?: string,
+    userId: number;
+    premiumId?: number;
     lastOnline?: Date;
     userStateInApp?: UserActiveStatus;
     userPermissions: string[];

@@ -13,6 +13,8 @@ const userSchema = new mongoose.Schema<IUserDocument>(
   {
     username: { type: String, required: false },
     email: { type: String, required: true },
+    userId: { type: Number, required: true, unique: true, min: 100001 },
+    premiumId: { type: Number },
     password: { type: String },
     lastOnline: { type: Date },
     userStateInApp: {
