@@ -198,7 +198,7 @@ export default class UserRepository implements IUserRepository {
     query: Record<string, unknown>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] } | null> {
     const qb = new QueryBuilder(this.UserModel, query);
-    const res = qb.search(["email", "uid"]).sort();
+    const res = qb.search(["email", "uid", "userId", "premiumId"]).sort();
     const users = await res.paginate().sort().exec();
     const pagination = await res.countTotal();
     return { users, pagination };
