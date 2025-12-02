@@ -3,6 +3,8 @@ import { ActivityZone,  Avatar, IUserEntity } from "./user_entity_interface";
 class UserEntity {
     id: string;
     username: string;
+    userId: number;
+    premiumId?: number;
     email: string;
     password: string;
     lastOnline?: Date;
@@ -32,6 +34,8 @@ class UserEntity {
     constructor(data: IUserEntity) {
         this.id = data.id;
         this.username = data.username;
+        this.userId = data.userId;
+        this.premiumId = data.premiumId;
         this.email = data.email;
         this.password = data.password;
         this.lastOnline = data.lastOnline;
@@ -67,6 +71,8 @@ class UserEntity {
         return new UserEntity({
             id: json._id,
             username: json.username,
+            userId: json.userId,
+            premiumId: json.premiumId,
             email: json.email,
             password: json.password,
             lastOnline: json.lastOnline ? new Date(json.lastOnline) : undefined,
