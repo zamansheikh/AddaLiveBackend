@@ -115,15 +115,20 @@ export default class UserRepository implements IUserRepository {
     return await this.UserModel.findOne({ uid }).select("-password");
   }
 
-  async findUserByEmail(identifier: string): Promise<IUserDocument | null> {
-    const query = {
-      $or: [
-        { email: identifier },
-        { uid: identifier },
-        { userId: identifier },
-        { premiumId: identifier },
-      ],
-    };
+  async findUserByEmail(identifier: any): Promise<IUserDocument | null> {
+    const isNumeric =
+      !isNaN(identifier) && identifier !== null && identifier !== undefined;
+    const numericIdentifier = isNumeric ? Number(identifier) : undefined;
+    let orConditions = [];
+    orConditions.push(
+      { email: identifier }, // String field
+      { uid: identifier }
+    );
+    if (isNumeric) {
+      orConditions.push({ premiumId: numericIdentifier }); // Number field
+    }
+    const query = { $or: orConditions };
+    
     return await this.UserModel.findOne(query);
   }
 
