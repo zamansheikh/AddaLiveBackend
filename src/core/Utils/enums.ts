@@ -44,7 +44,9 @@ export enum DatabaseNames {
   RoomBonusRecord = "room_bonus_records",
   LevelTagBg = "level_tag_bg",
   BlockDocs = "block_docs",
-  GiftAudioRoomRockets = 'gift_audio_room_rockets'
+  GiftAudioRoomRockets = 'gift_audio_room_rockets',
+  BlockedEmails = 'blocked_emails',
+  
 }
 
 export enum ReelStatus {
@@ -85,7 +87,6 @@ export enum RequestTypes {
 export enum SocketChannels {
   newMessage = "newMessage",
   newConversation = "newConversation",
-
   createRoom = "create-room",
   deleteRoom = "delete-room",
   makeAdmin = "make-admin",
@@ -93,7 +94,6 @@ export enum SocketChannels {
   roomList = "room-list",
   joinRoom = "join-room",
   joinCallReq = "join-call-request",
-
   joinCallReqList = "join-call-request-list",
   acceptCallReq = "accept-call-request",
   broadcasterList = "broadcaster-list",

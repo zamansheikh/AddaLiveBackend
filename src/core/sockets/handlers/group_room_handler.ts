@@ -17,6 +17,8 @@ import {
 } from "../../Utils/helper_functions";
 import { IMemberDetails, RoomData } from "../interface/socket_interface";
 import { IAdminRepository } from "../../../repository/admin/admin_repository";
+import { IBlockedEmailRepository } from "../../../repository/security/blockedEmailRepository";
+import SocketServer from "../socket_server";
 
 export interface ISerializedRoomData {
   hostId: string;
@@ -59,7 +61,8 @@ export async function registerGroupRoomHandler(
   userRepository: IUserRepository,
   adminRepository: IAdminRepository,
   bucketRepository: IMyBucketRepository,
-  categoryRepository: IStoreCategoryRepository
+  categoryRepository: IStoreCategoryRepository,
+  blockedEmailRepository: IBlockedEmailRepository
 ) {
   const userId = socket.handshake.query.userId as string;
 
@@ -810,7 +813,7 @@ export async function registerGroupRoomHandler(
   });
 
   // user only
-  socket.on(SocketChannels.joinRoom, ({ roomId }) => {
+  socket.on(SocketChannels.joinRoom, async ({ roomId }) => {
     if (!roomId)
       return io.to(socket.id).emit(SocketChannels.error, {
         status: StatusCodes.BAD_REQUEST,
@@ -889,6 +892,11 @@ export async function registerGroupRoomHandler(
     }
     io.to(roomId).emit(SocketChannels.sendMessage, message);
     io.to(roomId).emit(SocketChannels.userJoined, details);
+    let isBlocked = await blockedEmailRepository.checkBlockedEmail(userId);
+    if(isBlocked) {
+      const socketInstance = SocketServer.getInstance()
+      socketInstance.hanldeUserDisconnect(userId, roomId, room);
+    }
   });
 
   socket.on(SocketChannels.leaveRoom, ({ roomId }) => {

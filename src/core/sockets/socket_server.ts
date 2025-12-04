@@ -32,6 +32,8 @@ import GiftAudioRoomRocketModel, {
 } from "../../models/gifts/gift_audio_rocket_model";
 import AdminRepository from "../../repository/admin/admin_repository";
 import Admin from "../../models/admin/admin_model";
+import { BlockedEmailRepository } from "../../repository/security/blockedEmailRepository";
+import BlockedEmailModel from "../../models/security/blocked_emails";
 
 export default class SocketServer {
   private static instance: SocketServer;
@@ -43,6 +45,8 @@ export default class SocketServer {
   >(); // Map<userId, socketId>
   private hostedRooms = {} as Record<string, RoomData>;
   private hostedAudioRooms = {} as Record<string, IAudioRoomData>;
+  private bannedEmail: string[] = [] as string[];
+  private blockedEmailRepository = new BlockedEmailRepository(BlockedEmailModel);
   private userRepo = new UserRepository(User);
   private adminRepo = new AdminRepository(Admin);
   private bucketRepo = new MyBucketRepository(MyBucketModel);
@@ -98,7 +102,8 @@ export default class SocketServer {
         this.userRepo,
         this.adminRepo,
         this.bucketRepo,
-        this.categoryRepo
+        this.categoryRepo,
+        this.blockedEmailRepository,
       );
 
       registerAudioRoomHandler(
@@ -111,7 +116,8 @@ export default class SocketServer {
         this.bucketRepo,
         this.categoryRepo,
         this.rocketInfo,
-        this.launchRocketInfo
+        this.launchRocketInfo,
+        this.blockedEmailRepository
       );
 
       socket.on("disconnect", () => {
@@ -370,7 +376,7 @@ export default class SocketServer {
     console.log(`User ${userId} connected with socket ID: ${socket.id}`);
   }
 
-  private hanldeUserDisconnect(
+  public hanldeUserDisconnect(
     userId: string,
     roomId: string,
     roomData: RoomData

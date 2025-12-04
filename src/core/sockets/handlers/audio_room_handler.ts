@@ -24,6 +24,7 @@ import { AudioRoomPolicy } from "../policies/audio_room_policy";
 import SocketServer from "../socket_server";
 import { IGiftAudioRocket } from "../../../models/gifts/gift_audio_rocket_model";
 import AdminRepository from "../../../repository/admin/admin_repository";
+import { IBlockedEmailRepository } from "../../../repository/security/blockedEmailRepository";
 
 export const registerAudioRoomHandler = async (
   io: Server,
@@ -35,7 +36,8 @@ export const registerAudioRoomHandler = async (
   bucketRepository: IMyBucketRepository,
   categoryRepository: IStoreCategoryRepository,
   rocketInfo: Partial<IGiftAudioRocket>,
-  launchRocketInfo: Record<string, ILaunchRocketInfo>
+  launchRocketInfo: Record<string, ILaunchRocketInfo>,
+  blockedEmailRepository: IBlockedEmailRepository
 ) => {
   // userId -> mongoose object_id
   const userId = socket.handshake.query.userId as string;
@@ -71,6 +73,7 @@ export const registerAudioRoomHandler = async (
     "level",
     "activityZone",
   ]);
+
   if (!userDetails) {
     socketResponse(io, SocketChannels.error, socket.id, {
       success: false,
@@ -317,7 +320,7 @@ export const registerAudioRoomHandler = async (
   });
 
   // user join audio room
-  socket.on(SocketAudioChannels.JoinAudioRoom, ({ roomId }) => {
+  socket.on(SocketAudioChannels.JoinAudioRoom, async ({ roomId }) => {
     const ensureUserCanJoin = audioRoomPolicy.ensureUserCanJoin(roomId, userId);
     if (ensureUserCanJoin == false) return;
     const room = audioRoom[roomId];
@@ -355,7 +358,6 @@ export const registerAudioRoomHandler = async (
     socketResponse(io, SocketAudioChannels.SendMessage, roomId, {
       success: true,
       message: "Successfully joined the room",
-
       data: message,
     });
     // const serializedRoom: ISearializedAudioRoom = {
@@ -398,6 +400,12 @@ export const registerAudioRoomHandler = async (
       message: "Successfully joined the room",
       data: userDetailsToSend,
     });
+
+    const isBlocked = await blockedEmailRepository.checkBlockedEmail(userId);
+    if(isBlocked){
+      const socketInstance = SocketServer.getInstance();
+      socketInstance.handleAudioRoomDisconnect(userId, roomId, room);
+    }
   });
 
   // join seats

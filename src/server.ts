@@ -23,6 +23,8 @@ import PowerSharedRoutes from "./router/portal_user_routes";
 import StoreRoutes from "./router/store_router";
 import AppVersionRoutes from "./router/app_version_routes";
 import GiftAudioRoketRouter from "./router/gift_audio_rocket_route";
+import BlockedEmail from "./router/blocked_email_routes";
+
 
 
 // error handlers
@@ -90,6 +92,7 @@ app.use("/api/power-shared", PowerSharedRoutes);
 app.use("/api/store", StoreRoutes);
 app.use("/release", AppVersionRoutes);
 app.use("/api/gifts-audio-rocket", GiftAudioRoketRouter);
+app.use("/api/blocked-emails", BlockedEmail);
 
 
 // app.get("/release/latest", async (req: Request, res: Response) => {
