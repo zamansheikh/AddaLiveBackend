@@ -76,6 +76,7 @@ export interface IUserRepository {
 
   getUserCounts(role: UserRoles): Promise<number>;
   getHostCounts(parentCreator: string): Promise<number>;
+  isPhoneUnique(phoneNumber: string): Promise<boolean>;
 
   getLatestUserId(): Promise<number>;
 }
@@ -125,10 +126,13 @@ export default class UserRepository implements IUserRepository {
       { uid: identifier }
     );
     if (isNumeric) {
-      orConditions.push({ premiumId: numericIdentifier }); // Number field
+      orConditions.push(
+        { premiumId: numericIdentifier },
+        { userId: numericIdentifier }
+      ); // Number field
     }
     const query = { $or: orConditions };
-    
+
     return await this.UserModel.findOne(query);
   }
 
@@ -417,6 +421,11 @@ export default class UserRepository implements IUserRepository {
     return await this.UserModel.countDocuments({
       parentCreator: parentCreator,
     });
+  }
+
+  async isPhoneUnique(phoneNumber: string): Promise<boolean> {
+    const user = await this.UserModel.findOne({ phone: phoneNumber });
+    return user ? false : true;
   }
 
   async getLatestUserId(): Promise<number> {

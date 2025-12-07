@@ -26,6 +26,7 @@ export interface IAuthService {
     UserData: IUserEntity
   ): Promise<{ user: IUserDocument; token: string }>;
   loginWithEmailPassword(email: string, password: string): Promise<{ user: IUserDocument; token: string }>;
+  verifyAccount(userId: string, phoneNumber: string, password: string): Promise<IUserDocument>;
   retrieveMyDetails(id: string): Promise<IUserDocument | null>;
   deleteMyAccount(id: string): Promise<IUserDocument | null>;
   retrieveUserDetails(id: string, myId: string): Promise<IUserDocument | null>;

@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema<IUserDocument>(
     email: { type: String, required: true },
     userId: { type: Number, required: true, unique: true, min: 100001 },
     premiumId: { type: Number },
+    phone: { type: String, sparse: true, unique: true},
     password: { type: String },
     lastOnline: { type: Date },
     userStateInApp: {
@@ -72,6 +73,7 @@ const userSchema = new mongoose.Schema<IUserDocument>(
       createdAt: { type: Date },
       expire: { type: Date },
     },
+    verified: { type: Boolean, default: false },
   },
   {
     timestamps: true,

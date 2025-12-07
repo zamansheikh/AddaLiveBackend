@@ -178,7 +178,39 @@ router
   .post(authController.loginWithEmailPassword)
   .put(authenticate(), authController.setMyPassword);
 
+router.route("/verify-account").put(authenticate(), authController.verifyAccount);
+
+
 router.route("/is-premium").get(authenticate(), authController.isPremiumUser);
+
+// router.route("/set-verified-false").put(async (req: Request, res: Response) => {
+//   try {
+//     const users = await User.find({});
+//     if (!users || users.length === 0){
+//       return res.status(404).json({ message: "No users found to update." });
+//     }
+
+//     const updatePromises = users.map(user => {
+//       user.verified = false;
+//       return user.save();
+//     });
+
+//     await Promise.all(updatePromises);
+
+//     return res.status(200).json({
+//       message: `Successfully set 'verified' to false for ${updatePromises.length} users.`,
+//     });
+    
+
+    
+//   } catch (error: Error) {
+//     console.error("Error during batch userId update:", error);
+//     return res.status(500).json({
+//       message: "Failed to update users due to a server error.",
+//       error: error.message,
+//     });
+//   }
+// });
 
 // const STARTING_ID = 100001;
 

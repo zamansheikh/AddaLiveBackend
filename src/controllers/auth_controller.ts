@@ -252,6 +252,15 @@ export default class AuthController {
     sendResponseEnhanced(res, user);
   });
 
+  verifyAccount = catchAsync(async (req: Request, res: Response) => {
+    const {id} = req.user!;
+    const {phoneNumber, password} = req.body;
+    validateFieldExistance(phoneNumber, "phoneNumber");
+    validateFieldExistance(password, "password");
+    const user = await this.authService.verifyAccount(id, phoneNumber, password);
+    sendResponseEnhanced(res, user);
+  });
+
   setMyPassword = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.user!;
     const { password, newPassword } = req.body;

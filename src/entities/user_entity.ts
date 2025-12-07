@@ -6,6 +6,7 @@ class UserEntity {
     userId: number;
     premiumId?: number;
     email: string;
+    phone?: string;
     password: string;
     lastOnline?: Date;
     userStateInApp: "Online" | "Offline";
@@ -30,6 +31,7 @@ class UserEntity {
     isViewer: boolean;
     objectId?: string;
     activityZone: ActivityZone;
+    verified: boolean;
 
     constructor(data: IUserEntity) {
         this.id = data.id;
@@ -37,6 +39,7 @@ class UserEntity {
         this.userId = data.userId;
         this.premiumId = data.premiumId;
         this.email = data.email;
+        this.phone = data.phone;
         this.password = data.password;
         this.lastOnline = data.lastOnline;
         this.userStateInApp = data.userStateInApp || "Offline";
@@ -65,6 +68,7 @@ class UserEntity {
             createdAt: data.activityZone?.createdAt,
             expire: data.activityZone?.expire,
         };
+        this.verified = data.verified || false;
     }
 
     static fromJson(json: any): UserEntity {
@@ -74,6 +78,7 @@ class UserEntity {
             userId: json.userId,
             premiumId: json.premiumId,
             email: json.email,
+            phone: json.phone,
             password: json.password,
             lastOnline: json.lastOnline ? new Date(json.lastOnline) : undefined,
             userStateInApp: json.userStateInApp,
@@ -108,6 +113,7 @@ class UserEntity {
                           : undefined,
                   }
                 : undefined,
+                verified: json.verified,
         });
     }
 }

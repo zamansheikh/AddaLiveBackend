@@ -229,6 +229,30 @@ export default class AuthService implements IAuthService {
     return { user: userWithStats, token };
   }
 
+  async verifyAccount(
+    userId: string,
+    phoneNumber: string,
+    password: string
+  ): Promise<IUserDocument> {
+    const existingUser = await this.UserRepository.findUserById(userId);
+    if (!existingUser)
+      throw new AppError(StatusCodes.NOT_FOUND, "user not found");
+    if (existingUser.verified == true)
+      throw new AppError(StatusCodes.BAD_REQUEST, "account already verified");
+    const uniquePhone = this.UserRepository.isPhoneUnique(phoneNumber);
+    if (!uniquePhone)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "phone number already in use"
+      );
+    const hashedPassword = await bcrypt.hash(password, 10);
+    existingUser.phone = phoneNumber;
+    existingUser.password = hashedPassword;
+    existingUser.verified = true;
+    await existingUser.save();
+    return existingUser;
+  }
+
   async retrieveMyDetails(id: string): Promise<IUserDocument | null> {
     const user = await this.UserRepository.findUserById(id);
     if (!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
@@ -356,7 +380,7 @@ export default class AuthService implements IAuthService {
     if (
       existingUser.password &&
       existingUser.password != "" &&
-      !(await bcrypt.compare( password, existingUser.password))
+      !(await bcrypt.compare(password, existingUser.password))
     )
       throw new AppError(StatusCodes.BAD_REQUEST, "incorrect password");
 

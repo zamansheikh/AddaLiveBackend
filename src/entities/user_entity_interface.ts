@@ -17,6 +17,7 @@ export interface IUserEntity {
     email: string;
     userId: number;
     premiumId?: number;
+    phone?: string;
     password: string;
     lastOnline?: Date;
     userStateInApp?: "Online" | "Offline";
@@ -41,4 +42,5 @@ export interface IUserEntity {
     isViewer?: boolean;
     objectId?: string;
     activityZone?: Partial<ActivityZone>;
+    verified?: boolean;
 }

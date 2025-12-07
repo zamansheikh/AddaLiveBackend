@@ -10,6 +10,7 @@ export interface UserData {
     password?: string,
     userId: number;
     premiumId?: number;
+    phone?: string;
     lastOnline?: Date;
     userStateInApp?: UserActiveStatus;
     userPermissions: string[];
@@ -41,7 +42,8 @@ export interface UserData {
         createdAt?: Date;
         expire?: Date;
     };
-    stats?: IUserStats
+    stats?: IUserStats;
+    verified: boolean;
 }
 
 //  Create the document type (instance methods + fields)
