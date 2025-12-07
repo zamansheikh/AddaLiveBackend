@@ -120,10 +120,12 @@ export default class UserRepository implements IUserRepository {
     const isNumeric =
       !isNaN(identifier) && identifier !== null && identifier !== undefined;
     const numericIdentifier = isNumeric ? Number(identifier) : undefined;
+    
     let orConditions = [];
     orConditions.push(
       { email: identifier }, // String field
-      { uid: identifier }
+      { uid: identifier },
+      {phone: identifier}
     );
     if (isNumeric) {
       orConditions.push(
