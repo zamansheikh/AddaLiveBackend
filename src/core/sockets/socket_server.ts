@@ -43,8 +43,8 @@ export default class SocketServer {
     string,
     { timeOut: NodeJS.Timeout; roomId?: string }
   >(); // Map<userId, socketId>
-  private hostedRooms = {} as Record<string, RoomData>;
-  private hostedAudioRooms = {} as Record<string, IAudioRoomData>;
+  private hostedRooms = {} as Record<string, RoomData>; //roomid : roomdata
+  private hostedAudioRooms = {} as Record<string, IAudioRoomData>; //roomid : roomdata
   private bannedEmail: string[] = [] as string[];
   private blockedEmailRepository = new BlockedEmailRepository(
     BlockedEmailModel

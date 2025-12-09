@@ -153,6 +153,7 @@ export enum SocketAudioChannels {
   InviteUserToSeat = 'invite-user-to-seat',
   AudioSeatInvitations = 'audio-seat-invitations',
   AcceptAudioSeatInvitation = 'accept-audio-seat-invitation',
+  AudioRoomSearch = 'audio-room-search',
 }
 
 export enum RoomTypes {
