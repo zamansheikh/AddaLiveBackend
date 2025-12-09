@@ -109,7 +109,7 @@ export class AudioRoomPolicy {
     return true;
   }
 
-  ensureUserCanJoin(roomId: string, userId: string): boolean {
+  ensureUserCanJoin(roomId: string, userId: string, password: string): boolean {
     const ensureRoomExists = this.ensureRoomExists(roomId);
     if (ensureRoomExists == false) return false;
 
@@ -130,15 +130,23 @@ export class AudioRoomPolicy {
       return false;
     }
 
+    if (room.isLocked && room.password != password) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "wrong password, this room is locked",
+      });
+      return false;
+    }
+
     return true;
   }
 
   ensureRightSeatType(seatKey: string): boolean {
-    if(seatKey == undefined || seatKey == null || seatKey == "" || !seatKey) {
+    if (seatKey == undefined || seatKey == null || seatKey == "" || !seatKey) {
       socketResponse(this.io, SocketChannels.error, this.socket.id, {
         success: false,
         message: "seatKey is required",
-      });  
+      });
       return false;
     }
     if (seatKey != "premiumSeat" && !seatKey.startsWith("seat-")) {
@@ -435,6 +443,71 @@ export class AudioRoomPolicy {
         message: "There is no admin to remove",
       });
       return false;
+    }
+    return true;
+  }
+
+  ensureRightChatPrivacyType(privacyType: any): boolean {
+    if (
+      privacyType == undefined ||
+      privacyType == null ||
+      privacyType == "" ||
+      !privacyType
+    ) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "privacyType is required",
+      });
+      return false;
+    }
+
+    if (
+      privacyType != "any" &&
+      privacyType != "none" &&
+      !Array.isArray(privacyType)
+    ) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "Invalid privacyType",
+      });
+      return false;
+    }
+    if (Array.isArray(privacyType)) {
+      for (let i = 0; i < privacyType.length; i++) {
+        // check if its an array of mongoose object id
+        if (!privacyType[i].match(/^[0-9a-fA-F]{24}$/)) {
+          socketResponse(this.io, SocketChannels.error, this.socket.id, {
+            success: false,
+            message: "Invalid privacyType array, must contain valid user IDs",
+          });
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  enureCanSendMessage(roomId: string, userId: string): boolean {
+    const roomExistance = this.ensureRoomExists(roomId);
+    const hasMember = this.ensureHasMember(roomId, userId);
+    if (roomExistance == false) return false;
+    if (hasMember == false) return false;
+    const room = this.hostestRooms[roomId];
+    if (room.chatPrivacy == "none") {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "Chat is disabled in this room",
+      });
+      return false;
+    }
+    if (Array.isArray(room.chatPrivacy)) {
+      if (!room.chatPrivacy.includes(userId)) {
+        socketResponse(this.io, SocketChannels.error, this.socket.id, {
+          success: false,
+          message: "You are not allowed to chat in this room",
+        });
+        return false;
+      }
     }
     return true;
   }

@@ -46,7 +46,9 @@ export default class SocketServer {
   private hostedRooms = {} as Record<string, RoomData>;
   private hostedAudioRooms = {} as Record<string, IAudioRoomData>;
   private bannedEmail: string[] = [] as string[];
-  private blockedEmailRepository = new BlockedEmailRepository(BlockedEmailModel);
+  private blockedEmailRepository = new BlockedEmailRepository(
+    BlockedEmailModel
+  );
   private userRepo = new UserRepository(User);
   private adminRepo = new AdminRepository(Admin);
   private bucketRepo = new MyBucketRepository(MyBucketModel);
@@ -103,7 +105,7 @@ export default class SocketServer {
         this.adminRepo,
         this.bucketRepo,
         this.categoryRepo,
-        this.blockedEmailRepository,
+        this.blockedEmailRepository
       );
 
       registerAudioRoomHandler(
@@ -365,10 +367,10 @@ export default class SocketServer {
                 connected: true,
                 id: userId,
                 seat: getAudioUserSeat(userId, audioRoom),
-              }
-            });
+              },
+            }
+          );
         }
-        
       }
       this.disconnectedUsers.delete(userId);
     }
@@ -463,7 +465,13 @@ export default class SocketServer {
     roomId: string,
     roomData: IAudioRoomData
   ) {
-    if ((roomData.hostDetails as IMemberDetails)._id == userId) {
+    const isPersistRoom =
+      process.env.ROOM_PERSIST && process.env.ROOM_PERSIST == "1";
+
+    if (
+      !isPersistRoom &&
+      (roomData.hostDetails as IMemberDetails)._id == userId
+    ) {
       socketResponse(this.io, SocketAudioChannels.RoomDetails, roomId, {
         success: true,
         message: "Room has been closed by the host",
@@ -489,6 +497,7 @@ export default class SocketServer {
         const obj = {
           title: roomData.title,
           numberOfSeats: roomData.numberOfSeats,
+          announcement: roomData.announcement,
           currentRocketMilestone: roomData.currentRocketMilestone,
           currentRocketFuel: roomData.currentRocketFuel,
           fuelPercentage:
@@ -509,9 +518,11 @@ export default class SocketServer {
           bannedUsers: Array.from(roomData.bannedUsers),
           mutedUsers: Array.from(roomData.mutedUsers),
           ranking: roomData.ranking,
+          chatPrivacy: roomData.chatPrivacy,
           duration: Math.floor(
             (new Date().getTime() - roomData.createdAt.getTime()) / 1000
           ),
+          isLocked: roomData.isLocked,
         };
         allRoomSerialized.push(obj);
       }
@@ -523,6 +534,51 @@ export default class SocketServer {
       });
       return;
     }
+
+    // if host left in persisted audio room
+    if (
+      isPersistRoom &&
+      (roomData.hostDetails as IMemberDetails)._id == userId
+    ) {
+      let message: IRoomMessage = {
+        name: roomData.hostDetails!.name as string,
+        avatar: roomData.hostDetails!.avatar as string,
+        uid: roomData.hostDetails!.uid as string,
+        country: roomData.hostDetails!.country as string,
+        _id: roomData.hostDetails!._id as string,
+        text: "left the room",
+        currentBackground: roomData.hostDetails!.currentBackground as string,
+        currentTag: roomData.hostDetails!.currentTag as string,
+        currentLevel: roomData.hostDetails!.currentLevel as number,
+        equipedStoreItems: roomData.hostDetails!.equipedStoreItems,
+      };
+      socketResponse(this.io, SocketAudioChannels.SendMessage, roomId, {
+        success: true,
+        message: "Successfully left the seat",
+        data: message,
+      });
+      socketResponse(this.io, SocketAudioChannels.leaveSeat, roomId, {
+        success: true,
+        message: "host left the room",
+        data: {
+          seatKey: "hostDetails",
+          member: {},
+        },
+      });
+      roomData.hostDetails = undefined;
+      roomData.members.delete(userId);
+      const socketId = this.onlineUsers.get(userId);
+      if (socketId) {
+        const getSocket = this.io.sockets.sockets.get(socketId);
+        if (getSocket) {
+          getSocket.leave(roomId);
+        }
+      }
+      return;
+    }
+
+    // if the left person is not the host
+
     if (roomData.members.has(userId)) {
       // message body
 

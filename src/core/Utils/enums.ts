@@ -124,6 +124,7 @@ export enum SocketAudioChannels {
   CreateAudioRoom = "create-audio-room",
   GetAllAudioRooms = "get-all-audio-rooms",
   JoinAudioRoom = "join-audio-room",
+  JoinHostBack = "join-host-back",
   joinSeat = "join-audio-seat",
   RemoveFromSeat = "remove-from-seat",
   leaveSeat = "leave-audio-seat",
@@ -146,7 +147,12 @@ export enum SocketAudioChannels {
   LockUnLockAudioSeat = 'lock-unlock-audio-seat',
   AudioUserConnection = 'audio-user-connection',
   UpdateAudioSeatCount = 'update-audio-seat-count',
-  
+  UpdateAudioAnnouncement = 'update-audio-announcement',
+  SetAudioPrivacyStatus = 'set-audio-privacy-status',
+  SetAudioChatPrivacyStatus = 'set-audio-chat-privacy-status',
+  InviteUserToSeat = 'invite-user-to-seat',
+  AudioSeatInvitations = 'audio-seat-invitations',
+  AcceptAudioSeatInvitation = 'accept-audio-seat-invitation',
 }
 
 export enum RoomTypes {

@@ -95,7 +95,7 @@ export const registerAudioRoomHandler = async (
   // channel to create audio room
   socket.on(
     SocketAudioChannels.CreateAudioRoom,
-    ({ roomId, title, numberOfSeats }) => {
+    ({ roomId, title, numberOfSeats, announcement }) => {
       // validating input data
       const ensureUserIsNotBlocked =
         audioRoomPolicy.ensureUserIsNotBlocked(userDetails);
@@ -132,6 +132,7 @@ export const registerAudioRoomHandler = async (
         hostDetails: membersDetails,
         title: title,
         numberOfSeats: numberOfSeats,
+        announcement: announcement ?? "",
         currentRocketMilestone: isEmptyObject(rocketInfo)
           ? 0
           : rocketInfo.milestones![0],
@@ -151,6 +152,9 @@ export const registerAudioRoomHandler = async (
         bannedUsers: new Set(),
         mutedUsers: new Set(),
         ranking: [membersDetails],
+        chatPrivacy: "any",
+        isLocked: false,
+        hostId: userId,
       };
       audioRoom[roomId] = createdRoom;
 
@@ -168,6 +172,7 @@ export const registerAudioRoomHandler = async (
       const serializedRoom: ISearializedAudioRoom = {
         title: createdRoom.title,
         numberOfSeats: createdRoom.numberOfSeats,
+        announcement: createdRoom.announcement,
         currentRocketMilestone: createdRoom.currentRocketMilestone,
         currentRocketFuel: createdRoom.currentRocketFuel,
         fuelPercentage: 0,
@@ -185,9 +190,11 @@ export const registerAudioRoomHandler = async (
         bannedUsers: Array.from(createdRoom.bannedUsers),
         mutedUsers: Array.from(createdRoom.mutedUsers),
         ranking: createdRoom.ranking,
+        chatPrivacy: createdRoom.chatPrivacy,
         duration: Math.floor(
           (new Date().getTime() - createdRoom.createdAt.getTime()) / 1000
         ),
+        isLocked: createdRoom.isLocked,
       };
 
       const allRoomSerialized: ISearializedAudioRoom[] = [];
@@ -196,6 +203,7 @@ export const registerAudioRoomHandler = async (
         const obj: ISearializedAudioRoom = {
           title: roomData.title,
           numberOfSeats: roomData.numberOfSeats,
+          announcement: roomData.announcement,
           currentRocketMilestone: roomData.currentRocketMilestone,
           currentRocketFuel: roomData.currentRocketFuel,
           fuelPercentage:
@@ -217,9 +225,11 @@ export const registerAudioRoomHandler = async (
           bannedUsers: Array.from(roomData.bannedUsers),
           mutedUsers: Array.from(roomData.mutedUsers),
           ranking: roomData.ranking,
+          chatPrivacy: roomData.chatPrivacy,
           duration: Math.floor(
             (new Date().getTime() - roomData.createdAt.getTime()) / 1000
           ),
+          isLocked: roomData.isLocked,
         };
         allRoomSerialized.push(obj);
       }
@@ -245,6 +255,7 @@ export const registerAudioRoomHandler = async (
       const obj: ISearializedAudioRoom = {
         title: roomData.title,
         numberOfSeats: roomData.numberOfSeats,
+        announcement: roomData.announcement,
         currentRocketMilestone: roomData.currentRocketMilestone,
         currentRocketFuel: roomData.currentRocketFuel,
         fuelPercentage:
@@ -266,9 +277,11 @@ export const registerAudioRoomHandler = async (
         bannedUsers: Array.from(roomData.bannedUsers),
         mutedUsers: Array.from(roomData.mutedUsers),
         ranking: roomData.ranking,
+        chatPrivacy: roomData.chatPrivacy,
         duration: Math.floor(
           (new Date().getTime() - roomData.createdAt.getTime()) / 1000
         ),
+        isLocked: roomData.isLocked,
       };
       serializedRooms.push(obj);
     }
@@ -288,6 +301,7 @@ export const registerAudioRoomHandler = async (
     const serializedRoom: ISearializedAudioRoom = {
       title: room.title,
       numberOfSeats: room.numberOfSeats,
+      announcement: room.announcement,
       currentRocketMilestone: room.currentRocketMilestone,
       currentRocketFuel: room.currentRocketFuel,
       fuelPercentage:
@@ -308,9 +322,11 @@ export const registerAudioRoomHandler = async (
       membersDetails: room.membersDetails,
       mutedUsers: Array.from(room.mutedUsers),
       ranking: room.ranking,
+      chatPrivacy: room.chatPrivacy,
       duration: Math.floor(
         (new Date().getTime() - room.createdAt.getTime()) / 1000
       ),
+      isLocked: room.isLocked,
     };
     socketResponse(io, SocketAudioChannels.RoomDetails, socket.id, {
       success: true,
@@ -320,10 +336,16 @@ export const registerAudioRoomHandler = async (
   });
 
   // user join audio room
-  socket.on(SocketAudioChannels.JoinAudioRoom, async ({ roomId }) => {
-    const ensureUserCanJoin = audioRoomPolicy.ensureUserCanJoin(roomId, userId);
+  socket.on(SocketAudioChannels.JoinAudioRoom, async ({ roomId, password }) => {
+    const ensureUserCanJoin = audioRoomPolicy.ensureUserCanJoin(
+      roomId,
+      userId,
+      password
+    );
     if (ensureUserCanJoin == false) return;
     const room = audioRoom[roomId];
+    const isHost = room.hostId === userId;
+
     const membersDetails: IMemberDetails = {
       name: userDetails.name as string,
       avatar: userDetails.avatar as string,
@@ -338,8 +360,8 @@ export const registerAudioRoomHandler = async (
       isMuted: false,
     };
     room.members.add(userId);
-    room.membersDetails.push(membersDetails);
-    room.ranking.push(membersDetails);
+    if(!isHost) room.membersDetails.push(membersDetails);
+    if(!isHost) room.ranking.push(membersDetails);
     socket.join(roomId);
     const message: IRoomMessage = {
       name: userDetails.name as string,
@@ -394,15 +416,15 @@ export const registerAudioRoomHandler = async (
       totalGiftSent: 0,
       isMuted: false,
     };
-
-    socketResponse(io, SocketAudioChannels.JoinAudioRoom, roomId, {
+    
+    socketResponse(io, isHost? SocketAudioChannels.JoinHostBack :  SocketAudioChannels.JoinAudioRoom, roomId, {
       success: true,
       message: "Successfully joined the room",
       data: userDetailsToSend,
     });
 
     const isBlocked = await blockedEmailRepository.checkBlockedEmail(userId);
-    if(isBlocked){
+    if (isBlocked) {
       const socketInstance = SocketServer.getInstance();
       socketInstance.handleAudioRoomDisconnect(userId, roomId, room);
     }
@@ -614,6 +636,7 @@ export const registerAudioRoomHandler = async (
     const serializedRoom: ISearializedAudioRoom = {
       title: room.title,
       numberOfSeats: room.numberOfSeats,
+      announcement: room.announcement,
       currentRocketMilestone: room.currentRocketMilestone,
       currentRocketFuel: room.currentRocketFuel,
       fuelPercentage:
@@ -634,9 +657,11 @@ export const registerAudioRoomHandler = async (
       bannedUsers: Array.from(room.bannedUsers),
       mutedUsers: Array.from(room.mutedUsers),
       ranking: room.ranking,
+      chatPrivacy: room.chatPrivacy,
       duration: Math.floor(
         (new Date().getTime() - room.createdAt.getTime()) / 1000
       ),
+      isLocked: room.isLocked,
     };
 
     socketResponse(io, SocketAudioChannels.RoomDetails, roomId, {
@@ -660,10 +685,8 @@ export const registerAudioRoomHandler = async (
 
   // send message
   socket.on(SocketAudioChannels.SendMessage, ({ roomId, text }) => {
-    const ensureRoomExists = audioRoomPolicy.ensureRoomExists(roomId);
-    const ensureHasMember = audioRoomPolicy.ensureHasMember(roomId, userId);
-    if (ensureRoomExists == false) return;
-    if (ensureHasMember == false) return;
+    const canSendMessage = audioRoomPolicy.enureCanSendMessage(roomId, userId);
+    if (canSendMessage == false) return;
 
     const room = audioRoom[roomId];
     const message: IRoomMessage = {
@@ -858,7 +881,9 @@ export const registerAudioRoomHandler = async (
             continue;
           }
           const leftUserDetails = room.membersDetails.filter(
-            (member) => member._id == (room.seats[`seat-${i}`].member as IMemberDetails)._id
+            (member) =>
+              member._id ==
+              (room.seats[`seat-${i}`].member as IMemberDetails)._id
           );
           let message: IRoomMessage = {
             name: leftUserDetails[0].name as string,
@@ -873,7 +898,7 @@ export const registerAudioRoomHandler = async (
             equipedStoreItems: leftUserDetails[0].equipedStoreItems,
           };
           message.text = `left seat-${i}`;
-          
+
           socketResponse(io, SocketAudioChannels.SendMessage, roomId, {
             success: true,
             message: "Successfully left the seat",
@@ -895,6 +920,7 @@ export const registerAudioRoomHandler = async (
       const serializedRoom: ISearializedAudioRoom = {
         title: room.title,
         numberOfSeats: room.numberOfSeats,
+        announcement: room.announcement,
         currentRocketMilestone: room.currentRocketMilestone,
         currentRocketFuel: room.currentRocketFuel,
         fuelPercentage:
@@ -915,9 +941,11 @@ export const registerAudioRoomHandler = async (
         membersDetails: room.membersDetails,
         mutedUsers: Array.from(room.mutedUsers),
         ranking: room.ranking,
+        chatPrivacy: room.chatPrivacy,
         duration: Math.floor(
           (new Date().getTime() - room.createdAt.getTime()) / 1000
         ),
+        isLocked: room.isLocked,
       };
       socketResponse(io, SocketAudioChannels.RoomDetails, socket.id, {
         success: true,
@@ -927,5 +955,121 @@ export const registerAudioRoomHandler = async (
     }
   );
 
-  // get ranked users
+  // update announcement
+  socket.on(
+    SocketAudioChannels.UpdateAudioAnnouncement,
+    ({ roomId, announcement }) => {
+      const isHost = audioRoomPolicy.ensureIsHost(roomId, userId);
+      if (isHost == false) return;
+      const room = audioRoom[roomId];
+      room.announcement = announcement;
+      socketResponse(io, SocketAudioChannels.UpdateAudioAnnouncement, roomId, {
+        success: true,
+        message: "Successfully updated announcement",
+        data: {
+          announcement: room.announcement,
+        },
+      });
+    }
+  );
+
+  // set privacy status
+  socket.on(
+    SocketAudioChannels.SetAudioPrivacyStatus,
+    ({ roomId, password }) => {
+      const isHost = audioRoomPolicy.ensureIsHost(roomId, userId);
+      if (isHost == false) return;
+      const room = audioRoom[roomId];
+      // if room is locked -> unlocking it
+      if (room.isLocked) {
+        if (room.password !== password) {
+          socketResponse(io, SocketChannels.error, socket.id, {
+            success: false,
+            message: "wrong password, room remains private",
+            data: {
+              password: password,
+            },
+          });
+          return;
+        }
+        room.isLocked = false;
+        room.password = undefined;
+      }
+      // if room is unlocked -> locking it
+      else {
+        room.isLocked = true;
+        room.password = password;
+      }
+
+      socketResponse(io, SocketAudioChannels.SetAudioPrivacyStatus, socket.id, {
+        success: true,
+        message: `Successfully updated privacy status`,
+        data: {
+          isLocked: room.isLocked,
+        },
+      });
+    }
+  );
+
+  // set chat privacy
+  socket.on(
+    SocketAudioChannels.SetAudioChatPrivacyStatus,
+    ({ roomId, privacyType }) => {
+      const isHost = audioRoomPolicy.ensureIsHost(roomId, userId);
+      const rightPrivacyType =
+        audioRoomPolicy.ensureRightChatPrivacyType(privacyType);
+      if (rightPrivacyType == false) return;
+      if (isHost == false) return;
+      const room = audioRoom[roomId];
+      room.chatPrivacy = privacyType;
+      socketResponse(
+        io,
+        SocketAudioChannels.SetAudioChatPrivacyStatus,
+        roomId,
+        {
+          success: true,
+          message: "Successfully updated chat privacy status",
+          data: {
+            chatPrivacy: room.chatPrivacy,
+          },
+        }
+      );
+    }
+  );
+
+  // imvite user to seat
+  socket.on(
+    SocketAudioChannels.InviteUserToSeat,
+    async ({ roomId, seatKey, targetId }) => {
+      const isHost = audioRoomPolicy.ensureIsHost(roomId, userId);
+      const joinSeat = await audioRoomPolicy.ensureJoinSeat(
+        roomId,
+        targetId,
+        seatKey
+      );
+      if (joinSeat == false) return;
+      if (isHost == false) return;
+
+      const targetSocketId = onlineUsers.get(targetId);
+
+      socketResponse(
+        io,
+        SocketAudioChannels.AudioSeatInvitations,
+        targetSocketId ?? roomId,
+        {
+          success: true,
+          message: `you have been invited to ${seatKey}`,
+          data: {
+            seatKey,
+            targetId,
+          },
+        }
+      );
+      socketResponse(io, SocketAudioChannels.InviteUserToSeat, socket.id, {
+        success: true,
+        message: `Successfully invited user to ${seatKey}`,
+        data: { seatKey, targetId },
+      });
+    }
+  ); 
 };

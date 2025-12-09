@@ -77,6 +77,7 @@ export interface IAudioSeats {
 export interface IAudioRoomData {
   title: string;
   numberOfSeats: number;
+  announcement: string; 
   currentRocketMilestone: number; // fuel needed to fire the rocket
   currentRocketFuel: number; // current fuel level
   roomId: string;
@@ -93,12 +94,17 @@ export interface IAudioRoomData {
   bannedUsers: Set<string>;
   mutedUsers: Set<string>;
   ranking: IMemberDetails[];
+  chatPrivacy: string | string[];
+  password?: string; // for room entry 
+  isLocked: boolean; // private or public 
+  hostId: string; // to track the host
 }
 
 
 export interface ISearializedAudioRoom {
   title: string;
   numberOfSeats: number;
+  announcement: string;
   currentRocketMilestone: number;
   currentRocketFuel: number;
   fuelPercentage: number;
@@ -116,7 +122,9 @@ export interface ISearializedAudioRoom {
   bannedUsers: string[];
   mutedUsers: string[];
   ranking: IMemberDetails[];
+  chatPrivacy: string | string[];
   duration: number;
+  isLocked: boolean;
 }
 
 
