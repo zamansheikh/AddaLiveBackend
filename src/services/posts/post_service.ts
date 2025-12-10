@@ -178,13 +178,7 @@ export default class PostService implements IPostService {
 
         if (reaction && reaction.length > 0) {
             const reactionID = reaction[0]._id as string;
-            if (reaction[0].reactionType == reaction_type) {
-                const deletedReaction = this.CommentReactionRepository.deleteReactionByID(reactionID);
-                if (!deletedReaction) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "deleting the reaction failed");
-                const comment = await this.CommentRepository.updateCount(commentId, { reactionsCount: -1 });
-                return comment;
-            }
-
+          
             const updatedReaction = await this.CommentReactionRepository.findPostReactopnByIdAndUpdate(reactionID, { reaction_type });
             if (!updatedReaction) throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "updating the reaction failed");
             return updatedReaction;

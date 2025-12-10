@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import AppError from "../errors/app_errors";
 import BlockedEmailModel from "../../models/security/blocked_emails";
 import { BlockedEmailRepository } from "../../repository/security/blockedEmailRepository";
+import { blockedEmailRepositoryObject } from "../Utils/constant_repositories";
 
 // Define the shape of the JWT payload
 interface JwtPayload {
@@ -27,12 +28,8 @@ const secret = process.env.JWT_SECRET || "jwt_secret";
 // Higher-order middleware to accept roles
 export const authenticate =
   (allowedRoles: string[] = []) =>
-  (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     // repository to check blocked emails
-    // const blockedEmailRepository = new BlockedEmailRepository(
-    //   BlockedEmailModel
-    // );
-
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -50,9 +47,13 @@ export const authenticate =
       const decoded = jwt.verify(token, secret) as JwtPayload;
       req.user = decoded;
 
-
-      // If specific roles are required, check them
+      // check if the token is banned
+      const isBlocekd = await blockedEmailRepositoryObject.checkBlockedEmail(
+        decoded.id
+      );
+    
       if (allowedRoles.length > 0) {
+        // If specific roles are required, check them
         if (!decoded.role || !allowedRoles.includes(decoded.role)) {
           return next(
             new AppError(

@@ -84,23 +84,7 @@ export default class ReelsService implements IReelService {
             reactedBy: userID,
         });
 
-        // If reaction exists
-        if (existingReactions && existingReactions.length > 0) {
-            const existingReaction = existingReactions[0];
-            const id = existingReaction._id;
-
-            // Toggle off if same reaction type
-            if (existingReaction.reactionType === reaction_type) {
-                const delReaction = await this.ReactionRepository.deleteReactionByID(id as string);
-                if (delReaction) return await this.ReelRepository.updateCount({
-                    reelId,
-                    count: -1,
-                    isReaction: true,
-                });
-
-                throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Something went wrong while unliking the post");
-            }
-
+      
             // Update to new reaction type
             return await this.ReactionRepository.findReelReactopnByIdAndUpdate(id as string, { reaction_type });
         }
