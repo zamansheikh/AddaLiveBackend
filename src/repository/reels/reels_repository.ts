@@ -36,7 +36,25 @@ export default class ReelsRepository implements IReelRepository {
                         as: "userInfo"
                     }
                 },
-        
+                {
+                    $lookup: {
+                        from: "reels_reactions",
+                        let: { reelId: "$_id", userId: userId },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $and: [
+                                            { $eq: ["$reactedTo", "$$reelId"] },
+                                            { $eq: ["$reactedBy", "$$userId"] }
+                                        ]
+                                    }
+                                }
+                            }
+                        ],
+                        as: "myReaction"
+                    }
+                },
                 {
                     $unwind: {
                         path: "$myReaction",

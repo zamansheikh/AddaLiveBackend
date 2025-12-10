@@ -51,7 +51,14 @@ export const authenticate =
       const isBlocekd = await blockedEmailRepositoryObject.checkBlockedEmail(
         decoded.id
       );
-    
+      if (isBlocekd) {
+        return next(
+            new AppError(
+              StatusCodes.FORBIDDEN,
+              "Access denied: You are banned"
+            )
+          );
+      }
       if (allowedRoles.length > 0) {
         // If specific roles are required, check them
         if (!decoded.role || !allowedRoles.includes(decoded.role)) {
