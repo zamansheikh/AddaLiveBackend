@@ -256,7 +256,7 @@ export async function checkPremiumItem(
   )
     throw new AppError(StatusCodes.CONFLICT, "itemId is not populated");
   const item = equipedBuccket[0].itemId as IStoreItem;
-  if (item.isPremium) return true;
+  if (item.isPremium && item.name == "SVIP") return true;
   return false;
 }
 
