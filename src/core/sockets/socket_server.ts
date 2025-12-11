@@ -522,6 +522,7 @@ export default class SocketServer {
           duration: Math.floor(
             (new Date().getTime() - roomData.createdAt.getTime()) / 1000
           ),
+          isHostPresent: roomData.isHostPresent,
           isLocked: roomData.isLocked,
         };
         allRoomSerialized.push(obj);
@@ -565,8 +566,10 @@ export default class SocketServer {
           member: {},
         },
       });
-      roomData.hostDetails = undefined;
+      
+      roomData.isHostPresent = false;
       roomData.members.delete(userId);
+
       const socketId = this.onlineUsers.get(userId);
       if (socketId) {
         const getSocket = this.io.sockets.sockets.get(socketId);

@@ -96,6 +96,7 @@ export interface IAudioRoomData {
   ranking: IMemberDetails[];
   chatPrivacy: string | string[];
   password?: string; // for room entry 
+  isHostPresent: boolean, // to check if the host is present in the room
   isLocked: boolean; // private or public 
   hostId: string; // to track the host
 }
@@ -123,6 +124,7 @@ export interface ISearializedAudioRoom {
   mutedUsers: string[];
   ranking: IMemberDetails[];
   chatPrivacy: string | string[];
+  isHostPresent: boolean;
   duration: number;
   isLocked: boolean;
 }

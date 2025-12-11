@@ -122,6 +122,8 @@ export class AudioRoomPolicy {
       return false;
     }
 
+    if(room.hostId == userId) return true;
+
     if (room.bannedUsers.has(userId)) {
       socketResponse(this.io, SocketChannels.error, this.socket.id, {
         success: false,

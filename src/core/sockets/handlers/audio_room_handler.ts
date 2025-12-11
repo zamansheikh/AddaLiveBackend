@@ -155,6 +155,7 @@ export const registerAudioRoomHandler = async (
         chatPrivacy: "any",
         isLocked: false,
         hostId: userId,
+        isHostPresent: true,
       };
       audioRoom[roomId] = createdRoom;
 
@@ -194,6 +195,7 @@ export const registerAudioRoomHandler = async (
         duration: Math.floor(
           (new Date().getTime() - createdRoom.createdAt.getTime()) / 1000
         ),
+        isHostPresent: createdRoom.isHostPresent,
         isLocked: createdRoom.isLocked,
       };
 
@@ -229,6 +231,7 @@ export const registerAudioRoomHandler = async (
           duration: Math.floor(
             (new Date().getTime() - roomData.createdAt.getTime()) / 1000
           ),
+          isHostPresent: roomData.isHostPresent,
           isLocked: roomData.isLocked,
         };
         allRoomSerialized.push(obj);
@@ -281,8 +284,10 @@ export const registerAudioRoomHandler = async (
         duration: Math.floor(
           (new Date().getTime() - roomData.createdAt.getTime()) / 1000
         ),
+        isHostPresent: roomData.isHostPresent,
         isLocked: roomData.isLocked,
       };
+
       serializedRooms.push(obj);
     }
 
@@ -326,6 +331,7 @@ export const registerAudioRoomHandler = async (
       duration: Math.floor(
         (new Date().getTime() - room.createdAt.getTime()) / 1000
       ),
+      isHostPresent: room.isHostPresent,
       isLocked: room.isLocked,
     };
     socketResponse(io, SocketAudioChannels.RoomDetails, socket.id, {
@@ -360,6 +366,7 @@ export const registerAudioRoomHandler = async (
       isMuted: false,
     };
     room.members.add(userId);
+    if(isHost) room.isHostPresent = true;
     if (!isHost) room.membersDetails.push(membersDetails);
     if (!isHost) room.ranking.push(membersDetails);
     socket.join(roomId);
@@ -668,6 +675,7 @@ export const registerAudioRoomHandler = async (
       duration: Math.floor(
         (new Date().getTime() - room.createdAt.getTime()) / 1000
       ),
+      isHostPresent: room.isHostPresent,
       isLocked: room.isLocked,
     };
 
@@ -952,6 +960,7 @@ export const registerAudioRoomHandler = async (
         duration: Math.floor(
           (new Date().getTime() - room.createdAt.getTime()) / 1000
         ),
+        isHostPresent: room.isHostPresent,
         isLocked: room.isLocked,
       };
       socketResponse(io, SocketAudioChannels.RoomDetails, socket.id, {
@@ -1084,7 +1093,10 @@ export const registerAudioRoomHandler = async (
   socket.on(SocketAudioChannels.AudioRoomSearch, ({ title }) => {
     const allRoomSerialized: ISearializedAudioRoom[] = [];
     for (const [room, roomData] of Object.entries(audioRoom)) {
-      if (roomData.roomId.toLowerCase().includes(title.toLowerCase())) {
+      if (
+        roomData.roomId.toLowerCase().includes(title.toLowerCase()) ||
+        roomData.title.toLowerCase().includes(title.toLowerCase())
+      ) {
         const obj: ISearializedAudioRoom = {
           title: roomData.title,
           numberOfSeats: roomData.numberOfSeats,
@@ -1114,6 +1126,55 @@ export const registerAudioRoomHandler = async (
           duration: Math.floor(
             (new Date().getTime() - roomData.createdAt.getTime()) / 1000
           ),
+          isHostPresent: roomData.isHostPresent,
+          isLocked: roomData.isLocked,
+        };
+        allRoomSerialized.push(obj);
+      }
+    }
+
+    socketResponse(io, SocketAudioChannels.AudioRoomSearch, socket.id, {
+      success: true,
+      message: "Successfully fetched all audio rooms",
+      data: allRoomSerialized,
+    });
+  });
+
+  // get my audio room
+  socket.on(SocketAudioChannels.GetMyAudioRoom, () => {
+    const allRoomSerialized: ISearializedAudioRoom[] = [];
+    for (const [room, roomData] of Object.entries(audioRoom)) {
+      if (roomData.hostDetails?._id === userId) {
+        const obj: ISearializedAudioRoom = {
+          title: roomData.title,
+          numberOfSeats: roomData.numberOfSeats,
+          announcement: roomData.announcement,
+          currentRocketMilestone: roomData.currentRocketMilestone,
+          currentRocketFuel: roomData.currentRocketFuel,
+          fuelPercentage:
+            roomData.currentRocketMilestone === 0
+              ? 0
+              : (roomData.currentRocketFuel / roomData.currentRocketMilestone) *
+                100,
+          roomId: roomData.roomId,
+          hostGifts: roomData.hostGifts,
+          hostBonus: roomData.hostBonus,
+          hostDetails: roomData.hostDetails,
+          adminDetails: roomData.adminDetails,
+          premiumSeat: roomData.premiumSeat,
+          seats: roomData.seats,
+          messages: roomData.messages,
+          createdAt: roomData.createdAt,
+          members: Array.from(roomData.members),
+          membersDetails: roomData.membersDetails,
+          bannedUsers: Array.from(roomData.bannedUsers),
+          mutedUsers: Array.from(roomData.mutedUsers),
+          ranking: roomData.ranking,
+          chatPrivacy: roomData.chatPrivacy,
+          duration: Math.floor(
+            (new Date().getTime() - roomData.createdAt.getTime()) / 1000
+          ),
+          isHostPresent: roomData.isHostPresent,
           isLocked: roomData.isLocked,
         };
         allRoomSerialized.push(obj);
