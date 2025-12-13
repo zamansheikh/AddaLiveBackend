@@ -1181,10 +1181,10 @@ export const registerAudioRoomHandler = async (
       }
     }
 
-    socketResponse(io, SocketAudioChannels.AudioRoomSearch, socket.id, {
+    socketResponse(io, SocketAudioChannels.GetMyAudioRoom, socket.id, {
       success: true,
-      message: "Successfully fetched all audio rooms",
-      data: allRoomSerialized,
+      message: "Successfully fetched your audio rooms",
+      data: allRoomSerialized[0],
     });
   });
 };
