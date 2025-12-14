@@ -403,7 +403,8 @@ export default class AuthService implements IAuthService {
           StatusCodes.BAD_REQUEST,
           "not enough coins to change name"
         );
-      await this.UserStatsRepository.updateCoins(id, -costToUpdate);
+      if (costToUpdate != 0)
+        await this.UserStatsRepository.updateCoins(id, -costToUpdate);
     }
     exisitingUser.name = name;
     exisitingUser.nameUpdateDate = new Date();
