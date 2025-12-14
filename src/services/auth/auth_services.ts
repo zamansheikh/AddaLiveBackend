@@ -54,11 +54,13 @@ import {
   checkPremiumItem,
   getEquipedItemObjects,
   getNextSalaryDate,
+  isTheDateFromThisMonth,
 } from "../../core/Utils/helper_functions";
 import { IRoomBonusRecords } from "../../models/room/bonus_records_model";
 import { IRoomBonusRecordsRepository } from "../../repository/room/room_bonus_records_repository";
 import { IRoomMessage } from "../../core/sockets/interface/socket_interface";
 import bcrypt from "bcrypt";
+import { IUpdateCostRepository } from "../../repository/admin/updateCostRepository";
 
 export default class AuthService implements IAuthService {
   UserRepository: IUserRepository;
@@ -81,6 +83,7 @@ export default class AuthService implements IAuthService {
   BucketRepository: IMyBucketRepository;
   CategoryRepository: IStoreCategoryRepository;
   RoomBonusRecordsRepository: IRoomBonusRecordsRepository;
+  UpdateCostRepository: IUpdateCostRepository;
 
   constructor(
     UserRepository: IUserRepository,
@@ -102,7 +105,8 @@ export default class AuthService implements IAuthService {
     PortalUserRepository: IPortalUserRepository,
     BucketRepository: IMyBucketRepository,
     CategoryRepository: IStoreCategoryRepository,
-    RoomBonusRecords: IRoomBonusRecordsRepository
+    RoomBonusRecords: IRoomBonusRecordsRepository,
+    UpdateCostRepository: IUpdateCostRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
@@ -124,6 +128,7 @@ export default class AuthService implements IAuthService {
     this.BucketRepository = BucketRepository;
     this.CategoryRepository = CategoryRepository;
     this.RoomBonusRecordsRepository = RoomBonusRecords;
+    this.UpdateCostRepository = UpdateCostRepository;
   }
 
   async registerWithGoogle(UserData: IUserEntity) {
@@ -339,6 +344,11 @@ export default class AuthService implements IAuthService {
   }) {
     const user = await this.UserRepository.findUserById(id);
     if (!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
+    if (profileData["name"])
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "name cannot be changed from here!"
+      );
     const updatePayload: Record<string, any> = {};
     let profilePicUrl;
     if (avatar) {
@@ -363,10 +373,42 @@ export default class AuthService implements IAuthService {
         updatePayload[key] = value;
       }
     }
+
     if (Object.keys(updatePayload).length === 0) {
       throw new Error("No valid data provided for update.");
     }
     return this.UserRepository.findUserByIdAndUpdate(id, updatePayload);
+  }
+
+  async updateName(id: string, name: string): Promise<IUserDocument> {
+    const exisitingUser = await this.UserRepository.findUserById(id);
+    const exisitngUserStats = await this.UserStatsRepository.getUserStats(id);
+
+    if (!exisitingUser)
+      throw new AppError(StatusCodes.NOT_FOUND, "user not found");
+    if (!exisitngUserStats)
+      throw new AppError(StatusCodes.NOT_FOUND, "user stats not found");
+    if (
+      exisitingUser.nameUpdateDate &&
+      isTheDateFromThisMonth(new Date(exisitingUser.nameUpdateDate))
+    ) {
+      const updateCostDocument =
+        await this.UpdateCostRepository.getUpdateCostDoucment();
+      let costToUpdate = 0;
+      if (updateCostDocument) {
+        costToUpdate = updateCostDocument.nameUpdateCost;
+      }
+      if (exisitngUserStats.coins! < costToUpdate)
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          "not enough coins to change name"
+        );
+      await this.UserStatsRepository.updateCoins(id, -costToUpdate);
+    }
+    exisitingUser.name = name;
+    exisitingUser.nameUpdateDate = new Date();
+    await exisitingUser.save();
+    return exisitingUser;
   }
 
   async setMyPassword(

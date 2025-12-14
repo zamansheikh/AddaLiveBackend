@@ -51,6 +51,8 @@ import RoomBonusRecordRepository from "../repository/room/room_bonus_records_rep
 import RoomBonusRecordsModel from "../models/room/bonus_records_model";
 import { DatabaseNames, UserRoles } from "../core/Utils/enums";
 import mongoose from "mongoose";
+import { UpdateCostRepository } from "../repository/admin/updateCostRepository";
+import { UpdateCostModel } from "../models/admin/update_cost_model";
 
 const router = express.Router();
 
@@ -84,6 +86,7 @@ const portalUserRepository = new PortalUserRepository(PortalUser);
 const roomBonousRepository = new RoomBonusRecordRepository(
   RoomBonusRecordsModel
 );
+const updateCostRepository = new UpdateCostRepository(UpdateCostModel);
 
 const authService = new AuthService(
   userRepository,
@@ -105,7 +108,8 @@ const authService = new AuthService(
   portalUserRepository,
   bucketRepository,
   categoryRepository,
-  roomBonousRepository
+  roomBonousRepository,
+  updateCostRepository
 );
 const authController = new AuthController(authService);
 
@@ -125,6 +129,9 @@ router.put(
   validateRequest(ProfileUpdateDto),
   authController.updateProfile
 );
+
+router.put("/update-name", authenticate(), authController.updateName);
+
 router.get("/user/:id", authenticate(), authController.getUserDetails);
 router
   .route("/my-profile")
@@ -178,8 +185,9 @@ router
   .post(authController.loginWithEmailPassword)
   .put(authenticate(), authController.setMyPassword);
 
-router.route("/verify-account").put(authenticate(), authController.verifyAccount);
-
+router
+  .route("/verify-account")
+  .put(authenticate(), authController.verifyAccount);
 
 router.route("/is-premium").get(authenticate(), authController.isPremiumUser);
 
@@ -200,9 +208,7 @@ router.route("/is-premium").get(authenticate(), authController.isPremiumUser);
 //     return res.status(200).json({
 //       message: `Successfully set 'verified' to false for ${updatePromises.length} users.`,
 //     });
-    
 
-    
 //   } catch (error: Error) {
 //     console.error("Error during batch userId update:", error);
 //     return res.status(500).json({
@@ -216,7 +222,7 @@ router.route("/is-premium").get(authenticate(), authController.isPremiumUser);
 
 // router.route("/set-6-digit").put(async (req: Request, res: Response) => {
 //   try {
-    
+
 //     const users = await User.find({}).sort({ _id: 1 });
 
 //     if (!users || users.length === 0) {
@@ -235,7 +241,6 @@ router.route("/is-premium").get(authenticate(), authController.isPremiumUser);
 //       }
 //     }
 
-   
 //     await Promise.all(updatePromises);
 
 //     return res.status(200).json({

@@ -16,6 +16,8 @@ import {
 import {
   validateblockUser,
   validateCreatePortalUserData,
+  validateFieldExistance,
+  validateNumber,
   validatePermissions,
   validatePromoteUserPermission,
 } from "../../core/Utils/helper_functions";
@@ -814,6 +816,58 @@ export default class AdminUserController {
       success: true,
       result: result,
       message: "Level tag updated successfully",
+    });
+  });
+
+  createUpdateCost = catchAsync(async (req: Request, res: Response) => {
+    const { nameUpdateCost } = req.body;
+    validateFieldExistance(nameUpdateCost, "nameUpdateCost"); 
+    validateNumber(nameUpdateCost, "nameUpdateCost"); 
+    const result = await this.AdminUserService.createNewUpdateCost({
+      nameUpdateCost: Number(nameUpdateCost)
+    });
+    sendResponse(res, {
+      statusCode: StatusCodes.CREATED,
+      success: true,
+      result: result,
+      message: "Update cost created successfully",
+    });
+  });
+
+  getUpdateCost = catchAsync(async (req: Request, res: Response) => {
+    const result = await this.AdminUserService.getUpdateCostDocument();
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Update cost retrieved successfully",
+    });
+  });
+
+  updateUpdateCost = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const {nameUpdateCost} = req.body;
+    validateFieldExistance(nameUpdateCost, "nameUpdateCost"); 
+    validateNumber(nameUpdateCost, "nameUpdateCost");
+    const result = await this.AdminUserService.updateUpdateCostDocument(id, {
+     nameUpdateCost: Number(nameUpdateCost)
+    });
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Update cost updated successfully",
+    });
+  });
+
+  deleteUpdateCost = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const result = await this.AdminUserService.deleteUpdateCostDocument(id);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Update cost deleted successfully",
     });
   });
 }

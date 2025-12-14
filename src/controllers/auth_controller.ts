@@ -12,7 +12,10 @@ import {
   WhoCanTextMe,
   WhoCanTextMeLevelTypes,
 } from "../core/Utils/enums";
-import { validateFieldExistance, validateWithdrawBonus } from "../core/Utils/helper_functions";
+import {
+  validateFieldExistance,
+  validateWithdrawBonus,
+} from "../core/Utils/helper_functions";
 import Stream from "stream";
 
 export default class AuthController {
@@ -41,6 +44,15 @@ export default class AuthController {
       avatar,
       coverPicture,
     });
+
+    sendResponseEnhanced(res, updatedUser);
+  });
+
+  updateName = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const { name } = req.body;
+    validateFieldExistance(name, "name");
+    const updatedUser = await this.authService.updateName(userId, name);
     sendResponseEnhanced(res, updatedUser);
   });
 
@@ -205,9 +217,8 @@ export default class AuthController {
       statusCode: StatusCodes.CREATED,
       success: true,
       result: newRequest,
-      message: "Request to join agency submitted successfully"
-    }
-    )
+      message: "Request to join agency submitted successfully",
+    });
   });
 
   agencyJoinRequestStatus = catchAsync(async (req: Request, res: Response) => {
@@ -218,14 +229,12 @@ export default class AuthController {
 
   agencyCancelRequest = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.user!;
-    const deletedRequest = await this.authService.agencyCancelRequest(
-      id,
-    );
+    const deletedRequest = await this.authService.agencyCancelRequest(id);
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
       result: deletedRequest,
-      message: "Request to join agency cancelled successfully"
+      message: "Request to join agency cancelled successfully",
     });
   });
 
@@ -236,28 +245,29 @@ export default class AuthController {
   });
 
   isPremiumUser = catchAsync(async (req: Request, res: Response) => {
-    const {id} = req.user!;
+    const { id } = req.user!;
     const isPremium = await this.authService.isPremiumUser(id);
-    sendResponseEnhanced(res, {isPremium});
+    sendResponseEnhanced(res, { isPremium });
   });
 
   loginWithEmailPassword = catchAsync(async (req: Request, res: Response) => {
     const { email, password } = req.body;
     validateFieldExistance(email, "email");
     validateFieldExistance(password, "password");
-    const user = await this.authService.loginWithEmailPassword(
-      email,
-      password,
-    );
+    const user = await this.authService.loginWithEmailPassword(email, password);
     sendResponseEnhanced(res, user);
   });
 
   verifyAccount = catchAsync(async (req: Request, res: Response) => {
-    const {id} = req.user!;
-    const {phoneNumber, password} = req.body;
+    const { id } = req.user!;
+    const { phoneNumber, password } = req.body;
     validateFieldExistance(phoneNumber, "phoneNumber");
     validateFieldExistance(password, "password");
-    const user = await this.authService.verifyAccount(id, phoneNumber, password);
+    const user = await this.authService.verifyAccount(
+      id,
+      phoneNumber,
+      password
+    );
     sendResponseEnhanced(res, user);
   });
 
@@ -266,7 +276,11 @@ export default class AuthController {
     const { password, newPassword } = req.body;
     validateFieldExistance(password, "password");
     validateFieldExistance(newPassword, "newPassword");
-    const user = await this.authService.setMyPassword(id, password, newPassword);
+    const user = await this.authService.setMyPassword(
+      id,
+      password,
+      newPassword
+    );
     sendResponseEnhanced(res, user);
   });
 }

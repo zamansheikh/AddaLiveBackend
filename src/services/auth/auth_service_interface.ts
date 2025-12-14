@@ -41,6 +41,7 @@ export interface IAuthService {
     avatar?: Express.Multer.File;
     coverPicture?: Express.Multer.File;
   }): Promise<IUserDocument | null>;
+  updateName(id: string, name: string): Promise<IUserDocument>;
   setMyPassword(id: string, password: string, newPassword: string): Promise<IUserDocument>;
   giftUser({
     targetUserIds,

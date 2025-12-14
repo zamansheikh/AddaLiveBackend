@@ -211,6 +211,14 @@ export function validateFieldExistance(filed: any, fieldName: string) {
     throw new AppError(StatusCodes.BAD_REQUEST, `${fieldName} is required`);
 }
 
+export function validateNumber(number: any, fieldName: string) {
+  if (isNaN(Number(number)))
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      `${fieldName} must be a number`
+    );
+}
+
 export async function getEquipedItemObjects(
   repository: IMyBucketRepository,
   catRepository: IStoreCategoryRepository,
@@ -379,19 +387,25 @@ export function getAudioUserSeat(
   if (
     !isEmptyObject(roomData.premiumSeat.member) &&
     (roomData.premiumSeat.member as IMemberDetails)._id == userId
-  ){
-    return AudioSeatTypes.Premium; 
+  ) {
+    return AudioSeatTypes.Premium;
   }
-  if(roomData.hostDetails?._id == userId) return AudioSeatTypes.Host;
+  if (roomData.hostDetails?._id == userId) return AudioSeatTypes.Host;
   for (const [seatKey, seat] of Object.entries(roomData.seats)) {
     if (
       !isEmptyObject(seat.member) &&
       (seat.member as IMemberDetails)._id == userId
     ) {
-     return seatKey;
+      return seatKey;
     }
   }
   return AudioSeatTypes.Regular;
 }
 
-
+export function isTheDateFromThisMonth(date: Date): boolean {
+  const today = new Date();
+  return (
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  );
+}

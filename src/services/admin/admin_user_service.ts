@@ -60,6 +60,8 @@ import {
 import { ILevelTagBgRepository } from "../../repository/users/level_tag_bg_repository";
 import { IPoster, IPosterDocument } from "../../models/banner/posterModel";
 import { IPosterRepository } from "../../repository/banners/posterRepository";
+import { IUpdateCostRepository } from "../../repository/admin/updateCostRepository";
+import { IUpdateCost, IUpdateCostDocument } from "../../models/admin/update_cost_model";
 
 export interface IAdminUserService {
   loginAdmin(credentials: {
@@ -206,6 +208,12 @@ export interface IAdminUserService {
     tag?: Express.Multer.File,
     bg?: Express.Multer.File
   ): Promise<ILevelTagBgDocument>;
+  createNewUpdateCost(
+    data: IUpdateCost
+  ): Promise<IUpdateCostDocument>;
+  getUpdateCostDocument(): Promise<IUpdateCostDocument>;
+  updateUpdateCostDocument(id: string, data: Partial<IUpdateCost>): Promise<IUpdateCostDocument>;
+  deleteUpdateCostDocument(id: string): Promise<IUpdateCostDocument>;
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -221,6 +229,7 @@ export default class AdminUserService implements IAdminUserService {
   AgencyWithdrawRepository: IAgencyWithdrawRepository;
   LevelTagBgRepository: ILevelTagBgRepository;
   PosterRepository: IPosterRepository;
+  UpdateCostRepository: IUpdateCostRepository;
 
   constructor(
     UserRepository: IUserRepository,
@@ -234,7 +243,8 @@ export default class AdminUserService implements IAdminUserService {
     CoinHistoryRepository: ICoinHistoryRepository,
     AgencyWithdrawRepository: IAgencyWithdrawRepository,
     LevelTagBgRepository: ILevelTagBgRepository,
-    PosterRepository: IPosterRepository
+    PosterRepository: IPosterRepository,
+    UpdateCostRepository: IUpdateCostRepository
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
@@ -248,6 +258,7 @@ export default class AdminUserService implements IAdminUserService {
     this.AgencyWithdrawRepository = AgencyWithdrawRepository;
     this.LevelTagBgRepository = LevelTagBgRepository;
     this.PosterRepository = PosterRepository;
+    this.UpdateCostRepository = UpdateCostRepository;
   }
 
   async loginAdmin(credentials: {
@@ -1258,5 +1269,55 @@ export default class AdminUserService implements IAdminUserService {
         "Failed to update level tag bg"
       );
     return updatedLevelTagBg;
+  }
+
+
+  async createNewUpdateCost(
+    data: IUpdateCost
+  ): Promise<IUpdateCostDocument> {
+    const existingDoc = await this.UpdateCostRepository.getUpdateCostDoucment();
+    if (existingDoc)
+      throw new AppError(
+        StatusCodes.CONFLICT,
+        "Update cost document already exists. Please update the existing one."
+      );
+    const newDoc = await this.UpdateCostRepository.createUpdateCost(data);
+    return newDoc;
+  }
+
+  async getUpdateCostDocument(): Promise<IUpdateCostDocument> {
+    const doc = await this.UpdateCostRepository.getUpdateCostDoucment();
+    if (!doc)
+      throw new AppError(
+        StatusCodes.NOT_FOUND,
+        "Update cost document not found."
+      );
+    return doc;
+  }
+
+  async updateUpdateCostDocument(
+    id: string,
+    data: Partial<IUpdateCost>
+  ): Promise<IUpdateCostDocument> {
+    const updatedDoc = await this.UpdateCostRepository.updateUpdateCost(
+      id,
+      data
+    );
+    if (!updatedDoc)
+      throw new AppError(
+        StatusCodes.NOT_FOUND,
+        "Update cost document not found."
+      );
+    return updatedDoc;
+  }
+
+  async deleteUpdateCostDocument(id: string): Promise<IUpdateCostDocument> {
+    const deletedDoc = await this.UpdateCostRepository.deleteUpdateCost(id);
+    if (!deletedDoc)
+      throw new AppError(
+        StatusCodes.NOT_FOUND,
+        "Update cost document not found."
+      );
+    return deletedDoc;
   }
 }

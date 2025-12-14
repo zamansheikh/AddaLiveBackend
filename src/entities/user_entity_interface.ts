@@ -27,6 +27,7 @@ export interface IUserEntity {
     resellerHistory?: any[];
     avatar?: Avatar;
     name?: string;
+    nameUpdateDate?: Date;
     firstName?: string;
     lastName?: string;
     gender?: "male" | "female" | "other";

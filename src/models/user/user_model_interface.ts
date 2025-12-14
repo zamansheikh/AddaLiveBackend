@@ -19,6 +19,7 @@ export interface UserData {
     currentLevelBackground?: string;
     coverPicture: string;
     name?: string;
+    nameUpdateDate?: Date;
     firstName?: string;
     lastName?: string;
     gender?: Gender;

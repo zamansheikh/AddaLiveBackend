@@ -46,6 +46,7 @@ export enum DatabaseNames {
   BlockDocs = "block_docs",
   GiftAudioRoomRockets = 'gift_audio_room_rockets',
   BlockedEmails = 'blocked_emails',
+  UpdateCost = 'update_cost',
   
 }
 

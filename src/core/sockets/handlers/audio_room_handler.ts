@@ -1144,7 +1144,6 @@ export const registerAudioRoomHandler = async (
   socket.on(SocketAudioChannels.GetMyAudioRoom, () => {
     const allRoomSerialized: ISearializedAudioRoom[] = [];
     for (const [room, roomData] of Object.entries(audioRoom)) {
-      console.log(roomData.hostId, userId);
       if (roomData.hostId.toString() == userId.toString()) {
         const obj: ISearializedAudioRoom = {
           title: roomData.title,

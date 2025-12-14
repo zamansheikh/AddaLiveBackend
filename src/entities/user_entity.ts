@@ -16,6 +16,7 @@ class UserEntity {
     resellerHistory: any[];
     avatar?: Avatar;
     name?: string;
+    nameUpdateDate?: Date;
     firstName?: string;
     lastName?: string;
     gender?: "male" | "female" | "other";
@@ -49,6 +50,7 @@ class UserEntity {
         this.resellerHistory = data.resellerHistory || [];
         this.avatar = data.avatar;
         this.name = data.name;
+        this.nameUpdateDate = data.nameUpdateDate;
         this.firstName = data.firstName;
         this.lastName = data.lastName;
         this.gender = data.gender;
@@ -88,6 +90,9 @@ class UserEntity {
             resellerHistory: json.resellerHistory,
             avatar: json.avatar,
             name: json.name,
+            nameUpdateDate: json.nameUpdateDate
+                ? new Date(json.nameUpdateDate)
+                : undefined,
             firstName: json.firstName,
             lastName: json.lastName,
             gender: json.gender,

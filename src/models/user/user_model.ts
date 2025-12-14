@@ -31,6 +31,7 @@ const userSchema = new mongoose.Schema<IUserDocument>(
     currentLevelBackground: { type: String },
     coverPicture: { type: String },
     name: String,
+    nameUpdateDate: { type: Date },
     firstName: String,
     lastName: String,
     gender: { type: String, enum: Gender },

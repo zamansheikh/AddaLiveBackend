@@ -32,6 +32,8 @@ import LevelTagBgRepository from "../repository/users/level_tag_bg_repository";
 import LevelTagBgModel from "../models/user/level_tag_bg_model";
 import PosterRepository from "../repository/banners/posterRepository";
 import PosterModel from "../models/banner/posterModel";
+import { UpdateCostRepository } from "../repository/admin/updateCostRepository";
+import { UpdateCostModel } from "../models/admin/update_cost_model";
 
 const router = express.Router();
 
@@ -50,6 +52,7 @@ const agencyWithdrawRepository = new AgencyWithdrawRepository(
 const tagBgRepository = new LevelTagBgRepository(LevelTagBgModel);
 
 const posterRepository = new PosterRepository(PosterModel);
+const udpateCostRepository = new UpdateCostRepository(UpdateCostModel);
 
 const adminUserService = new AdminUserService(
   userRepository,
@@ -63,7 +66,8 @@ const adminUserService = new AdminUserService(
   coinHistoryRepository,
   agencyWithdrawRepository,
   tagBgRepository,
-  posterRepository
+  posterRepository,
+  udpateCostRepository
 );
 const adminUserController = new AdminUserController(adminUserService);
 
@@ -298,6 +302,25 @@ router.route("/level-tags/:id").put(
   ]),
   adminUserController.updateLeveltags
 );
+
+router
+  .route("/update-cost")
+  .post(
+    authenticate([UserRoles.Admin]),
+    adminUserController.createUpdateCost
+  )
+  .get(authenticate([UserRoles.Admin]), adminUserController.getUpdateCost);
+
+router
+  .route("/update-cost/:id")
+  .put(
+    authenticate([UserRoles.Admin]),
+    adminUserController.updateUpdateCost
+  )
+  .delete(
+    authenticate([UserRoles.Admin]),
+    adminUserController.deleteUpdateCost
+  );
 
 
 export default router;
