@@ -61,7 +61,10 @@ import { ILevelTagBgRepository } from "../../repository/users/level_tag_bg_repos
 import { IPoster, IPosterDocument } from "../../models/banner/posterModel";
 import { IPosterRepository } from "../../repository/banners/posterRepository";
 import { IUpdateCostRepository } from "../../repository/admin/updateCostRepository";
-import { IUpdateCost, IUpdateCostDocument } from "../../models/admin/update_cost_model";
+import {
+  IUpdateCost,
+  IUpdateCostDocument,
+} from "../../models/admin/update_cost_model";
 
 export interface IAdminUserService {
   loginAdmin(credentials: {
@@ -208,12 +211,17 @@ export interface IAdminUserService {
     tag?: Express.Multer.File,
     bg?: Express.Multer.File
   ): Promise<ILevelTagBgDocument>;
-  createNewUpdateCost(
-    data: IUpdateCost
-  ): Promise<IUpdateCostDocument>;
+  createNewUpdateCost(data: IUpdateCost): Promise<IUpdateCostDocument>;
   getUpdateCostDocument(): Promise<IUpdateCostDocument>;
-  updateUpdateCostDocument(id: string, data: Partial<IUpdateCost>): Promise<IUpdateCostDocument>;
+  updateUpdateCostDocument(
+    id: string,
+    data: Partial<IUpdateCost>
+  ): Promise<IUpdateCostDocument>;
   deleteUpdateCostDocument(id: string): Promise<IUpdateCostDocument>;
+  getBannedUsers(query: Record<string, unknown>): Promise<{
+    pagination: IPagination;
+    users: IUserDocument[];
+  }>;
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -824,8 +832,11 @@ export default class AdminUserService implements IAdminUserService {
       diamondCount: salary.diamondCount,
       type: salary.type,
     });
-    if(existingSalary && existingSalary.length > 0)
-      throw new AppError(StatusCodes.CONFLICT, "Salary already exists, try editing the exisiting one");
+    if (existingSalary && existingSalary.length > 0)
+      throw new AppError(
+        StatusCodes.CONFLICT,
+        "Salary already exists, try editing the exisiting one"
+      );
     const newSalary = await this.SalaryRepository.createSalary(salary);
     return newSalary;
   }
@@ -886,9 +897,8 @@ export default class AdminUserService implements IAdminUserService {
         const agencyAcc = await this.PortalUserRepository.getPortalUserById(
           agency.agencyId
         );
-        if (!agencyAcc)
-          continue;
-          // throw new AppError(StatusCodes.NOT_FOUND, "Agency not found");
+        if (!agencyAcc) continue;
+        // throw new AppError(StatusCodes.NOT_FOUND, "Agency not found");
         if (
           agencyAcc?.updatedAt.getDate() == 16 ||
           agencyAcc?.updatedAt.getDate() == 1
@@ -1271,10 +1281,7 @@ export default class AdminUserService implements IAdminUserService {
     return updatedLevelTagBg;
   }
 
-
-  async createNewUpdateCost(
-    data: IUpdateCost
-  ): Promise<IUpdateCostDocument> {
+  async createNewUpdateCost(data: IUpdateCost): Promise<IUpdateCostDocument> {
     const existingDoc = await this.UpdateCostRepository.getUpdateCostDoucment();
     if (existingDoc)
       throw new AppError(
@@ -1319,5 +1326,12 @@ export default class AdminUserService implements IAdminUserService {
         "Update cost document not found."
       );
     return deletedDoc;
+  }
+
+  async getBannedUsers(
+    query: Record<string, unknown>
+  ): Promise<{ pagination: IPagination; users: IUserDocument[] }> {
+    const blockedUsers = await this.UserRepository.getBannedUsers(query);
+    return blockedUsers;
   }
 }

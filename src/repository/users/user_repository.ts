@@ -5,7 +5,7 @@ import {
   IUserModel,
   UserData,
 } from "../../models/user/user_model_interface";
-import { DatabaseNames, UserRoles } from "../../core/Utils/enums";
+import { ActivityZoneState, DatabaseNames, UserRoles } from "../../core/Utils/enums";
 import Friendship from "../../models/friendship/friendship_model";
 import { IPagination, QueryBuilder } from "../../core/Utils/query_builder";
 import AppError from "../../core/errors/app_errors";
@@ -79,6 +79,10 @@ export interface IUserRepository {
   isPhoneUnique(phoneNumber: string): Promise<boolean>;
 
   getLatestUserId(): Promise<number>;
+  getBannedUsers(query: Record<string, unknown>): Promise<{
+    pagination: IPagination;
+    users: IUserDocument[];
+  }>;
 }
 
 export default class UserRepository implements IUserRepository {
@@ -120,12 +124,12 @@ export default class UserRepository implements IUserRepository {
     const isNumeric =
       !isNaN(identifier) && identifier !== null && identifier !== undefined;
     const numericIdentifier = isNumeric ? Number(identifier) : undefined;
-    
+
     let orConditions = [];
     orConditions.push(
       { email: identifier }, // String field
       { uid: identifier },
-      {phone: identifier}
+      { phone: identifier }
     );
     if (isNumeric) {
       orConditions.push(
@@ -437,5 +441,24 @@ export default class UserRepository implements IUserRepository {
       .exec(); // Execute the query
 
     return latestUser ? latestUser.userId + 1 : 100001;
+  }
+
+  async getBannedUsers(
+    query: Record<string, unknown>
+  ): Promise<{ pagination: IPagination; users: IUserDocument[] }> {
+    const qb = new QueryBuilder(this.UserModel, query);
+    const queryCriteria = {
+      $or: [
+        { "activityZone.zone": ActivityZoneState.permanentBlock },
+        {
+          "activityZone.zone": ActivityZoneState.temporaryBlock,
+          "activityZone.expire": { $gt: new Date().toISOString() },
+        },
+      ],
+    };
+    const res = qb.find(queryCriteria);
+    const users = await res.paginate().sort().exec();
+    const pagination = await res.countTotal();
+    return { users, pagination };
   }
 }

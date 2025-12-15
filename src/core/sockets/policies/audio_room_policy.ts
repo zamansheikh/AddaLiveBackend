@@ -114,13 +114,13 @@ export class AudioRoomPolicy {
     if (ensureRoomExists == false) return false;
 
     const room = this.hostestRooms[roomId];
-    if (room.members.has(userId)) {
-      socketResponse(this.io, SocketChannels.error, this.socket.id, {
-        success: false,
-        message: "You are already in this room",
-      });
-      return false;
-    }
+    // if (room.members.has(userId)) {
+    //   socketResponse(this.io, SocketChannels.error, this.socket.id, {
+    //     success: false,
+    //     message: "You are already in this room",
+    //   });
+    //   return false;
+    // }
 
     if(room.hostId == userId) return true;
 
@@ -267,12 +267,12 @@ export class AudioRoomPolicy {
       return false;
     }
     const ensureSeatAvailable = this.ensureSeatAvailable(roomId, seatKey);
-    const ensureUserIsNotOnAnySeat = this.ensureUserIsNotOnAnySeat(
-      roomId,
-      userId
-    );
+    // const ensureUserIsNotOnAnySeat = this.ensureUserIsNotOnAnySeat(
+    //   roomId,
+    //   userId
+    // );
     if (ensureSeatAvailable == false) return false;
-    if (ensureUserIsNotOnAnySeat == false) return false;
+    // if (ensureUserIsNotOnAnySeat == false) return false;
     if (seatKey === "premiumSeat") {
       return await this.ensurePremiumUser(
         userId,

@@ -309,7 +309,7 @@ router
     authenticate([UserRoles.Admin]),
     adminUserController.createUpdateCost
   )
-  .get(authenticate([UserRoles.Admin]), adminUserController.getUpdateCost);
+  .get(authenticate(), adminUserController.getUpdateCost);
 
 router
   .route("/update-cost/:id")
@@ -321,6 +321,13 @@ router
     authenticate([UserRoles.Admin]),
     adminUserController.deleteUpdateCost
   );
+
+
+  
+router
+  .route("/users/banned-users")
+  .get(authenticate([UserRoles.Admin]), adminUserController.getBannedUsers);
+  
 
 
 export default router;

@@ -698,9 +698,8 @@ export default class AdminUserController {
     });
   });
 
-
   getPortalUserCoinHistory = catchAsync(async (req: Request, res: Response) => {
-    const {userId} = req.params;
+    const { userId } = req.params;
     const result = await this.AdminUserService.getCoinHistory(
       UserRoles.Merchant,
       userId,
@@ -713,8 +712,6 @@ export default class AdminUserController {
       message: "transaction history retrieved successfully",
     });
   });
-
-
 
   getAgencyWithdrawList = catchAsync(async (req: Request, res: Response) => {
     const result = await this.AdminUserService.getAgencyWithdrawList(req.query);
@@ -821,10 +818,10 @@ export default class AdminUserController {
 
   createUpdateCost = catchAsync(async (req: Request, res: Response) => {
     const { nameUpdateCost } = req.body;
-    validateFieldExistance(nameUpdateCost, "nameUpdateCost"); 
-    validateNumber(nameUpdateCost, "nameUpdateCost"); 
+    validateFieldExistance(nameUpdateCost, "nameUpdateCost");
+    validateNumber(nameUpdateCost, "nameUpdateCost");
     const result = await this.AdminUserService.createNewUpdateCost({
-      nameUpdateCost: Number(nameUpdateCost)
+      nameUpdateCost: Number(nameUpdateCost),
     });
     sendResponse(res, {
       statusCode: StatusCodes.CREATED,
@@ -846,11 +843,11 @@ export default class AdminUserController {
 
   updateUpdateCost = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const {nameUpdateCost} = req.body;
-    validateFieldExistance(nameUpdateCost, "nameUpdateCost"); 
+    const { nameUpdateCost } = req.body;
+    validateFieldExistance(nameUpdateCost, "nameUpdateCost");
     validateNumber(nameUpdateCost, "nameUpdateCost");
     const result = await this.AdminUserService.updateUpdateCostDocument(id, {
-     nameUpdateCost: Number(nameUpdateCost)
+      nameUpdateCost: Number(nameUpdateCost),
     });
     sendResponse(res, {
       statusCode: StatusCodes.OK,
@@ -868,6 +865,18 @@ export default class AdminUserController {
       success: true,
       result: result,
       message: "Update cost deleted successfully",
+    });
+  });
+
+  getBannedUsers = catchAsync(async (req: Request, res: Response) => {
+    const result = await this.AdminUserService.getBannedUsers(
+      req.query as Record<string, unknown>
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Banned users retrieved successfully",
     });
   });
 }
