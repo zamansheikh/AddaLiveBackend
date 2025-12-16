@@ -156,6 +156,7 @@ export enum SocketAudioChannels {
   AcceptAudioSeatInvitation = 'accept-audio-seat-invitation',
   AudioRoomSearch = 'audio-room-search',
   GetMyAudioRoom = 'get-my-audio-room',
+  RecentVisitedAudioRooms = 'recent-visited-audio-rooms',
 }
 
 export enum RoomTypes {

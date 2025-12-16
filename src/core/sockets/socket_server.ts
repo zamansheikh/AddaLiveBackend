@@ -45,6 +45,7 @@ export default class SocketServer {
   >(); // Map<userId, socketId>
   private hostedRooms = {} as Record<string, RoomData>; //roomid : roomdata
   private hostedAudioRooms = {} as Record<string, IAudioRoomData>; //roomid : roomdata
+  private audioRoomVisitedHistory = {} as Record<string, Record<string, string>>; // {userId: {roomId: lastVisited}}
   private bannedEmail: string[] = [] as string[];
   private blockedEmailRepository = new BlockedEmailRepository(
     BlockedEmailModel
@@ -119,7 +120,8 @@ export default class SocketServer {
         this.categoryRepo,
         this.rocketInfo,
         this.launchRocketInfo,
-        this.blockedEmailRepository
+        this.blockedEmailRepository,
+        this.audioRoomVisitedHistory
       );
 
       socket.on("disconnect", () => {

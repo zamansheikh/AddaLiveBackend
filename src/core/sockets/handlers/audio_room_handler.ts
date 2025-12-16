@@ -37,7 +37,8 @@ export const registerAudioRoomHandler = async (
   categoryRepository: IStoreCategoryRepository,
   rocketInfo: Partial<IGiftAudioRocket>,
   launchRocketInfo: Record<string, ILaunchRocketInfo>,
-  blockedEmailRepository: IBlockedEmailRepository
+  blockedEmailRepository: IBlockedEmailRepository,
+  audioRoomVisitedHistory: Record<string, Record<string, string>>
 ) => {
   // userId -> mongoose object_id
   const userId = socket.handshake.query.userId as string;
@@ -170,6 +171,11 @@ export const registerAudioRoomHandler = async (
       }
 
       socket.join(roomId);
+      // keeping track of audio room joinings
+      if (!audioRoomVisitedHistory[userId])
+        audioRoomVisitedHistory[userId] = {};
+      audioRoomVisitedHistory[userId][roomId] = new Date().toISOString();
+      // sending all rooms list update
       const serializedRoom: ISearializedAudioRoom = {
         title: createdRoom.title,
         numberOfSeats: createdRoom.numberOfSeats,
@@ -202,6 +208,7 @@ export const registerAudioRoomHandler = async (
       const allRoomSerialized: ISearializedAudioRoom[] = [];
 
       for (const [room, roomData] of Object.entries(audioRoom)) {
+        if (roomData.members.size == 0) continue;
         const obj: ISearializedAudioRoom = {
           title: roomData.title,
           numberOfSeats: roomData.numberOfSeats,
@@ -255,7 +262,7 @@ export const registerAudioRoomHandler = async (
   socket.on(SocketAudioChannels.GetAllAudioRooms, () => {
     const serializedRooms: ISearializedAudioRoom[] = [];
     for (const [room, roomData] of Object.entries(audioRoom)) {
-      if(roomData.members.size == 0) continue;
+      if (roomData.members.size == 0) continue;
       const obj: ISearializedAudioRoom = {
         title: roomData.title,
         numberOfSeats: roomData.numberOfSeats,
@@ -374,6 +381,9 @@ export const registerAudioRoomHandler = async (
       if (!isHost) room.ranking.push(membersDetails);
     }
     socket.join(roomId);
+    // to keep track of recent joinings in audio rooms
+    if (!audioRoomVisitedHistory[userId]) audioRoomVisitedHistory[userId] = {};
+    audioRoomVisitedHistory[userId][roomId] = new Date().toISOString();
     const message: IRoomMessage = {
       name: userDetails.name as string,
       avatar: userDetails.avatar as string,
@@ -1235,6 +1245,65 @@ export const registerAudioRoomHandler = async (
       success: true,
       message: "Successfully fetched your audio rooms",
       data: allRoomSerialized[0],
+    });
+  });
+
+  // my recent visited Rooms
+  socket.on(SocketAudioChannels.RecentVisitedAudioRooms, () => {
+    const allRoomSerialized: ISearializedAudioRoom[] = [];
+    const normalizedVisitHistory: { roomId: string; timestamp: string }[] = [];
+    const myVisitedRooms = audioRoomVisitedHistory[userId];
+    for (const [roomId, timestamp] of Object.entries(myVisitedRooms)) {
+      const obj: { roomId: string; timestamp: string } = {
+        roomId,
+        timestamp,
+      };
+      normalizedVisitHistory.push(obj);
+    }
+    normalizedVisitHistory.sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    for (let i = 0; i < normalizedVisitHistory.length; i++) {
+      const room = audioRoom[normalizedVisitHistory[i].roomId];
+      const obj: ISearializedAudioRoom = {
+        title: room.title,
+        numberOfSeats: room.numberOfSeats,
+        announcement: room.announcement,
+        currentRocketMilestone: room.currentRocketMilestone,
+        currentRocketFuel: room.currentRocketFuel,
+        fuelPercentage:
+          room.currentRocketMilestone === 0
+            ? 0
+            : (room.currentRocketFuel / room.currentRocketMilestone) * 100,
+        roomId: room.roomId,
+        hostGifts: room.hostGifts,
+        hostBonus: room.hostBonus,
+        hostDetails: room.hostDetails,
+        adminDetails: room.adminDetails,
+        premiumSeat: room.premiumSeat,
+        seats: room.seats,
+        messages: room.messages,
+        createdAt: room.createdAt,
+        members: Array.from(room.members),
+        membersDetails: room.membersDetails,
+        bannedUsers: Array.from(room.bannedUsers),
+        mutedUsers: Array.from(room.mutedUsers),
+        ranking: room.ranking,
+        chatPrivacy: room.chatPrivacy,
+        duration: Math.floor(
+          (new Date().getTime() - room.createdAt.getTime()) / 1000
+        ),
+        isHostPresent: room.isHostPresent,
+        isLocked: room.isLocked,
+      };
+      allRoomSerialized.push(obj);
+    }
+
+    socketResponse(io, SocketAudioChannels.RecentVisitedAudioRooms, socket.id, {
+      success: true,
+      message: "Successfully fetched your recent visited audio rooms",
+      data: allRoomSerialized,
     });
   });
 };
