@@ -366,7 +366,7 @@ export const registerAudioRoomHandler = async (
       totalGiftSent: 0,
       isMuted: false,
     };
-    if(!alreadyUserInRoom){
+    if (!alreadyUserInRoom) {
       room.members.add(userId);
       if (isHost) room.isHostPresent = true;
       if (!isHost) room.membersDetails.push(membersDetails);
@@ -936,7 +936,9 @@ export const registerAudioRoomHandler = async (
           };
         }
         room.numberOfSeats = newSeatCount;
-      } else {
+      }
+      //removing excess seats
+      else {
         for (let i = newSeatCount + 1; i <= room.numberOfSeats; i++) {
           if (isEmptyObject(room.seats[`seat-${i}`].member)) {
             delete room.seats[`seat-${i}`];
@@ -975,8 +977,8 @@ export const registerAudioRoomHandler = async (
             },
           });
           delete room.seats[`seat-${i}`];
-          room.numberOfSeats = newSeatCount;
         }
+        room.numberOfSeats = newSeatCount;
       }
 
       const serializedRoom: ISearializedAudioRoom = {
@@ -1010,7 +1012,7 @@ export const registerAudioRoomHandler = async (
         isHostPresent: room.isHostPresent,
         isLocked: room.isLocked,
       };
-      socketResponse(io, SocketAudioChannels.RoomDetails, socket.id, {
+      socketResponse(io, SocketAudioChannels.RoomDetails, roomId, {
         success: true,
         message: "Successfully fetched room details",
         data: serializedRoom,
