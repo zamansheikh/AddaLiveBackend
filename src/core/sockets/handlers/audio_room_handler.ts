@@ -255,6 +255,7 @@ export const registerAudioRoomHandler = async (
   socket.on(SocketAudioChannels.GetAllAudioRooms, () => {
     const serializedRooms: ISearializedAudioRoom[] = [];
     for (const [room, roomData] of Object.entries(audioRoom)) {
+      if(roomData.members.size == 0) continue;
       const obj: ISearializedAudioRoom = {
         title: roomData.title,
         numberOfSeats: roomData.numberOfSeats,
