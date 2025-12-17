@@ -233,6 +233,7 @@ export async function getEquipedItemObjects(
     )
       throw new AppError(StatusCodes.CONFLICT, "itemId is not populated");
     const item = equipedBuccket[i].itemId as IStoreItem;
+    if (!item) continue;
     if (item.bundleFiles && item.bundleFiles.length > 0) {
       for (let j = 0; j < item.bundleFiles.length; j++) {
         equipedFeatures[item.bundleFiles[j].categoryName] =
