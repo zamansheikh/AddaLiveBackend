@@ -3,6 +3,7 @@ import { DatabaseNames } from "../../core/Utils/enums";
 
 export interface IUpdateCost {
     nameUpdateCost: number;
+    expEquivalentCoin: number;
 }
 
 export interface IUpdateCostDocument extends IUpdateCost, mongoose.Document {
@@ -15,7 +16,9 @@ export interface IUpdateCostModel extends mongoose.Model<IUpdateCostDocument> {}
 const UpdateCostSchema  = new mongoose.Schema<IUpdateCostDocument, IUpdateCostModel>({
     nameUpdateCost: {
         type: Number,
-        required: true,
+    },
+    expEquivalentCoin: {
+        type: Number,
     },
 });
 

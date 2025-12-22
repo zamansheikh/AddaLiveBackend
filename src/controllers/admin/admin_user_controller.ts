@@ -817,11 +817,14 @@ export default class AdminUserController {
   });
 
   createUpdateCost = catchAsync(async (req: Request, res: Response) => {
-    const { nameUpdateCost } = req.body;
+    const { nameUpdateCost, expEquivalentCoin } = req.body;
     validateFieldExistance(nameUpdateCost, "nameUpdateCost");
     validateNumber(nameUpdateCost, "nameUpdateCost");
+    validateFieldExistance(expEquivalentCoin, "expEquivalentCoin");
+    validateNumber(expEquivalentCoin, "expEquivalentCoin");
     const result = await this.AdminUserService.createNewUpdateCost({
       nameUpdateCost: Number(nameUpdateCost),
+      expEquivalentCoin: Number(expEquivalentCoin),
     });
     sendResponse(res, {
       statusCode: StatusCodes.CREATED,
@@ -843,9 +846,15 @@ export default class AdminUserController {
 
   updateUpdateCost = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { nameUpdateCost } = req.body;
-    validateFieldExistance(nameUpdateCost, "nameUpdateCost");
-    validateNumber(nameUpdateCost, "nameUpdateCost");
+    const { nameUpdateCost, expEquivalentCoin } = req.body;
+    if (!nameUpdateCost && !expEquivalentCoin)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "At least one field (nameUpdateCost, expEquivalentCoin) is required for update"
+      );
+    if (nameUpdateCost) validateNumber(nameUpdateCost, "nameUpdateCost");
+    if (expEquivalentCoin)
+      validateNumber(expEquivalentCoin, "expEquivalentCoin");
     const result = await this.AdminUserService.updateUpdateCostDocument(id, {
       nameUpdateCost: Number(nameUpdateCost),
     });

@@ -25,8 +25,6 @@ import AppVersionRoutes from "./router/app_version_routes";
 import GiftAudioRoketRouter from "./router/gift_audio_rocket_route";
 import BlockedEmail from "./router/blocked_email_routes";
 
-
-
 // error handlers
 import globalErrorHandler from "./core/errors/global_error_handlar";
 
@@ -37,9 +35,6 @@ dotenv.config();
 const app: Application = express();
 
 const server = http.createServer(app);
-
-// socket connection to the http server
- SocketServer.initialize(server);
 
 // Middleware
 app.use(
@@ -94,7 +89,6 @@ app.use("/release", AppVersionRoutes);
 app.use("/api/gifts-audio-rocket", GiftAudioRoketRouter);
 app.use("/api/blocked-emails", BlockedEmail);
 
-
 // app.get("/release/latest", async (req: Request, res: Response) => {
 //   res.send({
 //     Version: "1.0.0",
@@ -113,6 +107,8 @@ const MONGOURL =
 
 mongoose.connect(MONGOURL).then(() => {
   console.log("DB Connected");
+  // socket connection to the http server
+  SocketServer.initialize(server);
   // Start the server
   server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
