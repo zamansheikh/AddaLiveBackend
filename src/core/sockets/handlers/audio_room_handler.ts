@@ -391,6 +391,7 @@ export const registerAudioRoomHandler = async (
       name: userDetails.name as string,
       avatar: userDetails.avatar as string,
       uid: userDetails.uid as string,
+      userId: userDetails.userId as number,
       country: userDetails.country as string,
       _id: userDetails._id as string,
       text: "joined the room",

@@ -543,6 +543,7 @@ export default class AuthService implements IAuthService {
       name: myUser.name as string,
       avatar: myUser.avatar as string,
       uid: myUser.uid as string,
+      userId: myUser.userId as number,
       country: myUser.country as string,
       _id: myUser._id as string,
       text: `has gifted ${qty} ${exisitngGift.name} to ${

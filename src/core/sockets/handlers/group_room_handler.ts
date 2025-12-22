@@ -15,7 +15,11 @@ import {
   getEquipedItemObjects,
   socketResponse,
 } from "../../Utils/helper_functions";
-import { IMemberDetails, RoomData } from "../interface/socket_interface";
+import {
+  IMemberDetails,
+  IRoomMessage,
+  RoomData,
+} from "../interface/socket_interface";
 import { IAdminRepository } from "../../../repository/admin/admin_repository";
 import { IBlockedEmailRepository } from "../../../repository/security/blockedEmailRepository";
 import SocketServer from "../socket_server";
@@ -67,7 +71,7 @@ export async function registerGroupRoomHandler(
   const userId = socket.handshake.query.userId as string;
 
   console.log(userId);
-  
+
   if (!userId) {
     socketResponse(io, SocketChannels.error, socket.id, {
       success: false,
@@ -76,7 +80,7 @@ export async function registerGroupRoomHandler(
     return;
   }
 
-    socket.on(SocketChannels.GetVideoHosts, () => {
+  socket.on(SocketChannels.GetVideoHosts, () => {
     let hosts = [];
     for (const [room, roomData] of Object.entries(hostedRooms)) {
       hosts.push(roomData.hostDetails);
@@ -87,11 +91,11 @@ export async function registerGroupRoomHandler(
     });
   });
 
-  
   const userDetails = await userRepository.getUserDetailsSelectedField(userId, [
     "name",
     "avatar",
     "uid",
+    "userId",
     "country",
     "currentLevelBackground",
     "currentLevelTag",
@@ -131,10 +135,11 @@ export async function registerGroupRoomHandler(
       });
     }
 
-    const message = {
+    const message: IRoomMessage = {
       name: userDetails.name as string,
       avatar: userDetails.avatar as string,
       uid: userDetails.uid as string,
+      userId: userDetails.userId as number,
       country: userDetails.country as string,
       _id: userDetails._id as string,
       text: messageText,
@@ -205,6 +210,7 @@ export async function registerGroupRoomHandler(
           name: userDetails.name as string,
           avatar: userDetails.avatar as string,
           uid: userDetails.uid as string,
+          userId: userDetails.userId as number,
           country: userDetails.country as string,
           _id: userDetails._id as string,
           currentBackground: userDetails.currentLevelBackground as string,
@@ -226,6 +232,7 @@ export async function registerGroupRoomHandler(
           name: userDetails.name as string,
           avatar: userDetails.avatar as string,
           uid: userDetails.uid as string,
+          userId: userDetails.userId as number,
           country: userDetails.country as string,
           _id: userDetails._id as string,
           currentBackground: userDetails.currentLevelBackground as string,
@@ -354,10 +361,14 @@ export async function registerGroupRoomHandler(
         message: "User is not a broadcaster",
       });
     room.adminDetails = broadcaster;
-    const message = {
+    const message: IRoomMessage = {
       name: broadcaster.name as string,
       avatar: broadcaster.avatar as string,
       uid: broadcaster.uid as string,
+      currentBackground: broadcaster.currentBackground as string,
+      currentTag: broadcaster.currentTag as string,
+      currentLevel: broadcaster.currentLevel as number,
+      userId: broadcaster.userId as number,
       country: broadcaster.country as string,
       _id: broadcaster._id as string,
       text: `Has been made an admin`,
@@ -413,10 +424,14 @@ export async function registerGroupRoomHandler(
       targetId
     );
 
-    let message = {
+    let message: IRoomMessage = {
       name: targetIdDetails.name as string,
       avatar: targetIdDetails.avatar as string,
       uid: targetIdDetails.uid as string,
+      userId: targetIdDetails.userId as number,
+      currentBackground: targetIdDetails.currentLevelBackground as string,
+      currentTag: targetIdDetails.currentLevelTag as string,
+      currentLevel: targetIdDetails.level as number,
       country: targetIdDetails.country as string,
       _id: targetIdDetails._id as string,
       text: `left the room`,
@@ -492,10 +507,14 @@ export async function registerGroupRoomHandler(
         message: "You have already sent request to join the call",
       });
 
-    const message = {
+    const message: IRoomMessage = {
       name: userDetails.name as string,
       avatar: userDetails.avatar as string,
       uid: userDetails.uid as string,
+      userId: userDetails.userId as number,
+      currentBackground: userDetails.currentLevelBackground as string,
+      currentTag: userDetails.currentLevelTag as string,
+      currentLevel: userDetails.level as number,
       country: userDetails.country as string,
       _id: userDetails._id as string,
       text: `Has requested to join the call`,
@@ -507,6 +526,7 @@ export async function registerGroupRoomHandler(
       name: userDetails.name as string,
       avatar: userDetails.avatar as string,
       uid: userDetails.uid as string,
+      userId: userDetails.userId as number,
       country: userDetails.country as string,
       _id: userDetails._id as string,
       equipedStoreItems: userObj.equipedStoreItems,
@@ -613,6 +633,7 @@ export async function registerGroupRoomHandler(
         "name",
         "avatar",
         "uid",
+        "userId",
         "country",
         "currentLevelBackground",
         "currentLevelTag",
@@ -638,6 +659,7 @@ export async function registerGroupRoomHandler(
       name: targetUser.name as string,
       avatar: targetUser.avatar as string,
       uid: targetUser.uid as string,
+      userId: targetUser.userId as number,
       country: targetUser.country as string,
       _id: targetUser._id as string,
       equipedStoreItems: targetEquipedStoreItems,
@@ -648,7 +670,16 @@ export async function registerGroupRoomHandler(
 
     const targetIdDetails = await userRepository.getUserDetailsSelectedField(
       targetId,
-      ["name", "avatar", "uid", "country"]
+      [
+        "name",
+        "avatar",
+        "uid",
+        "userId",
+        "country",
+        "currentLevelBackground",
+        "currentLevelTag",
+        "level",
+      ]
     );
 
     if (!targetIdDetails) {
@@ -659,10 +690,14 @@ export async function registerGroupRoomHandler(
       return;
     }
 
-    const message = {
+    const message: IRoomMessage = {
       name: targetIdDetails.name as string,
       avatar: targetIdDetails.avatar as string,
       uid: targetIdDetails.uid as string,
+      userId: targetIdDetails.userId as number,
+      currentBackground: targetIdDetails.currentLevelBackground as string,
+      currentTag: targetIdDetails.currentLevelTag as string,
+      currentLevel: targetIdDetails.level as number,
       country: targetIdDetails.country as string,
       _id: targetIdDetails._id as string,
       text: `Has joined the call`,
@@ -773,7 +808,16 @@ export async function registerGroupRoomHandler(
 
     const targetIdDetails = await userRepository.getUserDetailsSelectedField(
       targetId,
-      ["name", "avatar", "uid", "country"]
+      [
+        "name",
+        "avatar",
+        "uid",
+        "userId",
+        "country",
+        `currentLevelBackground`,
+        `currentLevelTag`,
+        `level`,
+      ]
     );
 
     if (!targetIdDetails) {
@@ -788,10 +832,14 @@ export async function registerGroupRoomHandler(
       categoryRepository,
       targetId
     );
-    const message = {
+    const message: IRoomMessage = {
       name: targetIdDetails.name as string,
       avatar: targetIdDetails.avatar as string,
       uid: targetIdDetails.uid as string,
+      userId: targetIdDetails.userId as number,
+      currentBackground: targetIdDetails.currentLevelBackground as string,
+      currentTag: targetIdDetails.currentLevelTag as string,
+      currentLevel: targetIdDetails.level as number,
       country: targetIdDetails.country as string,
       _id: targetIdDetails._id as string,
       text: `Has been removed from call`,
@@ -845,6 +893,7 @@ export async function registerGroupRoomHandler(
       name: userDetails.name as string,
       avatar: userDetails.avatar as string,
       uid: userDetails.uid as string,
+      userId: userDetails.userId as number,
       country: userDetails.country as string,
       _id: userDetails._id as string,
       equipedStoreItems: userObj.equipedStoreItems,
@@ -856,6 +905,7 @@ export async function registerGroupRoomHandler(
       name: userDetails.name as string,
       avatar: userDetails.avatar as string,
       uid: userDetails.uid as string,
+      userId: userDetails.userId as number,
       country: userDetails.country as string,
       _id: userDetails._id as string,
       equipedStoreItems: userObj.equipedStoreItems,
@@ -865,10 +915,11 @@ export async function registerGroupRoomHandler(
       totalGiftSent: 0,
     });
     socket.join(roomId);
-    const message = {
+    const message: IRoomMessage = {
       name: userDetails.name as string,
       avatar: userDetails.avatar as string,
       uid: userDetails.uid as string,
+      userId: userDetails.userId as number,
       country: userDetails.country as string,
       _id: userDetails._id as string,
       text: "joined the room",
@@ -881,6 +932,7 @@ export async function registerGroupRoomHandler(
       name: userDetails.name as string,
       avatar: userDetails.avatar as string,
       uid: userDetails.uid as string,
+      userId: userDetails.userId as number,
       country: userDetails.country as string,
       _id: userDetails._id as string,
       equipedStoreItems: userObj.equipedStoreItems,
@@ -888,13 +940,12 @@ export async function registerGroupRoomHandler(
       currentLevel: userDetails.level as number,
       currentTag: userDetails.currentLevelTag as string,
       totalGiftSent: 0,
-    
-    }
+    };
     io.to(roomId).emit(SocketChannels.sendMessage, message);
     io.to(roomId).emit(SocketChannels.userJoined, details);
     let isBlocked = await blockedEmailRepository.checkBlockedEmail(userId);
-    if(isBlocked) {
-      const socketInstance = SocketServer.getInstance()
+    if (isBlocked) {
+      const socketInstance = SocketServer.getInstance();
       socketInstance.hanldeUserDisconnect(userId, roomId, room);
     }
   });
@@ -938,10 +989,14 @@ export async function registerGroupRoomHandler(
     if (objectToDelete) room.callRequests.delete(objectToDelete);
 
     socket.leave(roomId);
-    const message = {
+    const message: IRoomMessage = {
       name: userDetails.name as string,
       avatar: userDetails.avatar as string,
       uid: userDetails.uid as string,
+      userId: userDetails.userId as number,
+      currentBackground: userDetails.currentLevelBackground as string,
+      currentTag: userDetails.currentLevelTag as string,
+      currentLevel: userDetails.level as number,
       country: userDetails.country as string,
       _id: userDetails._id as string,
       text: `left the room`,
@@ -1042,7 +1097,16 @@ export async function registerGroupRoomHandler(
 
     const targetIdDetails = await userRepository.getUserDetailsSelectedField(
       targetId,
-      ["name", "avatar", "uid", "country"]
+      [
+        "name",
+        "avatar",
+        "uid",
+        "userId",
+        "country",
+        `currentLevelBackground`,
+        `currentLevelTag`,
+        `level`,
+      ]
     );
 
     if (!targetIdDetails) {
@@ -1059,10 +1123,14 @@ export async function registerGroupRoomHandler(
       targetId
     );
 
-    const message = {
+    const message:IRoomMessage = {
       name: targetIdDetails.name as string,
       avatar: targetIdDetails.avatar as string,
       uid: targetIdDetails.uid as string,
+      userId: targetIdDetails.userId as number,
+      currentBackground: targetIdDetails.currentLevelBackground as string,
+      currentTag: targetIdDetails.currentLevelTag as string,
+      currentLevel: targetIdDetails.level as number,
       country: targetIdDetails.country as string,
       _id: targetIdDetails._id as string,
       text: `Has been banned from this room`,
@@ -1155,6 +1223,4 @@ export async function registerGroupRoomHandler(
   });
 
   socket.on(SocketChannels.inviteUser, ({ roomId, targetId }) => {});
-
-
 }
