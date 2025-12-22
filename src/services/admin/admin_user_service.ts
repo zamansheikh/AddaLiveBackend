@@ -211,7 +211,7 @@ export interface IAdminUserService {
     tag?: Express.Multer.File,
     bg?: Express.Multer.File
   ): Promise<ILevelTagBgDocument>;
-  createNewUpdateCost(data: Partial<IUpdateCost>): Promise<IUpdateCostDocument>;
+  createNewUpdateCost(data: IUpdateCost): Promise<IUpdateCostDocument>;
   getUpdateCostDocument(): Promise<IUpdateCostDocument>;
   updateUpdateCostDocument(
     id: string,
@@ -1281,7 +1281,7 @@ export default class AdminUserService implements IAdminUserService {
     return updatedLevelTagBg;
   }
 
-  async createNewUpdateCost(data: Partial<IUpdateCost>): Promise<IUpdateCostDocument> {
+  async createNewUpdateCost(data: IUpdateCost): Promise<IUpdateCostDocument> {
     const existingDoc = await this.UpdateCostRepository.getUpdateCostDoucment();
     if (existingDoc)
       throw new AppError(
