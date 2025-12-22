@@ -11,6 +11,7 @@ export interface IMemberDetails {
   name: string;
   avatar: string;
   uid: string;
+  userId: number;
   country: string;
   currentBackground: string;
   currentTag: string;
@@ -58,6 +59,7 @@ export interface IRoomMessage {
   name: string;
   avatar: string;
   uid: string;
+  userId: number;
   country: string;
   _id: mongoose.Schema.Types.ObjectId | string;
   currentBackground: string;
