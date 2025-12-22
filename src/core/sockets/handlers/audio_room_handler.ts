@@ -1253,6 +1253,19 @@ export const registerAudioRoomHandler = async (
     const allRoomSerialized: ISearializedAudioRoom[] = [];
     const normalizedVisitHistory: { roomId: string; timestamp: string }[] = [];
     const myVisitedRooms = audioRoomVisitedHistory[userId];
+    if (!myVisitedRooms) {
+      socketResponse(
+        io,
+        SocketAudioChannels.RecentVisitedAudioRooms,
+        socket.id,
+        {
+          success: true,
+          message: "Successfully fetched your recent visited audio rooms",
+          data: [],
+        }
+      );
+      return;
+    }
     for (const [roomId, timestamp] of Object.entries(myVisitedRooms)) {
       const obj: { roomId: string; timestamp: string } = {
         roomId,
