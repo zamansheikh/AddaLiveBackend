@@ -199,7 +199,7 @@ router.route("/is-premium").get(authenticate(), authController.isPremiumUser);
 //     }
 
 //     const updatePromises = users.map(user => {
-//       user.verified = false;
+//       user.totalEarnedXp = 0;
 //       return user.save();
 //     });
 

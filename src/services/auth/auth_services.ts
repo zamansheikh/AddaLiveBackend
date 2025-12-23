@@ -52,6 +52,7 @@ import { IStoreCategoryRepository } from "../../repository/store/store_category_
 import { IStoreItem } from "../../models/store/store_item_model";
 import {
   checkPremiumItem,
+  determineUserLevelFromXp,
   getEquipedItemObjects,
   getNextSalaryDate,
   isTheDateFromThisMonth,
@@ -483,8 +484,34 @@ export default class AuthService implements IAuthService {
       matchedCount: 1,
     } as UpdateResult;
 
+    const xpEnv = process.env.XP_MODE ?? "0";
+    const isXpMode = xpEnv.toString() == "1";
+
     const session = await mongoose.startSession();
     session.startTransaction();
+
+    if (isXpMode) {
+      const updateCostDocument =
+        await this.UpdateCostRepository.getUpdateCostDoucment();
+      if (!updateCostDocument)
+        throw new AppError(
+          StatusCodes.NOT_FOUND,
+          "update cost document is not created yet"
+        );
+      const coinEquivalent = updateCostDocument.expEquivalentCoin;
+      if (!coinEquivalent || isNaN(coinEquivalent))
+        throw new AppError(
+          StatusCodes.BAD_GATEWAY,
+          "either xpCoinEquivalent is missing or not a number"
+        );
+      const totalNewXpGained = totalPrice / coinEquivalent;
+      const newLevel = determineUserLevelFromXp(
+        myUser.totalEarnedXp + totalNewXpGained
+      );
+      myUser.level = newLevel;
+      myUser.totalEarnedXp = myUser.totalEarnedXp + totalNewXpGained;
+      await myUser.save({ session });
+    }
 
     mystats.coins! -= totalPrice;
     if (hasMyId.length > 0) mystats.diamonds! += exisitngGift.diamonds * qty;

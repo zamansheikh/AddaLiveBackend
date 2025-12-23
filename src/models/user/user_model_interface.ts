@@ -25,6 +25,7 @@ export interface UserData {
     gender?: Gender;
     birthday?: Date;
     totalBoughtCoins: number;
+    totalEarnedXp: number;
     level?: number;
     country?: string;
     whoCanTextMe?: WhoCanTextMe;

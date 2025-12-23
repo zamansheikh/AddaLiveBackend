@@ -25,6 +25,7 @@ const userSchema = new mongoose.Schema<IUserDocument>(
     },
     userPermissions: [{ type: String }],
     totalBoughtCoins: { type: Number, default: 0 },
+    totalEarnedXp: { type: Number, default: 0 },
     level: { type: Number, default: 0 },
     avatar: { type: String },
     currentLevelTag: { type: String },

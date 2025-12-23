@@ -10,6 +10,7 @@ export interface IStoreCategoryRepository {
     deleteCategory(id: string): Promise<IStoreCategoryDocument>;
     getCategoryByTitle(title: string): Promise<IStoreCategoryDocument | null>;
     getCategoryConditionally(condition: Partial<IStoreCategory>): Promise<IStoreCategoryDocument | null>;
+    isValidCategory(title: string): Promise<boolean>;
 }
 
 export default class StoreCategoryRepository implements IStoreCategoryRepository{
@@ -49,5 +50,10 @@ export default class StoreCategoryRepository implements IStoreCategoryRepository
 
     async getCategoryConditionally(condition: Partial<IStoreCategory>): Promise<IStoreCategoryDocument | null> {
         return await this.Model.findOne(condition);
+    }
+
+    async isValidCategory(title: string): Promise<boolean> {
+        const category = await this.Model.findOne({ title });
+        return !!category;
     }
 }

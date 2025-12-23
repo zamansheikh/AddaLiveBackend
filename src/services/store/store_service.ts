@@ -29,7 +29,10 @@ export interface IPremiumFiles {
 
 export interface IStoreService {
   // 📌 store categories
-  createCategory(title: string, isPremium?: boolean): Promise<IStoreCategoryDocument>;
+  createCategory(
+    title: string,
+    isPremium?: boolean
+  ): Promise<IStoreCategoryDocument>;
   getCategoryById(id: string): Promise<IStoreCategoryDocument>;
   getAllCategories(): Promise<IStoreCategoryDocument[]>;
   updateCategory(id: string, title: string): Promise<IStoreCategoryDocument>;
@@ -94,10 +97,20 @@ export default class StoreService implements IStoreService {
   }
 
   //  📌 store categories
-  async createCategory(title: string, isPremium?: boolean): Promise<IStoreCategoryDocument> {
-    if(isPremium) {
-      const existingPremium = await this.CategoryRepository.getCategoryConditionally({isPremium: true});
-      if(existingPremium) throw new AppError(StatusCodes.BAD_REQUEST, "Premium category already exists");
+  async createCategory(
+    title: string,
+    isPremium?: boolean
+  ): Promise<IStoreCategoryDocument> {
+    if (isPremium) {
+      const existingPremium =
+        await this.CategoryRepository.getCategoryConditionally({
+          isPremium: true,
+        });
+      if (existingPremium)
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          "Premium category already exists"
+        );
     }
     return await this.CategoryRepository.createCategory(title, isPremium);
   }
@@ -164,10 +177,29 @@ export default class StoreService implements IStoreService {
     item: IStoreItem,
     files: IPremiumFiles[]
   ): Promise<IStoreItemDocument> {
-    let premimumURLs = [];
+    // checking category name validity
     for (let i = 0; i < files.length; i++) {
+      const fileSize = files[i].svgaFile.size;
+      const extension = files[i].svgaFile.originalname.split(".").pop();
+      const categoryName = files[i].categoryName;
+      const isValidCategory = await this.CategoryRepository.isValidCategory(
+        categoryName
+      );
+      if(fileSize > 10485760) throw new AppError(StatusCodes.BAD_REQUEST, `${files[i].categoryName} is too large`)
+      if (!extension)
+        throw new AppError(StatusCodes.BAD_REQUEST, "Invalid file format");
+      if (!isValidCategory)
+        throw new AppError(
+          StatusCodes.NOT_FOUND,
+          `category -> ${categoryName} is not valid name`
+        );
+    }
+    // to upload and get the links
+    let premimumURLs: IBundle[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const extension = files[i].svgaFile.originalname.split(".").pop();
       const url = await uploadFileToCloudinary({
-        svga: true,
+        svga: extension === "svga",
         folder: "store_items",
         file: files[i].svgaFile,
         isVideo: false,
@@ -175,6 +207,7 @@ export default class StoreService implements IStoreService {
       premimumURLs.push({
         categoryName: files[i].categoryName,
         svgaFile: url,
+        fileType: extension ?? "",
       });
     }
     let itemToCreate: IStoreItem = {
@@ -288,8 +321,9 @@ export default class StoreService implements IStoreService {
     let newFilesToBeAdded: IBundle[] = [];
 
     for (let i = 0; i < files!.length; i++) {
+      const extenstion = files![i].svgaFile.originalname.split(".").pop();
       let url = await uploadFileToCloudinary({
-        svga: true,
+        svga: extenstion === "svga",
         folder: "store_items",
         file: files![i].svgaFile,
         isVideo: false,
@@ -297,6 +331,7 @@ export default class StoreService implements IStoreService {
       newFilesToBeAdded.push({
         categoryName: files![i].categoryName,
         svgaFile: url,
+        fileType: extenstion ?? "",
       });
     }
 
@@ -359,7 +394,9 @@ export default class StoreService implements IStoreService {
           itemId: item._id as string,
           ownerId: ownerId,
           categoryId: item.categoryId,
-          expireAt: new Date(Date.now() + item.validity * 15 * 24 * 60 * 60 * 1000), // validity in days
+          expireAt: new Date(
+            Date.now() + item.validity * 15 * 24 * 60 * 60 * 1000
+          ), // validity in days
         },
         session
       );
@@ -411,7 +448,10 @@ export default class StoreService implements IStoreService {
       bucket.itemId.toString()
     );
     if (!item) throw new AppError(StatusCodes.NOT_FOUND, "Item not found");
-    const premiumCategory = await this.CategoryRepository.getCategoryConditionally({isPremium: true});
+    const premiumCategory =
+      await this.CategoryRepository.getCategoryConditionally({
+        isPremium: true,
+      });
 
     // start transaction
     const session = await mongoose.startSession();
@@ -427,9 +467,13 @@ export default class StoreService implements IStoreService {
         );
       } else {
         // deselect premium items
-        if(premiumCategory)
+        if (premiumCategory)
           await this.BucketRepository.updateBucketUseStatus(
-            { ownerId: ownerId, useStatus: true, categoryId: premiumCategory!._id },
+            {
+              ownerId: ownerId,
+              useStatus: true,
+              categoryId: premiumCategory!._id,
+            },
             { useStatus: false },
             session
           );

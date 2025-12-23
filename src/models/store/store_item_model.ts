@@ -4,6 +4,7 @@ import { DatabaseNames } from "../../core/Utils/enums";
 export interface IBundle {
   categoryName: string;
   svgaFile: string;
+  fileType: string;
 }
 
 export interface IStoreItem {
@@ -32,6 +33,10 @@ export const bundleSchema = new mongoose.Schema<IBundle>({
     required: true,
   },
   svgaFile: {
+    type: String,
+    required: true,
+  },
+  fileType: {
     type: String,
     required: true,
   },

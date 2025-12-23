@@ -41,3 +41,57 @@ export const userLevels = [
   100000000000000, // Level 40
 ];
 
+export const xpLevels = [
+  160, // Level 1
+  325, // Level 2
+  460, // Level 3
+  625, // Level 4
+  805, // Level 5
+  995, // Level 6
+  1175, // Level 7
+  1382, // Level 8
+  1618, // Level 9
+  1937, // Level 10
+  2332, // Level 11
+  2892, // Level 12
+  3602, // Level 13
+  4442, // Level 14
+  5427, // Level 15
+  6630, // Level 16
+  8010, // Level 17
+  9517, // Level 18
+  11215, // Level 19
+  13022, // Level 20
+  15009, // Level 21
+  17269, // Level 22
+  19567, // Level 23
+  22254, // Level 24
+  25207, // Level 25
+  28410, // Level 26
+  31810, // Level 27
+  35427, // Level 28
+  39228, // Level 29
+  43278, // Level 30
+  47614, // Level 31
+  52126, // Level 32
+  56982, // Level 33
+  62180, // Level 34
+  67928, // Level 35
+  73928, // Level 36
+  80356, // Level 37
+  87202, // Level 38
+  97002, // Level 39
+  107203, // Level 40
+  123767, // Level 41
+  145890, // Level 42
+  174319, // Level 43
+  210897, // Level 44
+  254555, // Level 45
+  304540, // Level 46
+  363509, // Level 47
+  431094, // Level 48
+  500617, // Level 49
+  580602, // Level 50
+  670860, // Level 51
+  772069, // Level 52
+];

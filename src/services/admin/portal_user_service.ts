@@ -344,21 +344,27 @@ export default class SharedPowerService implements ISharedPowerService {
         session
       );
     } else {
-      // when the target profile is the role user
-      const userProfile = targetProfile as IUserDocument;
-      // determine level, bg and tags
-      const newLevel = determineUserLevel(userProfile.totalBoughtCoins + coins);
-      const newTagAndBg = determineUserTagAndBg(newLevel);
-      const tagAndBgDocument = await this.LevelTagBgRepository.findByLevel(
-        newTagAndBg
-      );
-      // updating the user profile accordingly;
-      await this.UserRepository.findUserByIdAndUpdate(userId, {
-        totalBoughtCoins: userProfile.totalBoughtCoins + coins,
-        level: newLevel,
-        currentLevelTag: tagAndBgDocument?.levelTag,
-        currentLevelBackground: tagAndBgDocument?.levelBg,
-      });
+      const xpEnv = process.env.XP_MODE ?? "0";
+      const isXpMode = xpEnv.toString() == "1";
+      if (!isXpMode) {
+        // when the target profile is the role user
+        const userProfile = targetProfile as IUserDocument;
+        // determine level, bg and tags
+        const newLevel = determineUserLevel(
+          userProfile.totalBoughtCoins + coins
+        );
+        const newTagAndBg = determineUserTagAndBg(newLevel);
+        const tagAndBgDocument = await this.LevelTagBgRepository.findByLevel(
+          newTagAndBg
+        );
+        // updating the user profile accordingly;
+        await this.UserRepository.findUserByIdAndUpdate(userId, {
+          totalBoughtCoins: userProfile.totalBoughtCoins + coins,
+          level: newLevel,
+          currentLevelTag: tagAndBgDocument?.levelTag,
+          currentLevelBackground: tagAndBgDocument?.levelBg,
+        });
+      }
 
       // adding coin to the user;
       returnBody = await this.UserStatsRepository.updateCoins(

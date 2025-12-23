@@ -856,7 +856,8 @@ export default class AdminUserController {
     if (expEquivalentCoin)
       validateNumber(expEquivalentCoin, "expEquivalentCoin");
     const result = await this.AdminUserService.updateUpdateCostDocument(id, {
-      nameUpdateCost: Number(nameUpdateCost),
+      nameUpdateCost: nameUpdateCost? Number(nameUpdateCost): undefined,
+      expEquivalentCoin: expEquivalentCoin? Number(expEquivalentCoin): undefined,
     });
     sendResponse(res, {
       statusCode: StatusCodes.OK,
