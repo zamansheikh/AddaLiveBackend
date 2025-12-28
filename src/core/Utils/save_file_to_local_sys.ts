@@ -1,0 +1,29 @@
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
+import { Express } from "express";
+
+interface SaveFileOptions {
+  folder: string; // e.g. "store_items"
+}
+
+export const saveFileToLocal = async (
+  file: Express.Multer.File,
+  options: SaveFileOptions
+): Promise<string> => {
+  const uploadsRoot = path.join(process.cwd(), "public/uploads");
+  const targetDir = path.join(uploadsRoot, options.folder);
+
+  // Ensure directory exists
+  await fs.promises.mkdir(targetDir, { recursive: true });
+
+  const extension = path.extname(file.originalname);
+  const fileName = `${crypto.randomUUID()}${extension}`;
+  const filePath = path.join(targetDir, fileName);
+
+  // Write buffer to disk
+  await fs.promises.writeFile(filePath, file.buffer);
+
+  // Public URL
+  return `/uploads/${options.folder}/${fileName}`;
+};

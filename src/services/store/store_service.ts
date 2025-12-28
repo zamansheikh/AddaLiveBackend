@@ -21,6 +21,7 @@ import { IMyBucketRepository } from "../../repository/store/my_bucket_repository
 import IUserStatsRepository from "../../repository/users/userstats_repository_interface";
 import mongoose, { mongo } from "mongoose";
 import { IMyBucketDocument } from "../../models/store/my_bucket_model";
+import { saveFileToLocal } from "../../core/Utils/save_file_to_local_sys";
 
 export interface IPremiumFiles {
   categoryName: string;
@@ -156,11 +157,8 @@ export default class StoreService implements IStoreService {
     item: IStoreItem,
     file: Express.Multer.File
   ): Promise<IStoreItemDocument> {
-    const url = await uploadFileToCloudinary({
-      svga: true,
+    const url = await saveFileToLocal(file, {
       folder: "store_items",
-      file,
-      isVideo: false,
     });
     let itemToCreate: IStoreItem = {
       name: item.name,
@@ -185,7 +183,11 @@ export default class StoreService implements IStoreService {
       const isValidCategory = await this.CategoryRepository.isValidCategory(
         categoryName
       );
-      if(fileSize > 10485760) throw new AppError(StatusCodes.BAD_REQUEST, `${files[i].categoryName} is too large`)
+      // if (fileSize > 10485760)
+      //   throw new AppError(
+      //     StatusCodes.BAD_REQUEST,
+      //     `${files[i].categoryName} is too large`
+      //   );
       if (!extension)
         throw new AppError(StatusCodes.BAD_REQUEST, "Invalid file format");
       if (!isValidCategory)
@@ -198,11 +200,8 @@ export default class StoreService implements IStoreService {
     let premimumURLs: IBundle[] = [];
     for (let i = 0; i < files.length; i++) {
       const extension = files[i].svgaFile.originalname.split(".").pop();
-      const url = await uploadFileToCloudinary({
-        svga: extension === "svga",
+      const url = await saveFileToLocal(files[i].svgaFile, {
         folder: "store_items",
-        file: files[i].svgaFile,
-        isVideo: false,
       });
       premimumURLs.push({
         categoryName: files[i].categoryName,

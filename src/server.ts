@@ -24,6 +24,7 @@ import StoreRoutes from "./router/store_router";
 import AppVersionRoutes from "./router/app_version_routes";
 import GiftAudioRoketRouter from "./router/gift_audio_rocket_route";
 import BlockedEmail from "./router/blocked_email_routes";
+import path from "path";
 
 // error handlers
 import globalErrorHandler from "./core/errors/global_error_handlar";
@@ -72,6 +73,10 @@ app.use(
     saveUninitialized: true, // Save a new session even if it hasn't been modified.
   })
 );
+
+// for public access to the url
+app.use("/uploads", express.static(path.join(process.cwd(), "public/uploads")));
+
 
 // Routes
 app.use("/api/auth", AuthRouter);
