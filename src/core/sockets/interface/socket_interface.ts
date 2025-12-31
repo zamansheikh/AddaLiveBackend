@@ -138,3 +138,9 @@ export interface ILaunchRocketInfo {
   currentDay: Date; // to keep track of the day (since each day it gets reset)
   cooldownTill: Date; 
 }
+
+export interface IRoomXPData {
+  firstEntry: boolean;
+  ownRoomXP: number;
+  othersRoomXp: number;
+}

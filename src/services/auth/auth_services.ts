@@ -56,12 +56,19 @@ import {
   getEquipedItemObjects,
   getNextSalaryDate,
   isTheDateFromThisMonth,
+  updateUserXpFunc,
 } from "../../core/Utils/helper_functions";
 import { IRoomBonusRecords } from "../../models/room/bonus_records_model";
 import { IRoomBonusRecordsRepository } from "../../repository/room/room_bonus_records_repository";
 import { IRoomMessage } from "../../core/sockets/interface/socket_interface";
 import bcrypt from "bcrypt";
 import { IUpdateCostRepository } from "../../repository/admin/updateCostRepository";
+import {
+  OTHERS_ROOM_MAX_XP,
+  OTHERS_ROOM_XP_MULTIPLIER,
+  OWN_ROOM_MAX_XP,
+  OWN_ROOM_XP_MULTIPLIER,
+} from "../../core/Utils/constants";
 
 export default class AuthService implements IAuthService {
   UserRepository: IUserRepository;
@@ -463,6 +470,8 @@ export default class AuthService implements IAuthService {
 
     const totalPrice = exisitngGift.coinPrice * targetUserIds.length * qty;
 
+    const ioInstance = SocketServer.getInstance().getIO();
+
     if (!mystats)
       throw new AppError(
         StatusCodes.INTERNAL_SERVER_ERROR,
@@ -505,12 +514,7 @@ export default class AuthService implements IAuthService {
           "either xpCoinEquivalent is missing or not a number"
         );
       const totalNewXpGained = totalPrice / coinEquivalent;
-      const newLevel = determineUserLevelFromXp(
-        myUser.totalEarnedXp + totalNewXpGained
-      );
-      myUser.level = newLevel;
-      myUser.totalEarnedXp = myUser.totalEarnedXp + totalNewXpGained;
-      await myUser.save({ session });
+      updateUserXpFunc(this.UserRepository, myId, totalNewXpGained, ioInstance);
     }
 
     mystats.coins! -= totalPrice;
@@ -527,7 +531,6 @@ export default class AuthService implements IAuthService {
     session.endSession();
 
     // sending the information to the frontend via socket
-    const ioInstance = SocketServer.getInstance().getIO();
 
     SocketServer.getInstance().updateRoomCoin(
       roomId,
@@ -1006,5 +1009,56 @@ export default class AuthService implements IAuthService {
     const user = await this.UserRepository.findUserById(userId);
     if (!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
     return await checkPremiumItem(this.BucketRepository, userId);
+  }
+
+  async updateMyXp(userId: string, isMyRoom: boolean): Promise<{XP: number}> {
+    const existingUser = await this.UserRepository.findUserById(userId);
+    if (!existingUser) {
+      throw new AppError(StatusCodes.NOT_FOUND, "user not found");
+    }
+
+    const socketInstance = SocketServer.getInstance();
+
+    // initialize tracker if missing
+    socketInstance.roomXpTrackingSystem[userId] ??= {
+      firstEntry: false,
+      othersRoomXp: 0,
+      ownRoomXP: 0,
+    };
+
+    // room-based config
+    const config = isMyRoom
+      ? {
+          key: "ownRoomXP" as const,
+          maxXp: OWN_ROOM_MAX_XP,
+          increment: OWN_ROOM_XP_MULTIPLIER,
+          errorMsg: "you have reached the maximum xp for this room",
+        }
+      : {
+          key: "othersRoomXp" as const,
+          maxXp: OTHERS_ROOM_MAX_XP,
+          increment: OTHERS_ROOM_XP_MULTIPLIER,
+          errorMsg: "you have reached the maximum xp for this room",
+        };
+
+    const tracker = socketInstance.roomXpTrackingSystem[userId];
+
+    // limit check
+    if (tracker[config.key] >= config.maxXp) {
+      throw new AppError(StatusCodes.BAD_REQUEST, config.errorMsg);
+    }
+
+    // update tracker
+    tracker[config.key] += config.increment;
+
+    // update DB + emit socket
+    updateUserXpFunc(
+      this.UserRepository,
+      userId,
+      config.increment,
+      socketInstance.getIO()
+    );
+
+    return {XP: config.increment}
   }
 }

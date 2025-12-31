@@ -11,6 +11,7 @@ import {
   getEquipedItemObjects,
   isEmptyObject,
   socketResponse,
+  updateUserXpFunc,
 } from "../../Utils/helper_functions";
 import {
   IAudioRoomData,
@@ -18,6 +19,7 @@ import {
   ILaunchRocketInfo,
   IMemberDetails,
   IRoomMessage,
+  IRoomXPData,
   ISearializedAudioRoom,
 } from "../interface/socket_interface";
 import { AudioRoomPolicy } from "../policies/audio_room_policy";
@@ -25,6 +27,7 @@ import SocketServer from "../socket_server";
 import { IGiftAudioRocket } from "../../../models/gifts/gift_audio_rocket_model";
 import AdminRepository from "../../../repository/admin/admin_repository";
 import { IBlockedEmailRepository } from "../../../repository/security/blockedEmailRepository";
+import { ROOM_ENTRY_XP } from "../../Utils/constants";
 
 export const registerAudioRoomHandler = async (
   io: Server,
@@ -38,7 +41,8 @@ export const registerAudioRoomHandler = async (
   rocketInfo: Partial<IGiftAudioRocket>,
   launchRocketInfo: Record<string, ILaunchRocketInfo>,
   blockedEmailRepository: IBlockedEmailRepository,
-  audioRoomVisitedHistory: Record<string, Record<string, string>>
+  audioRoomVisitedHistory: Record<string, Record<string, string>>,
+  roomXpTrackingSystem: Record<string, IRoomXPData>
 ) => {
   // userId -> mongoose object_id
   const userId = socket.handshake.query.userId as string;
@@ -177,6 +181,22 @@ export const registerAudioRoomHandler = async (
       if (!audioRoomVisitedHistory[userId])
         audioRoomVisitedHistory[userId] = {};
       audioRoomVisitedHistory[userId][roomId] = new Date().toISOString();
+
+      // xp tracking
+      if (process.env.XP_MODE == "1") {
+        if (!roomXpTrackingSystem[userId]) {
+          roomXpTrackingSystem[userId] = {
+            firstEntry: false,
+            ownRoomXP: 0,
+            othersRoomXp: 0,
+          };
+        }
+
+        if (roomXpTrackingSystem[userId].firstEntry == false) {
+          roomXpTrackingSystem[userId].firstEntry = true;
+          updateUserXpFunc(userRepository, userId, ROOM_ENTRY_XP, io);
+        }
+      }
       // sending all rooms list update
       const serializedRoom: ISearializedAudioRoom = {
         title: createdRoom.title,
@@ -387,6 +407,22 @@ export const registerAudioRoomHandler = async (
     // to keep track of recent joinings in audio rooms
     if (!audioRoomVisitedHistory[userId]) audioRoomVisitedHistory[userId] = {};
     audioRoomVisitedHistory[userId][roomId] = new Date().toISOString();
+
+    // xp tracking
+    if (process.env.XP_MODE == "1") {
+      if (!roomXpTrackingSystem[userId]) {
+        roomXpTrackingSystem[userId] = {
+          firstEntry: false,
+          ownRoomXP: 0,
+          othersRoomXp: 0,
+        };
+      }
+
+      if (roomXpTrackingSystem[userId].firstEntry == false) {
+        roomXpTrackingSystem[userId].firstEntry = true;
+        updateUserXpFunc(userRepository, userId, ROOM_ENTRY_XP, io);
+      }
+    }
     const message: IRoomMessage = {
       name: userDetails.name as string,
       avatar: userDetails.avatar as string,

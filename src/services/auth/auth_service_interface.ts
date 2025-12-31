@@ -99,4 +99,6 @@ export interface IAuthService {
   }>;
 
   isPremiumUser(userId: string): Promise<boolean>;
+  updateMyXp(userId: string, isMyRoom: boolean): Promise<{XP: number}>;
+
 }

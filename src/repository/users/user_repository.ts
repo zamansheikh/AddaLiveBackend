@@ -83,6 +83,7 @@ export interface IUserRepository {
     pagination: IPagination;
     users: IUserDocument[];
   }>;
+  updateUserXp(id: string, xp: number): Promise<IUserDocument | null >;
 }
 
 export default class UserRepository implements IUserRepository {
@@ -460,5 +461,11 @@ export default class UserRepository implements IUserRepository {
     const users = await res.paginate().sort().exec();
     const pagination = await res.countTotal();
     return { users, pagination };
+  }
+
+ async updateUserXp(id: string, xp: number): Promise<IUserDocument | null> {
+    const user = await this.UserModel.findByIdAndUpdate(id, { $inc: { totalEarnedXp: xp} }, { new: true });
+    if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+    return user;
   }
 }

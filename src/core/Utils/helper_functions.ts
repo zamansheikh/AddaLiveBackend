@@ -5,6 +5,7 @@ import {
   ActivityZoneState,
   AdminPowers,
   AudioSeatTypes,
+  SocketChannels,
   StatusTypes,
   UserRoles,
   WithdrawAccountTypes,
@@ -24,6 +25,8 @@ import {
   IMemberDetails,
   ISearializedAudioRoom,
 } from "../sockets/interface/socket_interface";
+import { IUserRepository } from "../../repository/users/user_repository";
+import SocketServer from "../sockets/socket_server";
 
 export const generateFileHash = (buffer: Buffer): string => {
   return crypto.createHash("sha256").update(buffer).digest("hex");
@@ -308,19 +311,6 @@ export function getCloudinaryPublicId(url: string): string {
   return publicId;
 }
 
-export function socketResponse(
-  io: Server,
-  channel: string,
-  dest: string,
-  { success, message, data }: { success: boolean; message: string; data?: any }
-) {
-  io.to(dest).emit(channel, {
-    success,
-    message,
-    data,
-  });
-}
-
 export function isEmptyObject(obj: object): boolean {
   return Object.keys(obj).length === 0;
 }
@@ -418,4 +408,47 @@ export function isTheDateFromThisMonth(date: Date): boolean {
     date.getMonth() === today.getMonth() &&
     date.getFullYear() === today.getFullYear()
   );
+}
+
+export function socketResponse(
+  io: Server,
+  channel: string,
+  dest: string,
+  { success, message, data }: { success: boolean; message: string; data?: any }
+) {
+  io.to(dest).emit(channel, {
+    success,
+    message,
+    data,
+  });
+}
+
+export async function updateUserXpFunc(
+  repository: IUserRepository,
+  userId: string,
+  xp: number,
+  io: Server
+) {
+  const exisitngUser = await repository.findUserById(userId);
+  if (!exisitngUser) return;
+  const socketInstance = SocketServer.getInstance();
+  const userSocketId = socketInstance.getSocketId(userId);
+  const newLevel = determineUserLevelFromXp(exisitngUser.totalEarnedXp + xp);
+  if (userSocketId) {
+    socketResponse(io, SocketChannels.XpUp, userSocketId, {
+      success: true,
+      message: "Successfully updated user xp",
+      data: xp,
+    });
+  }
+  if (exisitngUser.level == newLevel - 1 && userSocketId) {
+    socketResponse(io, SocketChannels.levelUp, userSocketId, {
+      success: true,
+      message: "Successfully updated user level",
+      data: newLevel,
+    });
+  }
+  exisitngUser.level = newLevel;
+  exisitngUser.totalEarnedXp += xp;
+  exisitngUser.save();
 }

@@ -1,3 +1,10 @@
+export const ROOM_ENTRY_XP = 20;
+export const OWN_ROOM_MAX_XP = 100;
+export const OTHERS_ROOM_MAX_XP = 200;
+export const OWN_ROOM_XP_MULTIPLIER = 10;
+export const OTHERS_ROOM_XP_MULTIPLIER = 10;
+
+
 export const userLevels = [
   100000, // Level 1
   300000, // Level 2

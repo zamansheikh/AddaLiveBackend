@@ -17,6 +17,7 @@ import {
   ILaunchRocketInfo,
   IMemberDetails,
   IRoomMessage,
+  IRoomXPData,
   ISearializedAudioRoom,
   RoomData,
 } from "./interface/socket_interface";
@@ -45,8 +46,8 @@ export default class SocketServer {
   >(); // Map<userId, socketId>
   private hostedRooms = {} as Record<string, RoomData>; //roomid : roomdata
   private hostedAudioRooms = {} as Record<string, IAudioRoomData>; //roomid : roomdata
-  private audioRoomVisitedHistory = {} as Record<string, Record<string, string>>; // {userId: {roomId: lastVisited}}
-  private bannedEmail: string[] = [] as string[];
+  private audioRoomVisitedHistory = {} as Record<string, Record<string, string>>; // eg. {userId: {roomId: lastVisited}}
+  public roomXpTrackingSystem = {} as Record<string, IRoomXPData>; // eg. {userId: {RoomXpData}}
   private blockedEmailRepository = new BlockedEmailRepository(
     BlockedEmailModel
   );
@@ -121,7 +122,8 @@ export default class SocketServer {
         this.rocketInfo,
         this.launchRocketInfo,
         this.blockedEmailRepository,
-        this.audioRoomVisitedHistory
+        this.audioRoomVisitedHistory,
+        this.roomXpTrackingSystem
       );
 
       socket.on("disconnect", () => {
@@ -682,4 +684,5 @@ export default class SocketServer {
       }
     }
   }
+
 }

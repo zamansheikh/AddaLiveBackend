@@ -118,7 +118,8 @@ export enum SocketChannels {
   GetVideoHosts = "get-video-hosts",
   UpdateHostCoin = "update-host-coin",
   UserConnection = "user-connection",
-  
+  XpUp = 'xp-up',
+  levelUp = 'level-up',
 }
 
 export enum SocketAudioChannels {

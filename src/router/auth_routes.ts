@@ -191,6 +191,8 @@ router
 
 router.route("/is-premium").get(authenticate(), authController.isPremiumUser);
 
+router.route("/room-stay-xp").put(authenticate(), authController.roomStayXp);
+
 // router.route("/set-verified-false").put(async (req: Request, res: Response) => {
 //   try {
 //     const users = await User.find({});
