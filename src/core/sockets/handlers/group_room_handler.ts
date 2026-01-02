@@ -27,7 +27,7 @@ import SocketServer from "../socket_server";
 export interface ISerializedRoomData {
   hostId: string;
   roomType: RoomTypes;
-  hostDetails?: IUserDocument | null;
+  hostDetails?: IMemberDetails | null;
   hostCoins: number;
   hostBonus: number;
   members: string[];
@@ -200,7 +200,18 @@ export async function registerGroupRoomHandler(
     hostedRooms[roomId] = {
       hostId: userId,
       roomType: roomType,
-      hostDetails: userDetails,
+      hostDetails: {
+        name: userDetails.name as string,
+        avatar: userDetails.avatar as string,
+        uid: userDetails.uid as string,
+        userId: userDetails.userId as number,
+        country: userDetails.country as string,
+        _id: userDetails._id as string,
+        currentBackground: userDetails.currentLevelBackground as string,
+        currentTag: userDetails.currentLevelTag as string,
+        currentLevel: userDetails.level as number,
+        equipedStoreItems: userObj.equipedStoreItems,
+      },
       hostCoins: 0,
       hostBonus: 0,
       currentBackground: userDetails.currentLevelBackground as string,

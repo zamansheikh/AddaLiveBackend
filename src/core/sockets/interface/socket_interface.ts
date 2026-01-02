@@ -25,7 +25,7 @@ export interface IMemberDetails {
 export interface RoomData {
   hostId: string;
   roomType: RoomTypes;
-  hostDetails?: IUserDocument | null;
+  hostDetails?: IMemberDetails | null;
   hostCoins: number;
   hostBonus: number;
   members: Set<string>;
