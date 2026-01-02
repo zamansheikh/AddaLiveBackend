@@ -28,6 +28,8 @@ import path from "path";
 
 // error handlers
 import globalErrorHandler from "./core/errors/global_error_handlar";
+import CronManager from "./core/corn/corn_manager";
+import { resetRoomXPTrackingSystem } from "./core/corn/jobs/reset_room_xp_tracking_sys";
 
 // Initialize dotenv for environment variables
 dotenv.config();
@@ -77,7 +79,6 @@ app.use(
 // for public access to the url
 app.use("/uploads", express.static(path.join(process.cwd(), "public/uploads")));
 
-
 // Routes
 app.use("/api/auth", AuthRouter);
 app.use("/api/admin", AdminRouter);
@@ -117,5 +118,9 @@ mongoose.connect(MONGOURL).then(() => {
   // Start the server
   server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    // Starting corn server
+    const cronManager = CronManager.getInstance();
+    cronManager.start();
+    cronManager.register("0 0 * * *", resetRoomXPTrackingSystem); // Everyday at 12:00 AM
   });
 });
