@@ -21,7 +21,10 @@ import { IMyBucketRepository } from "../../repository/store/my_bucket_repository
 import IUserStatsRepository from "../../repository/users/userstats_repository_interface";
 import mongoose, { mongo } from "mongoose";
 import { IMyBucketDocument } from "../../models/store/my_bucket_model";
-import { saveFileToLocal } from "../../core/Utils/save_file_to_local_sys";
+import {
+  deleteLocalFile,
+  saveFileToLocal,
+} from "../../core/Utils/save_file_to_local_sys";
 
 export interface IPremiumFiles {
   categoryName: string;
@@ -175,6 +178,14 @@ export default class StoreService implements IStoreService {
     item: IStoreItem,
     files: IPremiumFiles[]
   ): Promise<IStoreItemDocument> {
+    // chhecking category validity
+    const exisitngCategory = await this.CategoryRepository.getCategoryById(
+      item.categoryId.toString()
+    );
+
+    if(!exisitngCategory) throw new AppError(StatusCodes.NOT_FOUND, "Category not found");
+    if(!exisitngCategory.isPremium) throw new AppError(StatusCodes.BAD_REQUEST, "This is not a premium category");
+
     // checking category name validity
     for (let i = 0; i < files.length; i++) {
       const fileSize = files[i].svgaFile.size;
@@ -255,11 +266,15 @@ export default class StoreService implements IStoreService {
       );
 
     if (file) {
-      const url = await uploadFileToCloudinary({
-        svga: true,
+      // deleting the previous file
+      const deleteStatus = await deleteLocalFile(existingItem.svgaFile!);
+      if (!deleteStatus)
+        throw new AppError(
+          StatusCodes.INTERNAL_SERVER_ERROR,
+          "Failed to delete file"
+        );
+      const url = await saveFileToLocal(file, {
         folder: "store_items",
-        file,
-        isVideo: false,
       });
       item.svgaFile = url;
     }
@@ -300,16 +315,7 @@ export default class StoreService implements IStoreService {
     }
 
     for (let i = 0; i < urlsBeDeleted.length; i++) {
-      const parts = new URL(urlsBeDeleted[i]).pathname.split("/");
-      const fileName = parts[parts.length - 1];
-      const folderName = parts[parts.length - 2];
-      const publicId = `${folderName}/${folderName}/${fileName}`;
-
-      const deleteFile = await deleteFileFromCloudinary({
-        isVideo: false,
-        publicId: publicId,
-        svga: true,
-      });
+      const deleteFile = await deleteLocalFile(urlsBeDeleted[i]);
       if (!deleteFile)
         throw new AppError(
           StatusCodes.INTERNAL_SERVER_ERROR,
@@ -321,11 +327,8 @@ export default class StoreService implements IStoreService {
 
     for (let i = 0; i < files!.length; i++) {
       const extenstion = files![i].svgaFile.originalname.split(".").pop();
-      let url = await uploadFileToCloudinary({
-        svga: extenstion === "svga",
+      let url = await saveFileToLocal(files![i].svgaFile, {
         folder: "store_items",
-        file: files![i].svgaFile,
-        isVideo: false,
       });
       newFilesToBeAdded.push({
         categoryName: files![i].categoryName,
