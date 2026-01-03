@@ -150,6 +150,7 @@ export enum SocketAudioChannels {
   AudioUserConnection = 'audio-user-connection',
   UpdateAudioSeatCount = 'update-audio-seat-count',
   UpdateAudioAnnouncement = 'update-audio-announcement',
+  UpdateAudioTitle = 'update-audio-title',
   SetAudioPrivacyStatus = 'set-audio-privacy-status',
   SetAudioChatPrivacyStatus = 'set-audio-chat-privacy-status',
   InviteUserToSeat = 'invite-user-to-seat',

@@ -1095,6 +1095,21 @@ export const registerAudioRoomHandler = async (
     }
   );
 
+  // update announcement
+  socket.on(SocketAudioChannels.UpdateAudioTitle, ({ roomId, title }) => {
+    const isHost = audioRoomPolicy.ensureIsHost(roomId, userId);
+    if (isHost == false) return;
+    const room = audioRoom[roomId];
+    room.title = title;
+    socketResponse(io, SocketAudioChannels.UpdateAudioTitle, roomId, {
+      success: true,
+      message: "Successfully updated title",
+      data: {
+        title: room.title,
+      },
+    });
+  });
+
   // set privacy status
   socket.on(
     SocketAudioChannels.SetAudioPrivacyStatus,
