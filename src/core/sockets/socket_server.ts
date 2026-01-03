@@ -513,6 +513,7 @@ export default class SocketServer {
           hostGifts: roomData.hostGifts,
           hostBonus: roomData.hostBonus,
           hostDetails: roomData.hostDetails,
+          adminDetails: roomData.adminDetails,
           premiumSeat: roomData.premiumSeat,
           seats: roomData.seats,
           messages: roomData.messages,

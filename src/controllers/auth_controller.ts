@@ -290,4 +290,10 @@ export default class AuthController {
     const xp = await this.authService.updateMyXp(id, isMyRoom == '1');
     sendResponseEnhanced(res, xp);
   });
+
+  getAllBucketItems = catchAsync(async (req: Request, res: Response) => {
+    const items = await this.authService.getAllBucketItems(req.query);
+    sendResponseEnhanced(res, items);
+  });
+  
 }

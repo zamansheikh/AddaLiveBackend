@@ -193,6 +193,8 @@ router.route("/is-premium").get(authenticate(), authController.isPremiumUser);
 
 router.route("/room-stay-xp").put(authenticate(), authController.roomStayXp);
 
+router.route("/bucket-items").get(authenticate(), authController.getAllBucketItems);
+
 // router.route("/set-verified-false").put(async (req: Request, res: Response) => {
 //   try {
 //     const users = await User.find({});

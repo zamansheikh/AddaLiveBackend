@@ -13,6 +13,8 @@ import {
   IAgencyJoinRequest,
   IAgencyJoinRequestDocument,
 } from "../../models/request/agencyJoinRequset";
+import { IPagination } from "../../core/Utils/query_builder";
+import { IMyBucketDocument } from "../../models/store/my_bucket_model";
 
 export interface IGiftUser {
   myId: string;
@@ -25,8 +27,15 @@ export interface IAuthService {
   registerWithGoogle(
     UserData: IUserEntity
   ): Promise<{ user: IUserDocument; token: string }>;
-  loginWithEmailPassword(email: string, password: string): Promise<{ user: IUserDocument; token: string }>;
-  verifyAccount(userId: string, phoneNumber: string, password: string): Promise<IUserDocument>;
+  loginWithEmailPassword(
+    email: string,
+    password: string
+  ): Promise<{ user: IUserDocument; token: string }>;
+  verifyAccount(
+    userId: string,
+    phoneNumber: string,
+    password: string
+  ): Promise<IUserDocument>;
   retrieveMyDetails(id: string): Promise<IUserDocument | null>;
   deleteMyAccount(id: string): Promise<IUserDocument | null>;
   retrieveUserDetails(id: string, myId: string): Promise<IUserDocument | null>;
@@ -42,7 +51,11 @@ export interface IAuthService {
     coverPicture?: Express.Multer.File;
   }): Promise<IUserDocument | null>;
   updateName(id: string, name: string): Promise<IUserDocument>;
-  setMyPassword(id: string, password: string, newPassword: string): Promise<IUserDocument>;
+  setMyPassword(
+    id: string,
+    password: string,
+    newPassword: string
+  ): Promise<IUserDocument>;
   giftUser({
     targetUserIds,
     myId,
@@ -99,6 +112,10 @@ export interface IAuthService {
   }>;
 
   isPremiumUser(userId: string): Promise<boolean>;
-  updateMyXp(userId: string, isMyRoom: boolean): Promise<{XP: number}>;
-
+  updateMyXp(userId: string, isMyRoom: boolean): Promise<{ XP: number }>;
+  
+  getAllBucketItems(query: Record<string, any>): Promise<{
+    pagination: IPagination;
+    items: IMyBucketDocument[];
+  }>;
 }

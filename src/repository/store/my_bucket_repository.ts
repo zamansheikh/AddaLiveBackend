@@ -30,6 +30,10 @@ export interface IMyBucketRepository {
     session?: ClientSession
   ): Promise<UpdateResult>;
   getEquipedBuckets(id: string): Promise<IMyBucketDocument[]>;
+  getAllBucketItems(query: Record<string, any>): Promise<{
+    pagination: IPagination;
+    items: IMyBucketDocument[];
+  }>;
 }
 
 export default class MyBucketRepository implements IMyBucketRepository {
@@ -106,4 +110,11 @@ export default class MyBucketRepository implements IMyBucketRepository {
     return equipped;
   }
 
+  async getAllBucketItems(query: Record<string, any>): Promise<{ pagination: IPagination; items: IMyBucketDocument[]; }> {
+    const qb = new QueryBuilder(this.Model, query);
+    const res = qb.find({}).populateField("itemId categoryId").sort().paginate();
+    const items = await res.exec();
+    const pagination = await res.countTotal();
+    return { pagination, items };
+  }
 }

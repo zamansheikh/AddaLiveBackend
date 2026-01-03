@@ -222,6 +222,7 @@ export interface IAdminUserService {
     pagination: IPagination;
     users: IUserDocument[];
   }>;
+  
 }
 
 export default class AdminUserService implements IAdminUserService {

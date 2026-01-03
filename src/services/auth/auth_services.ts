@@ -69,6 +69,8 @@ import {
   OWN_ROOM_MAX_XP,
   OWN_ROOM_XP_MULTIPLIER,
 } from "../../core/Utils/constants";
+import { IPagination } from "../../core/Utils/query_builder";
+import { IMyBucketDocument } from "../../models/store/my_bucket_model";
 
 export default class AuthService implements IAuthService {
   UserRepository: IUserRepository;
@@ -1060,5 +1062,10 @@ export default class AuthService implements IAuthService {
     );
 
     return {XP: config.increment}
+  }
+
+  async getAllBucketItems(query: Record<string, any>): Promise<{ pagination: IPagination; items: IMyBucketDocument[]; }> {
+    const items = await this.BucketRepository.getAllBucketItems(query);
+    return items;
   }
 }
