@@ -137,6 +137,7 @@ export const registerAudioRoomHandler = async (
       }
       const createdRoom: IAudioRoomData = {
         hostDetails: membersDetails,
+        adminDetails: [],
         title: title,
         numberOfSeats: numberOfSeats,
         announcement: announcement ?? "",
@@ -903,9 +904,7 @@ export const registerAudioRoomHandler = async (
     );
     if (canMakeAdmin == false) return;
     const room = audioRoom[roomId];
-    room.adminDetails = room.membersDetails.find(
-      (member) => member._id.toString() === targetId
-    );
+    room.adminDetails.push(targetId);
     socketResponse(io, SocketAudioChannels.MakeAdmin, roomId, {
       success: true,
       message: "Successfully made admin",
@@ -916,11 +915,11 @@ export const registerAudioRoomHandler = async (
   });
 
   // Remove admin
-  socket.on(SocketAudioChannels.RemoveAdmin, ({ roomId }) => {
+  socket.on(SocketAudioChannels.RemoveAdmin, ({ roomId, targetId }) => {
     const removeAdmin = audioRoomPolicy.ensureCanRemoveAdmin(roomId, userId);
     if (removeAdmin == false) return;
     const room = audioRoom[roomId];
-    room.adminDetails = undefined;
+    room.adminDetails = room.adminDetails.filter((admin) => admin != targetId);
     socketResponse(io, SocketAudioChannels.RemoveAdmin, roomId, {
       success: true,
       message: "Successfully removed admin",

@@ -122,7 +122,7 @@ export class AudioRoomPolicy {
     //   return false;
     // }
 
-    if(room.hostId == userId) return true;
+    if (room.hostId == userId) return true;
 
     if (room.bannedUsers.has(userId)) {
       socketResponse(this.io, SocketChannels.error, this.socket.id, {
@@ -332,9 +332,8 @@ export class AudioRoomPolicy {
     if (ensureRoomExists == false) return false;
     const room = this.hostestRooms[roomId];
     const hostId = room.hostDetails?._id;
-    const adminId = room.adminDetails?._id;
     const isHost = userId.toString() === hostId?.toString();
-    const isAdmin = adminId && userId.toString() === adminId.toString();
+    const isAdmin = room.adminDetails.includes(userId);
     if (!isHost && !isAdmin) {
       socketResponse(this.io, SocketChannels.error, this.socket.id, {
         success: false,
@@ -412,10 +411,10 @@ export class AudioRoomPolicy {
       return false;
     }
     const room = this.hostestRooms[roomId];
-    if (room.adminDetails) {
+    if (room.adminDetails.includes(targetId)) {
       socketResponse(this.io, SocketChannels.error, this.socket.id, {
         success: false,
-        message: "you can only have one admin",
+        message: "Target user is already an admin",
       });
       return false;
     }
@@ -439,7 +438,7 @@ export class AudioRoomPolicy {
       return false;
     }
     const room = this.hostestRooms[roomId];
-    if (!room.adminDetails) {
+    if (room.adminDetails.length == 0) {
       socketResponse(this.io, SocketChannels.error, this.socket.id, {
         success: false,
         message: "There is no admin to remove",

@@ -1052,7 +1052,7 @@ export default class AuthService implements IAuthService {
     tracker[config.key] += config.increment;
 
     // update DB + emit socket
-    updateUserXpFunc(
+    await updateUserXpFunc(
       this.UserRepository,
       userId,
       config.increment,
