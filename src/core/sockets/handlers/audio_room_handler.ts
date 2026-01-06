@@ -692,10 +692,10 @@ export const registerAudioRoomHandler = async (
         },
       });
     } else {
-      if (userId != targetId && userId != room.hostDetails?._id) {
+      if (userId != targetId && userId != room.hostDetails?._id && room.adminDetails.includes(userId) == false){
         socketResponse(io, SocketChannels.error, socket.id, {
           success: false,
-          message: "only the host and you can mute yourself",
+          message: "only the host, admins and you can mute yourself",
         });
         return;
       }

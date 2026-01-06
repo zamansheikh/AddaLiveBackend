@@ -156,12 +156,18 @@ export default class FollowerRepository implements IFollowerRepository {
               name: "$followerInfo.name",
               id: "$followerInfo._id",
               avatar: "$followerInfo.avatar",
+              level: "$followerInfo.level",
+              currentLevelTag: "$followerInfo.currentLevelTag",
+              currentLevelBackground: "$followerInfo.currentLevelBackground",
             },
 
             myId: {
               name: "$myInfo.name",
               id: "$myInfo._id",
               avatar: "$myInfo.avatar",
+              level: "$myInfo.level",
+              currentLevelTag: "$myInfo.currentLevelTag",
+              currentLevelBackground: "$myInfo.currentLevelBackground",
             },
           },
         },
