@@ -80,8 +80,6 @@ export interface IAudioRoomData {
   title: string;
   numberOfSeats: number;
   announcement: string; 
-  currentRocketMilestone: number; // fuel needed to fire the rocket
-  currentRocketFuel: number; // current fuel level
   roomId: string;
   adminDetails: string[];
   hostDetails?: IMemberDetails;
@@ -108,9 +106,6 @@ export interface ISearializedAudioRoom {
   title: string;
   numberOfSeats: number;
   announcement: string;
-  currentRocketMilestone: number;
-  currentRocketFuel: number;
-  fuelPercentage: number;
   roomId: string;
   hostGifts: number;
   hostBonus: number;
