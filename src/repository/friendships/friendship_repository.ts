@@ -102,12 +102,18 @@ class FriendshipRepository implements IFriendshipRepository {
                     friendInfo: {
                         _id: "$friendInfo._id",
                         name: "$friendInfo.name",
-                        avatar: "$friendInfo.avatar"
+                        avatar: "$friendInfo.avatar",
+                        level: "$friendInfo.level",
+                        currentLevelTag: "$friendInfo.currentLevelTag",
+                        currentLevelBackground: "$friendInfo.currentLevelBackground"
                     },
                     myInfo: {
                         _id: "$myInfo._id",
                         name: "$myInfo.name",
-                        avatar: "$myInfo.avatar"
+                        avatar: "$myInfo.avatar",
+                        level: "$myInfo.level",
+                        currentLevelTag: "$myInfo.currentLevelTag",
+                        currentLevelBackground: "$myInfo.currentLevelBackground"
                     }
                 }
             }
