@@ -211,6 +211,7 @@ export async function registerGroupRoomHandler(
         currentTag: userDetails.currentLevelTag as string,
         currentLevel: userDetails.level as number,
         equipedStoreItems: userObj.equipedStoreItems,
+        totalGiftSent: 0,
       },
       hostCoins: 0,
       hostBonus: 0,
@@ -228,6 +229,7 @@ export async function registerGroupRoomHandler(
           currentTag: userDetails.currentLevelTag as string,
           currentLevel: userDetails.level as number,
           equipedStoreItems: userObj.equipedStoreItems,
+          totalGiftSent: 0,
         },
       ],
       messages: [],
@@ -544,6 +546,7 @@ export async function registerGroupRoomHandler(
       currentBackground: userDetails.currentLevelBackground as string,
       currentLevel: userDetails.level as number,
       currentTag: userDetails.currentLevelTag as string,
+      totalGiftSent: 0,
     });
     const hostSocketId = onlineUsers.get(room.hostId);
     if (hostSocketId) {
@@ -677,6 +680,7 @@ export async function registerGroupRoomHandler(
       currentBackground: targetUser.currentLevelBackground as string,
       currentLevel: targetUser.level as number,
       currentTag: targetUser.currentLevelTag as string,
+        totalGiftSent: 0,
     });
 
     const targetIdDetails = await userRepository.getUserDetailsSelectedField(
@@ -911,6 +915,7 @@ export async function registerGroupRoomHandler(
       currentBackground: userDetails.currentLevelBackground as string,
       currentLevel: userDetails.level as number,
       currentTag: userDetails.currentLevelTag as string,
+      totalGiftSent: 0,
     });
     room.ranking.push({
       name: userDetails.name as string,

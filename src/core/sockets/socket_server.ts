@@ -114,8 +114,6 @@ export default class SocketServer {
         this.handleUserConnect(userId, socket);
       }
 
-      this.addAssetToUser();
-
       // Register handlers for specific events
 
       registerGroupRoomHandler(
@@ -214,11 +212,11 @@ export default class SocketServer {
     return this.onlineUsers.get(userId);
   }
 
-  public updateRoomCoin(
+  public async updateRoomCoin(
     roomId: string,
     coin: number,
     targetUserIds: string[]
-  ): void {
+  ): Promise<void> {
     const videoRoom: RoomData | undefined = this.hostedRooms[roomId];
     const audioRoom: IAudioRoomData | undefined = this.hostedAudioRooms[roomId];
     if (videoRoom) {
@@ -236,7 +234,7 @@ export default class SocketServer {
       const totalCoins = coin * targetUserIds.length;
       audioRoom.roomTotalTransaction += totalCoins;
       // rocket fuel update
-      this.addFuelToRocket(roomId, totalCoins);
+      await this.addFuelToRocket(roomId, totalCoins);
 
       socketResponse(
         this.io,
@@ -282,11 +280,11 @@ export default class SocketServer {
     }
   }
 
-  public addFuelToRocket(roomId: string, fuel: number) {
+  public async addFuelToRocket(roomId: string, fuel: number) {
     const room = this.hostedAudioRooms[roomId];
     if (!room) return;
     if (room.currentRocketMilestone <= room.currentRocketFuel + fuel) {
-      this.launchRocket(roomId, fuel);
+      await this.launchRocket(roomId, fuel);
       return;
     }
     room.currentRocketFuel += fuel;
