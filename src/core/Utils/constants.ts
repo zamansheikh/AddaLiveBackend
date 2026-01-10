@@ -1,9 +1,24 @@
+
+// Xp features 
 export const ROOM_ENTRY_XP = 20;
 export const OWN_ROOM_MAX_XP = 100;
 export const OTHERS_ROOM_MAX_XP = 200;
 export const OWN_ROOM_XP_MULTIPLIER = 10;
 export const OTHERS_ROOM_XP_MULTIPLIER = 10;
 
+
+// Rocket features
+export const ROCKET_MILESTONES = [1000000, 2000000, 3000000, 4000000, 5000000];
+export const REWARD_NUMBERS = [20, 35, 55, 75, 100];
+export const COIN_MIN = 1000;
+export const COIN_MAX = 10000;
+export const XP_MIN = 1000;
+export const XP_MAX = 10000;
+
+
+
+
+// level tracking
 
 export const userLevels = [
   100000, // Level 1

@@ -3,19 +3,26 @@
 import { Server, Socket } from "socket.io";
 import { Server as HttpServer } from "http";
 import { registerGroupRoomHandler } from "./handlers/group_room_handler";
-import { RoomTypes, SocketAudioChannels, SocketChannels } from "../Utils/enums";
+import {
+  LaunchGiftTypes,
+  RoomTypes,
+  SocketAudioChannels,
+  SocketChannels,
+} from "../Utils/enums";
 import UserRepository from "../../repository/users/user_repository";
 import User from "../../models/user/user_model";
 import { IUserDocument } from "../../models/user/user_model_interface";
-import mongoose from "mongoose";
+import mongoose, { Error } from "mongoose";
 import MyBucketRepository from "../../repository/store/my_bucket_repository";
-import MyBucketModel from "../../models/store/my_bucket_model";
+import MyBucketModel, { IMyBucket } from "../../models/store/my_bucket_model";
 import StoreCategoryRepository from "../../repository/store/store_category_repository";
 import StoreCategoryModel from "../../models/store/store_category_model";
 import {
   IAudioRoomData,
+  ILaunchGifts,
   ILaunchRocketInfo,
   IMemberDetails,
+  IRewarededUser,
   IRoomMessage,
   IRoomXPData,
   ISearializedAudioRoom,
@@ -24,8 +31,10 @@ import {
 import { registerAudioRoomHandler } from "./handlers/audio_room_handler";
 import {
   getAudioUserSeat,
+  getRandomNumberFromRange,
   isEmptyObject,
   socketResponse,
+  updateUserXpFunc,
 } from "../Utils/helper_functions";
 import { GiftAudioRocketRepository } from "../../repository/gifts/gift_audio_rocket_repository";
 import GiftAudioRoomRocketModel, {
@@ -35,6 +44,16 @@ import AdminRepository from "../../repository/admin/admin_repository";
 import Admin from "../../models/admin/admin_model";
 import { BlockedEmailRepository } from "../../repository/security/blockedEmailRepository";
 import BlockedEmailModel from "../../models/security/blocked_emails";
+import { CursorTimeoutMode } from "mongodb";
+import { COIN_MAX, COIN_MIN, REWARD_NUMBERS, ROCKET_MILESTONES, XP_MAX, XP_MIN } from "../Utils/constants";
+import StoreItemRepository from "../../repository/store/store_item_repository";
+import StoreItemModel, {
+  IStoreItem,
+  IStoreItemDocument,
+} from "../../models/store/store_item_model";
+import { log } from "console";
+import UserStats from "../../models/userstats/userstats_model";
+import UserStatsRepository from "../../repository/users/userstats_repository";
 
 export default class SocketServer {
   private static instance: SocketServer;
@@ -46,15 +65,20 @@ export default class SocketServer {
   >(); // Map<userId, socketId>
   private hostedRooms = {} as Record<string, RoomData>; //roomid : roomdata
   private hostedAudioRooms = {} as Record<string, IAudioRoomData>; //roomid : roomdata
-  private audioRoomVisitedHistory = {} as Record<string, Record<string, string>>; // eg. {userId: {roomId: lastVisited}}
+  private audioRoomVisitedHistory = {} as Record<
+    string,
+    Record<string, string>
+  >; // eg. {userId: {roomId: lastVisited}}
   public roomXpTrackingSystem = {} as Record<string, IRoomXPData>; // eg. {userId: {RoomXpData}}
   private blockedEmailRepository = new BlockedEmailRepository(
     BlockedEmailModel
   );
   private userRepo = new UserRepository(User);
+  private userStatsRepo = new UserStatsRepository(UserStats);
   private adminRepo = new AdminRepository(Admin);
   private bucketRepo = new MyBucketRepository(MyBucketModel);
   private categoryRepo = new StoreCategoryRepository(StoreCategoryModel);
+  private storeItemRepository = new StoreItemRepository(StoreItemModel);
 
   // Private constructor: enforce singleton usage
   private constructor(server: HttpServer) {
@@ -89,6 +113,10 @@ export default class SocketServer {
       if (userId) {
         this.handleUserConnect(userId, socket);
       }
+
+      this.addAssetToUser();
+
+      // Register handlers for specific events
 
       registerGroupRoomHandler(
         this.io,
@@ -204,20 +232,25 @@ export default class SocketServer {
       );
       if (hasHostId.length > 0) {
         audioRoom.hostBonus += coin;
-        socketResponse(
-          this.io,
-          SocketAudioChannels.UpdateAudioHostCoins,
-          audioRoom.roomId,
-          {
-            success: true,
-            message: "Successfully updated host coins",
-            data: {
-              hostBonus: audioRoom.hostBonus,
-            },
-          }
-        );
-        
       }
+      const totalCoins = coin * targetUserIds.length;
+      audioRoom.roomTotalTransaction += totalCoins;
+      // rocket fuel update
+      this.addFuelToRocket(roomId, totalCoins);
+
+      socketResponse(
+        this.io,
+        SocketAudioChannels.UpdateAudioHostCoins,
+        audioRoom.roomId,
+        {
+          success: true,
+          message: "Successfully updated host coins",
+          data: {
+            hostBonus: audioRoom.hostBonus,
+            roomTotalTransaction: audioRoom.roomTotalTransaction,
+          },
+        }
+      );
     }
   }
 
@@ -240,17 +273,226 @@ export default class SocketServer {
         }
     }
     if (audioRoom) {
-      const hasHostId = targetUserIds.filter(
-        (id) => id == audioRoom.hostDetails?._id
-      );
-      if (hasHostId.length > 0)
-        for (let i = 0; i < audioRoom.ranking.length; i++) {
-          if (audioRoom.ranking[i]._id.toString() === userId) {
-            audioRoom.ranking[i].totalGiftSent! += gifts;
-            break;
-          }
+      for (let i = 0; i < audioRoom.ranking.length; i++) {
+        if (audioRoom.ranking[i]._id.toString() === userId) {
+          audioRoom.ranking[i].totalGiftSent! += gifts;
+          break;
         }
+      }
     }
+  }
+
+  public addFuelToRocket(roomId: string, fuel: number) {
+    const room = this.hostedAudioRooms[roomId];
+    if (!room) return;
+    if (room.currentRocketMilestone <= room.currentRocketFuel + fuel) {
+      this.launchRocket(roomId, fuel);
+      return;
+    }
+    room.currentRocketFuel += fuel;
+    socketResponse(
+      this.io,
+      SocketAudioChannels.NewRocketFuelPercentage,
+      roomId,
+      {
+        success: true,
+        message: "Successfully updated rocket fuel",
+        data: {
+          currentRocketFuel: room.currentRocketFuel,
+          currentRocketFuelPercentage:
+            room.currentRocketFuel / room.currentRocketMilestone,
+        },
+      }
+    );
+  }
+
+  public async launchRocket(roomId: string, fuel: number) {
+    const room = this.hostedAudioRooms[roomId];
+    if (!room) return;
+    let remainingFuel =
+      room.currentRocketFuel + fuel - room.currentRocketMilestone;
+
+    // reward mechanism
+    const rewardedUsers = await this.rewardUsersUponLaunch(
+      room.currentRocketLevel,
+      roomId
+    );
+
+    // notifying the app about the rocket launch
+    for (const [id, data] of Object.entries(this.hostedAudioRooms)) {
+      socketResponse(this.io, SocketAudioChannels.LaunchRocket, id, {
+        success: true,
+        message: "Rocket is about to be launched",
+        data: {
+          roomId: roomId,
+          rewardedUsers
+        },
+      });
+    }
+
+    // update the rocket informations
+    room.currentRocketMilestone = ROCKET_MILESTONES[room.currentRocketLevel];
+    room.currentRocketLevel += 1;
+    room.currentRocketFuel = 0;
+    socketResponse(this.io, SocketAudioChannels.NewRocketLevel, roomId, {
+      success: true,
+      message: "Successfully rocket leveled up",
+      data: {
+        currentRocketLevel: room.currentRocketLevel,
+        currentRocketMilestone: room.currentRocketMilestone,
+      },
+    });
+
+    // recursive call to tackle multiple launch
+    if (room.currentRocketMilestone <= remainingFuel) {
+      this.launchRocket(roomId, remainingFuel);
+      return;
+    }
+    // fuel notification
+    room.currentRocketFuel = remainingFuel;
+    socketResponse(
+      this.io,
+      SocketAudioChannels.NewRocketFuelPercentage,
+      roomId,
+      {
+        success: true,
+        message: "Successfully updated rocket fuel",
+        data: {
+          currentRocketFuel: room.currentRocketFuel,
+          currentRocketFuelPercentage:
+            room.currentRocketFuel / room.currentRocketMilestone,
+        },
+      }
+    );
+  }
+
+  public async rewardUsersUponLaunch(
+    rocketLevel: number,
+    roomId: string
+  ): Promise<IRewarededUser[]> {
+    let rewardableUserCount = REWARD_NUMBERS[rocketLevel - 1];
+    const room = this.hostedAudioRooms[roomId];
+    if (!room) return [];
+    room.ranking.sort((a, b) => {
+      return b.totalGiftSent! - a.totalGiftSent!;
+    });
+    // adjusting for users
+    if (rewardableUserCount > room.ranking.length)
+      rewardableUserCount = room.ranking.length;
+    const rewardedUsers: IRewarededUser[] = [];
+    // distribute rewards to everyone in the room
+    for (let i = 0; i < rewardableUserCount; i++) {
+      const rewards: ILaunchGifts[] = [];
+      // for top 1 -> add asset
+      if (i == 0) {
+        const asset = await this.addAssetToUser(
+          room.ranking[i]._id.toString(),
+          4
+        );
+        const rewardObj: ILaunchGifts = {
+          quantity: 4,
+          thumbnail: asset,
+          type: LaunchGiftTypes.Assets,
+        };
+        rewards.push(rewardObj);
+      }
+
+      // for top 1 and 2 -> add asset
+      if (i < 2) {
+        const asset = await this.addAssetToUser(
+          room.ranking[i]._id.toString(),
+          3
+        );
+        const rewardObj: ILaunchGifts = {
+          quantity: 3,
+          thumbnail: asset,
+          type: LaunchGiftTypes.Assets,
+        };
+        rewards.push(rewardObj);
+      }
+
+      // for top 1 to 3 -> add Xp
+      if (i < 3) {
+        const xp = await this.addXpToUser(room.ranking[i]._id.toString());
+        const rewardObj: ILaunchGifts = {
+          quantity: xp,
+          thumbnail: "XP",
+          type: LaunchGiftTypes.XP,
+        };
+        rewards.push(rewardObj);
+      }
+
+      //  add coins
+      const coins = await this.addCoinsToUser(room.ranking[i]._id.toString());
+      const rewardGiftObj: ILaunchGifts = {
+        quantity: coins,
+        thumbnail: "Coins",
+        type: LaunchGiftTypes.Coins,
+      };
+      rewards.push(rewardGiftObj);
+      const rewardedUser: IRewarededUser = {
+        ...room.ranking[i],
+        gifts: rewards,
+      };
+      rewardedUsers.push(rewardedUser);
+    }
+    return rewardedUsers;
+  }
+  // this function adds asset to the
+  private async addAssetToUser(
+    targetUserId: string,
+    duration: number
+  ): Promise<string> {
+    // select a random category
+    const categories: { _id: string; name: string }[] = (
+      await this.categoryRepo.getAllCategories()
+    )
+      .filter((obj) => obj.isPremium != true)
+      .map((obj) => ({ _id: obj._id, name: obj.title })) as {
+      _id: string;
+      name: string;
+    }[];
+    const randomCategory: { _id: string; name: string } =
+      categories[Math.floor(Math.random() * categories.length)];
+    // select a random item
+    const items = await this.storeItemRepository.getAllStoreItemByCategory(
+      randomCategory._id
+    );
+    const randomItem: IStoreItemDocument = items[
+      Math.floor(Math.random() * items.length)
+    ] as IStoreItemDocument;
+
+    // add the item to users bucket
+    const bucket: IMyBucket = {
+      categoryId: randomCategory._id,
+      itemId: randomItem._id as string,
+      ownerId: targetUserId,
+      expireAt: new Date(Date.now() + duration * 24 * 60 * 60 * 1000),
+    };
+    // return the category if success else error for reference
+    try {
+      await this.bucketRepo.createNewBucket(bucket);
+      return randomCategory.name;
+    } catch (error) {
+      console.log(error);
+      return "error";
+    }
+  }
+
+  // this function adds xp to user
+  private async addXpToUser(targetUserId: string): Promise<number> {
+    const xpAmount = getRandomNumberFromRange(XP_MIN, XP_MAX);
+    await updateUserXpFunc(this.userRepo, targetUserId, xpAmount, this.io);
+    return xpAmount;
+  }
+
+  private async addCoinsToUser(targetUserId: string): Promise<number> {
+    const coins = getRandomNumberFromRange(COIN_MIN, COIN_MAX);
+    const user = await this.userRepo.findUserById(targetUserId);
+    if (!user) return 0;
+    const userStats = await this.userStatsRepo.updateCoins(targetUserId, coins);
+    if (!userStats) return 0;
+    return coins;
   }
 
   private handleUserConnect(userId: string, socket: Socket) {
@@ -408,6 +650,13 @@ export default class SocketServer {
           numberOfSeats: roomData.numberOfSeats,
           announcement: roomData.announcement,
           roomId: roomData.roomId,
+          currentRocketFuel: roomData.currentRocketFuel,
+          currentRocketLevel: roomData.currentRocketLevel,
+          currentRocketMilestone: roomData.currentRocketMilestone,
+          roomTotalTransaction: roomData.roomTotalTransaction,
+          rocketFuelPercentage: Math.floor(
+            roomData.currentRocketFuel / roomData.currentRocketMilestone
+          ),
           hostGifts: roomData.hostGifts,
           hostBonus: roomData.hostBonus,
           hostDetails: roomData.hostDetails,
@@ -470,7 +719,7 @@ export default class SocketServer {
           member: {},
         },
       });
-      
+
       roomData.isHostPresent = false;
       roomData.members.delete(userId);
 
@@ -583,5 +832,4 @@ export default class SocketServer {
       }
     }
   }
-
 }

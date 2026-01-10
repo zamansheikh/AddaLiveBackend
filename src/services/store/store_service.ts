@@ -397,7 +397,7 @@ export default class StoreService implements IStoreService {
           ownerId: ownerId,
           categoryId: item.categoryId,
           expireAt: new Date(
-            Date.now() + item.validity * 15 * 24 * 60 * 60 * 1000
+            Date.now() + item.validity * 24 * 60 * 60 * 1000
           ), // validity in days
         },
         session

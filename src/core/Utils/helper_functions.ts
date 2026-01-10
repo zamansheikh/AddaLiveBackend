@@ -452,3 +452,9 @@ export async function updateUserXpFunc(
   exisitngUser.totalEarnedXp += xp;
   exisitngUser.save();
 }
+
+
+export function getRandomNumberFromRange(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+

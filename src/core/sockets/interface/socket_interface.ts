@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { Socket } from "socket.io";
-import { RoomTypes } from "../../Utils/enums";
+import { LaunchGiftTypes, RoomTypes } from "../../Utils/enums";
 import { IUserDocument } from "../../../models/user/user_model_interface";
 
 export interface ISocketHandler {
@@ -18,7 +18,7 @@ export interface IMemberDetails {
   currentLevel: number;
   _id: mongoose.Schema.Types.ObjectId | string;
   equipedStoreItems: Record<string, string>;
-  totalGiftSent?: number;
+  totalGiftSent: number;
   isMuted?: boolean;
 }
 
@@ -81,10 +81,14 @@ export interface IAudioRoomData {
   numberOfSeats: number;
   announcement: string; 
   roomId: string;
+  currentRocketLevel: number; // eg: level 1 to level 5
+  currentRocketFuel: number; // eg : 5,00,000 - fromt gift coins
+  currentRocketMilestone: number; // eg: 10,00,000 - constant set according to business logic
   adminDetails: string[];
   hostDetails?: IMemberDetails;
   hostGifts: number; // host sent amount (used for ranking)
   hostBonus: number;  // host recieved amount (used to display the gifts)
+  roomTotalTransaction: number; // total amount exchanged in the room
   premiumSeat: IAudioSeats;
   seats: Record<string, IAudioSeats>;
   messages: IRoomMessage[];
@@ -107,8 +111,13 @@ export interface ISearializedAudioRoom {
   numberOfSeats: number;
   announcement: string;
   roomId: string;
+  currentRocketLevel: number; // eg: level 1 to level 5
+  currentRocketFuel: number; // eg : 5,00,000 - fromt gift coins
+  currentRocketMilestone: number; // eg: 10,00,000 - constant set according to business logic
+  rocketFuelPercentage: number; // eg : 0.78 - range (0-1) - calculated from currentRocketFuel / currentRocketMilestone
   hostGifts: number;
   hostBonus: number;
+  roomTotalTransaction: number; // total amount exchanged in the room
   hostDetails?: IMemberDetails;
   adminDetails: string[];
   premiumSeat: IAudioSeats;
@@ -126,6 +135,16 @@ export interface ISearializedAudioRoom {
   isLocked: boolean;
 }
 
+
+export interface ILaunchGifts {
+  type: LaunchGiftTypes;
+  thumbnail: string;
+  quantity: number;
+}
+
+export interface IRewarededUser extends IMemberDetails {
+  gifts: ILaunchGifts[];
+}
 
 export interface ILaunchRocketInfo {
   roomId: string,

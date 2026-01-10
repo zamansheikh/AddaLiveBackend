@@ -27,7 +27,7 @@ import SocketServer from "../socket_server";
 import { IGiftAudioRocket } from "../../../models/gifts/gift_audio_rocket_model";
 import AdminRepository from "../../../repository/admin/admin_repository";
 import { IBlockedEmailRepository } from "../../../repository/security/blockedEmailRepository";
-import { ROOM_ENTRY_XP } from "../../Utils/constants";
+import { ROCKET_MILESTONES, ROOM_ENTRY_XP } from "../../Utils/constants";
 
 export const registerAudioRoomHandler = async (
   io: Server,
@@ -140,6 +140,10 @@ export const registerAudioRoomHandler = async (
         numberOfSeats: numberOfSeats,
         announcement: announcement ?? "",
         roomId: roomId,
+        currentRocketFuel: 0,
+        currentRocketLevel: 1,
+        currentRocketMilestone: ROCKET_MILESTONES[0],
+        roomTotalTransaction: 0,
         hostGifts: 0,
         hostBonus: 0,
         premiumSeat: {
@@ -188,6 +192,13 @@ export const registerAudioRoomHandler = async (
         numberOfSeats: createdRoom.numberOfSeats,
         announcement: createdRoom.announcement,
         roomId: createdRoom.roomId,
+        currentRocketFuel: createdRoom.currentRocketFuel,
+        currentRocketLevel: createdRoom.currentRocketLevel,
+        currentRocketMilestone: createdRoom.currentRocketMilestone,
+        roomTotalTransaction: createdRoom.roomTotalTransaction,
+        rocketFuelPercentage:
+          createdRoom.currentRocketFuel / createdRoom.currentRocketMilestone,
+
         hostGifts: createdRoom.hostGifts,
         hostBonus: createdRoom.hostBonus,
         hostDetails: createdRoom.hostDetails,
@@ -218,6 +229,12 @@ export const registerAudioRoomHandler = async (
           numberOfSeats: roomData.numberOfSeats,
           announcement: roomData.announcement,
           roomId: roomData.roomId,
+          currentRocketFuel: roomData.currentRocketFuel,
+          currentRocketLevel: roomData.currentRocketLevel,
+          currentRocketMilestone: roomData.currentRocketMilestone,
+          roomTotalTransaction: roomData.roomTotalTransaction,
+          rocketFuelPercentage:
+            roomData.currentRocketFuel / roomData.currentRocketMilestone,
           hostGifts: roomData.hostGifts,
           hostBonus: roomData.hostBonus,
           hostDetails: roomData.hostDetails,
@@ -265,6 +282,12 @@ export const registerAudioRoomHandler = async (
         numberOfSeats: roomData.numberOfSeats,
         announcement: roomData.announcement,
         roomId: roomData.roomId,
+        currentRocketFuel: roomData.currentRocketFuel,
+        currentRocketLevel: roomData.currentRocketLevel,
+        currentRocketMilestone: roomData.currentRocketMilestone,
+        roomTotalTransaction: roomData.roomTotalTransaction,
+        rocketFuelPercentage:
+          roomData.currentRocketFuel / roomData.currentRocketMilestone,
         hostGifts: roomData.hostGifts,
         hostBonus: roomData.hostBonus,
         hostDetails: roomData.hostDetails,
@@ -306,6 +329,12 @@ export const registerAudioRoomHandler = async (
       numberOfSeats: room.numberOfSeats,
       announcement: room.announcement,
       roomId: room.roomId,
+      currentRocketFuel: room.currentRocketFuel,
+      currentRocketLevel: room.currentRocketLevel,
+      currentRocketMilestone: room.currentRocketMilestone,
+      roomTotalTransaction: room.roomTotalTransaction,
+      rocketFuelPercentage:
+        room.currentRocketFuel / room.currentRocketMilestone,
       hostGifts: room.hostGifts,
       hostBonus: room.hostBonus,
       hostDetails: room.hostDetails,
@@ -692,7 +721,11 @@ export const registerAudioRoomHandler = async (
         },
       });
     } else {
-      if (userId != targetId && userId != room.hostDetails?._id && room.adminDetails.includes(userId) == false){
+      if (
+        userId != targetId &&
+        userId != room.hostDetails?._id &&
+        room.adminDetails.includes(userId) == false
+      ) {
         socketResponse(io, SocketChannels.error, socket.id, {
           success: false,
           message: "only the host, admins and you can mute yourself",
@@ -716,6 +749,12 @@ export const registerAudioRoomHandler = async (
       numberOfSeats: room.numberOfSeats,
       announcement: room.announcement,
       roomId: room.roomId,
+      currentRocketFuel: room.currentRocketFuel,
+      currentRocketLevel: room.currentRocketLevel,
+      currentRocketMilestone: room.currentRocketMilestone,
+      roomTotalTransaction: room.roomTotalTransaction,
+      rocketFuelPercentage:
+        room.currentRocketFuel / room.currentRocketMilestone,
       hostGifts: room.hostGifts,
       hostBonus: room.hostBonus,
       hostDetails: room.hostDetails,
@@ -997,6 +1036,12 @@ export const registerAudioRoomHandler = async (
         numberOfSeats: room.numberOfSeats,
         announcement: room.announcement,
         roomId: room.roomId,
+        currentRocketFuel: room.currentRocketFuel,
+        currentRocketLevel: room.currentRocketLevel,
+        currentRocketMilestone: room.currentRocketMilestone,
+        roomTotalTransaction: room.roomTotalTransaction,
+        rocketFuelPercentage:
+          room.currentRocketFuel / room.currentRocketMilestone,
         hostGifts: room.hostGifts,
         hostBonus: room.hostBonus,
         hostDetails: room.hostDetails,
@@ -1171,6 +1216,12 @@ export const registerAudioRoomHandler = async (
           numberOfSeats: roomData.numberOfSeats,
           announcement: roomData.announcement,
           roomId: roomData.roomId,
+          currentRocketFuel: roomData.currentRocketFuel,
+          currentRocketLevel: roomData.currentRocketLevel,
+          currentRocketMilestone: roomData.currentRocketMilestone,
+          roomTotalTransaction: roomData.roomTotalTransaction,
+          rocketFuelPercentage:
+            roomData.currentRocketFuel / roomData.currentRocketMilestone,
           hostGifts: roomData.hostGifts,
           hostBonus: roomData.hostBonus,
           hostDetails: roomData.hostDetails,
@@ -1212,6 +1263,12 @@ export const registerAudioRoomHandler = async (
           numberOfSeats: roomData.numberOfSeats,
           announcement: roomData.announcement,
           roomId: roomData.roomId,
+          currentRocketFuel: roomData.currentRocketFuel,
+          currentRocketLevel: roomData.currentRocketLevel,
+          currentRocketMilestone: roomData.currentRocketMilestone,
+          roomTotalTransaction: roomData.roomTotalTransaction,
+          rocketFuelPercentage:
+            roomData.currentRocketFuel / roomData.currentRocketMilestone,
           hostGifts: roomData.hostGifts,
           hostBonus: roomData.hostBonus,
           hostDetails: roomData.hostDetails,
@@ -1279,6 +1336,12 @@ export const registerAudioRoomHandler = async (
         numberOfSeats: room.numberOfSeats,
         announcement: room.announcement,
         roomId: room.roomId,
+        currentRocketFuel: room.currentRocketFuel,
+        currentRocketLevel: room.currentRocketLevel,
+        currentRocketMilestone: room.currentRocketMilestone,
+        roomTotalTransaction: room.roomTotalTransaction,
+        rocketFuelPercentage:
+          room.currentRocketFuel / room.currentRocketMilestone,
         hostGifts: room.hostGifts,
         hostBonus: room.hostBonus,
         hostDetails: room.hostDetails,

@@ -141,6 +141,7 @@ export enum SocketAudioChannels {
   GetAudioHosts = "get-audio-hosts",
   UpdateAudioHostCoins = "update-audio-host-coins",
   NewRocketFuelPercentage = 'new-rocket-fuel-percentage',
+  NewRocketLevel = 'new-rocket-level',
   LaunchRocket = 'rocket-launch',
   SentAudioGift = 'sent-audio-gift',
   MakeAdmin = 'make-audio-admin',
@@ -253,4 +254,11 @@ export enum AgencyJoinStatus {
   Congrats = "congrats",
   member = "member",
   error = "error",
+}
+
+
+export enum LaunchGiftTypes {
+  Coins = "coins",
+  XP = "xp",
+  Assets = "assets",
 }

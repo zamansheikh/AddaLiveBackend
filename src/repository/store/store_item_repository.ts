@@ -29,6 +29,7 @@ export interface IStoreItemRepository {
   createNewBundles(id: string, bundle: IBundle[]): Promise<IStoreItemDocument>;
   deleteByCategory(categoryId: string): Promise<DeleteResult>;
   updateSoldCount(itemId: string): Promise<void>;
+  getAllStoreItemByCategory(categoryId: string): Promise<IStoreItemDocument[]>; // no pagination
 }
 
 export default class StoreItemRepository implements IStoreItemRepository {
@@ -135,5 +136,9 @@ export default class StoreItemRepository implements IStoreItemRepository {
 
   async updateSoldCount(itemId: string): Promise<void> {
     await this.Model.findByIdAndUpdate(itemId, { $inc: { totalSold: 1 } });
+  }
+
+  async getAllStoreItemByCategory(categoryId: string): Promise<IStoreItemDocument[]> {
+    return await this.Model.find({ categoryId: categoryId });
   }
 }
