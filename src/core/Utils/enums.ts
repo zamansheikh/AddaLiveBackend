@@ -160,6 +160,10 @@ export enum SocketAudioChannels {
   AudioRoomSearch = 'audio-room-search',
   GetMyAudioRoom = 'get-my-audio-room',
   RecentVisitedAudioRooms = 'recent-visited-audio-rooms',
+  ClearChatHistory = "audio-clear-chat-history",
+  LockAllSeat = 'audio-lock-all-seat',
+  UnlockAllSeats = 'audio-unlock-all-seat',
+  
 }
 
 export enum RoomTypes {

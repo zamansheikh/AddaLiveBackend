@@ -45,8 +45,7 @@ export interface IUserRepository {
     Id: string;
     myId: string;
   }): Promise<IUserDocument | null>;
-  searchUserByEmail(
-    email: string,
+  searchUserByQuery(
     query: Record<string, unknown>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] } | null>;
   addPermission(id: string, permission: string): Promise<IUserDocument | null>;
@@ -209,8 +208,7 @@ export default class UserRepository implements IUserRepository {
     return udpated;
   }
 
-  async searchUserByEmail(
-    email: string,
+  async searchUserByQuery(
     query: Record<string, unknown>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] } | null> {
     const qb = new QueryBuilder(this.UserModel, query);

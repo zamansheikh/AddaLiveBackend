@@ -502,9 +502,7 @@ export const registerAudioRoomHandler = async (
     if (ensureJoinSeat == false) return;
 
     const room = audioRoom[roomId];
-    const member = room.membersDetails.find(
-      (member) => member._id.toString() === userId
-    );
+    const member = userObj;
 
     let message: IRoomMessage = {
       name: userDetails.name as string,
@@ -1088,7 +1086,7 @@ export const registerAudioRoomHandler = async (
     }
   );
 
-  // update announcement
+  // update title
   socket.on(SocketAudioChannels.UpdateAudioTitle, ({ roomId, title }) => {
     const isHost = audioRoomPolicy.ensureIsHost(roomId, userId);
     if (isHost == false) return;
@@ -1371,4 +1369,55 @@ export const registerAudioRoomHandler = async (
       data: allRoomSerialized,
     });
   });
+
+  // clear chat history
+  socket.on(SocketAudioChannels.ClearChatHistory, ({roomId}) => {
+    const isHost = audioRoomPolicy.ensureIsHost(roomId, userId);
+    if (isHost == false) return;
+    const room = audioRoom[roomId];
+    room.messages = [];
+    socketResponse(io, SocketAudioChannels.ClearChatHistory, roomId, {
+      success: true,
+      message: "Successfully cleared chat history",
+      data: [],
+    });
+  } );
+
+  // lock all seat 
+  socket.on(SocketAudioChannels.LockAllSeat, ({ roomId }) => {
+    const isHost = audioRoomPolicy.ensureIsHost(roomId, userId);
+    if (isHost == false) return;
+    const room = audioRoom[roomId];
+    for (const [seatKey, seat] of Object.entries(room.seats)) {
+      room.seats[seatKey].available = false;
+    }
+    room.premiumSeat.available = false;
+    socketResponse(io, SocketAudioChannels.LockAllSeat, roomId, {
+      success: true,
+      message: "Successfully locked all seats",
+      data: {
+        seats: room.seats,
+        premiumSeat: room.premiumSeat,
+      },
+    });
+  });
+  // unlock all seat
+  socket.on(SocketAudioChannels.UnlockAllSeats, ({ roomId }) => {
+    const isHost = audioRoomPolicy.ensureIsHost(roomId, userId);
+    if (isHost == false) return;
+    const room = audioRoom[roomId];
+    for (const [seatKey, seat] of Object.entries(room.seats)) {
+      room.seats[seatKey].available = true;
+    }
+    room.premiumSeat.available = true;
+    socketResponse(io, SocketAudioChannels.UnlockAllSeats, roomId, {
+      success: true,
+      message: "Successfully unlocked all seats",
+      data: {
+        seats: room.seats,
+        premiumSeat: room.premiumSeat,
+      },
+    });
+  });
+  
 };

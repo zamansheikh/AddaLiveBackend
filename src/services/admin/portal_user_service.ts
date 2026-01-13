@@ -218,7 +218,7 @@ export default class SharedPowerService implements ISharedPowerService {
     email: string,
     query: Record<string, unknown>
   ): Promise<{ pagination: IPagination; users: IUserDocument[] } | null> {
-    const users = await this.UserRepository.searchUserByEmail(email, query);
+    const users = await this.UserRepository.searchUserByQuery( query);
     return users;
   }
 
