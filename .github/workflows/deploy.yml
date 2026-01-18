@@ -20,19 +20,17 @@ jobs:
       - name: Deploy to VPS
         run: |
           ssh -o StrictHostKeyChecking=no root@88.222.213.235 "
-            export PATH=\$PATH:/root/.bun/bin &&  # Existing for Bun
-            export PATH=/root/.nvm/versions/node/v20.19.5/bin:\$PATH &&  # Add this for Node 20 (replace with your path)
+            export PATH=/root/.nvm/versions/node/v20.19.5/bin:\$PATH &&  # Use Node path for Yarn
             cd /var/www/AddaLiveBackend &&
             git stash &&
             GIT_SSH_COMMAND=\"ssh -i ~/.ssh/id_ed25519_deploy\" git pull origin main &&
-            bun install &&
-            bun run build &&
+            yarn install &&
+            yarn build &&
             if tmux has-session -t AddaLiveBackend 2>/dev/null; then
               echo \"Already session running: AddaLiveBackend. Killing it...\"
               tmux kill-session -t AddaLiveBackend
             fi &&
             echo \"Starting new session: AddaLiveBackend\" &&
-            tmux new-session -d -s AddaLiveBackend 'bun run start' &&
-            echo \"Successfully started 'bun run start' in tmux session AddaLiveBackend\"
+            tmux new-session -d -s AddaLiveBackend 'yarn start' &&
+            echo \"Successfully started 'yarn start' in tmux session AddaLiveBackend\"
           "
- # GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519_deploy" git clone git@github.com:zamansheikh/amateur_player.git .
