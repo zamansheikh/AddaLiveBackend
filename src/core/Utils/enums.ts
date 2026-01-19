@@ -44,10 +44,9 @@ export enum DatabaseNames {
   RoomBonusRecord = "room_bonus_records",
   LevelTagBg = "level_tag_bg",
   BlockDocs = "block_docs",
-  GiftAudioRoomRockets = 'gift_audio_room_rockets',
-  BlockedEmails = 'blocked_emails',
-  UpdateCost = 'update_cost',
-  
+  GiftAudioRoomRockets = "gift_audio_room_rockets",
+  BlockedEmails = "blocked_emails",
+  UpdateCost = "update_cost",
 }
 
 export enum ReelStatus {
@@ -118,8 +117,8 @@ export enum SocketChannels {
   GetVideoHosts = "get-video-hosts",
   UpdateHostCoin = "update-host-coin",
   UserConnection = "user-connection",
-  XpUp = 'xp-up',
-  levelUp = 'level-up',
+  XpUp = "xp-up",
+  levelUp = "level-up",
 }
 
 export enum SocketAudioChannels {
@@ -140,30 +139,34 @@ export enum SocketAudioChannels {
   UnBanUser = "unban-audio-user",
   GetAudioHosts = "get-audio-hosts",
   UpdateAudioHostCoins = "update-audio-host-coins",
-  NewRocketFuelPercentage = 'new-rocket-fuel-percentage',
-  NewRocketLevel = 'new-rocket-level',
-  LaunchRocket = 'rocket-launch',
-  SentAudioGift = 'sent-audio-gift',
-  MakeAdmin = 'make-audio-admin',
-  RemoveAdmin = 'remove-audio-admin',
-  SendAudioEmoji = 'send-audio-emoji',
-  LockUnLockAudioSeat = 'lock-unlock-audio-seat',
-  AudioUserConnection = 'audio-user-connection',
-  UpdateAudioSeatCount = 'update-audio-seat-count',
-  UpdateAudioAnnouncement = 'update-audio-announcement',
-  UpdateAudioTitle = 'update-audio-title',
-  SetAudioPrivacyStatus = 'set-audio-privacy-status',
-  SetAudioChatPrivacyStatus = 'set-audio-chat-privacy-status',
-  InviteUserToSeat = 'invite-user-to-seat',
-  AudioSeatInvitations = 'audio-seat-invitations',
-  AcceptAudioSeatInvitation = 'accept-audio-seat-invitation',
-  AudioRoomSearch = 'audio-room-search',
-  GetMyAudioRoom = 'get-my-audio-room',
-  RecentVisitedAudioRooms = 'recent-visited-audio-rooms',
+  NewRocketFuelPercentage = "new-rocket-fuel-percentage",
+  NewRocketLevel = "new-rocket-level",
+  LaunchRocket = "rocket-launch",
+  SentAudioGift = "sent-audio-gift",
+  MakeAdmin = "make-audio-admin",
+  RemoveAdmin = "remove-audio-admin",
+  SendAudioEmoji = "send-audio-emoji",
+  LockUnLockAudioSeat = "lock-unlock-audio-seat",
+  AudioUserConnection = "audio-user-connection",
+  UpdateAudioSeatCount = "update-audio-seat-count",
+  UpdateAudioAnnouncement = "update-audio-announcement",
+  UpdateAudioTitle = "update-audio-title",
+  SetAudioPrivacyStatus = "set-audio-privacy-status",
+  SetAudioChatPrivacyStatus = "set-audio-chat-privacy-status",
+  InviteUserToSeat = "invite-user-to-seat",
+  AudioSeatInvitations = "audio-seat-invitations",
+  AcceptAudioSeatInvitation = "accept-audio-seat-invitation",
+  AudioRoomSearch = "audio-room-search",
+  GetMyAudioRoom = "get-my-audio-room",
+  RecentVisitedAudioRooms = "recent-visited-audio-rooms",
   ClearChatHistory = "audio-clear-chat-history",
-  LockAllSeat = 'audio-lock-all-seat',
-  UnlockAllSeats = 'audio-unlock-all-seat',
-  
+  LockAllSeat = "audio-lock-all-seat",
+  UnlockAllSeats = "audio-unlock-all-seat",
+  RoomLevelUp = "audio-room-level-up",
+  AddRoomPartners = "add-audio-room-partners",
+  RemoveRoomPartners = "remove-audio-room-partners",
+  RoomSupportReward = "room-support-reward",
+  GetRoomSupportHistory = "get-room-support-history",
 }
 
 export enum RoomTypes {
@@ -259,7 +262,6 @@ export enum AgencyJoinStatus {
   member = "member",
   error = "error",
 }
-
 
 export enum LaunchGiftTypes {
   Coins = "coins",

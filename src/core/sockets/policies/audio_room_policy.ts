@@ -13,19 +13,24 @@ import MyBucketRepository, {
 import MyBucketModel from "../../../models/store/my_bucket_model";
 import { IUserDocument } from "../../../models/user/user_model_interface";
 import { StoryReactionDto } from "../../../dtos/stories/story_react_dto";
+import { IUserRepository } from "../../../repository/users/user_repository";
+import { ROOM_LEVEL_CRITERIA } from "../../Utils/constants";
 
 export class AudioRoomPolicy {
   hostestRooms: Record<string, IAudioRoomData>;
   socket: Socket;
   io: Server;
+  userRepository: IUserRepository;
   constructor(
     hostedRooms: Record<string, IAudioRoomData>,
     io: Server,
-    socket: Socket
+    socket: Socket,
+    userRepository: IUserRepository
   ) {
     this.io = io;
     this.socket = socket;
     this.hostestRooms = hostedRooms;
+    this.userRepository = userRepository;
   }
 
   ensureUserIsNotBlocked(details: IUserDocument): boolean {
@@ -509,6 +514,102 @@ export class AudioRoomPolicy {
         });
         return false;
       }
+    }
+    return true;
+  }
+
+  async ensureAddRoomPartner(roomId: string, userId: string, partnerId: string): Promise<boolean> {
+    const isHost = this.ensureIsHost(roomId, userId);
+    if (isHost == false) return false;
+    const room = this.hostestRooms[roomId];
+
+    if(room.hostDetails?._id != userId) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "Only the host can add a partner",
+      });
+      return false;
+    }
+
+    if (room.roomLevel == 0) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "You can't add a partner to a room with level 0",
+      });
+      return false;
+    }
+
+    const currentLevelCriteria = ROOM_LEVEL_CRITERIA[room.roomLevel - 1];
+
+    if (currentLevelCriteria.numberOfPartners == room.roomPartners.length) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message:
+          "You have reached the maximum number of partners for this room level",
+      });
+      return false;
+    }
+
+    const hasPartner = room.roomPartners.filter(
+      (partner) => partner._id == partnerId
+    );
+
+    if (hasPartner.length > 0) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "You are already a partner of this room",
+      });
+      return false;
+    }
+
+    // fetching the relavent informations
+    const partnerDetails = await this.userRepository.getUserDetailsSelectedField(
+      partnerId,
+      [
+        "name",
+        "avatar",
+        "uid",
+        "userId",
+        "country",
+        "currentLevelBackground",
+        "currentLevelTag",
+        "level",
+        "activityZone",
+      ]
+    );
+    if (!partnerDetails) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "User does not exist",
+      });
+      return false;
+    }
+    return true;
+  }
+
+  ensureRemoveRoomPartner(roomId: string, userId: string, partnerId: string): boolean {
+    const isHost = this.ensureIsHost(roomId, userId);
+    if (isHost == false) return false;
+    const room = this.hostestRooms[roomId];
+
+    if(room.hostDetails?._id != userId) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "Only the host can remove a partner",
+      });
+      return false;
+    }
+
+    const hasPartner = room.roomPartners.filter(
+      (partner) => partner._id == partnerId
+    );
+
+    if (hasPartner.length == 0) {
+      socketResponse(this.io, SocketChannels.error, this.socket.id, {
+        success: false,
+        message: "This user is not a partner of this room",
+      });
+      return false;
     }
     return true;
   }

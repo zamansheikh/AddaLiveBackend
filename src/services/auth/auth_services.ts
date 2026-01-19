@@ -727,11 +727,11 @@ export default class AuthService implements IAuthService {
     const month = today.getMonth(); // 0-indexed
     const date = today.getDate();
     const lastDate = new Date(year, month + 1, 0).getDate();
-    if (date != 15 && date != lastDate)
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        `${date} is not salary day, 15th or the last day of the month`
-      );
+    // if (date != 15 && date != lastDate)
+    //   throw new AppError(
+    //     StatusCodes.BAD_REQUEST,
+    //     `${date} is not salary day, 15th or the last day of the month`
+    //   );
 
     const { hostId, accountType, accountNumber, totalSalary } = data;
     const host = await this.UserRepository.findUserById(hostId);

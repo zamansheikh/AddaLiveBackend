@@ -103,6 +103,9 @@ export interface IAudioRoomData {
   isHostPresent: boolean, // to check if the host is present in the room
   isLocked: boolean; // private or public 
   hostId: string; // to track the host
+  uniqueUsers: Set<string>; // to track the unique users _id in the room
+  roomLevel: number; // to track the room level (used for room support reward)
+  roomPartners: IMemberDetails[]; // to track the room partners (used for room support reward)
 }
 
 
@@ -133,6 +136,8 @@ export interface ISearializedAudioRoom {
   isHostPresent: boolean;
   duration: number;
   isLocked: boolean;
+  roomLevel: number;
+  roomPartners: IMemberDetails[];
 }
 
 
@@ -157,4 +162,11 @@ export interface IRoomXPData {
   firstEntry: boolean;
   ownRoomXP: number;
   othersRoomXp: number;
+}
+
+export interface IRoomSupportHistory {
+  roomLevel: number;
+  roomVisitors: number;
+  roomTransactions: number;
+  rewardCoin: number;
 }

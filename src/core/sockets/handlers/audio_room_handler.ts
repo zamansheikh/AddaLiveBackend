@@ -19,6 +19,7 @@ import {
   ILaunchRocketInfo,
   IMemberDetails,
   IRoomMessage,
+  IRoomSupportHistory,
   IRoomXPData,
   ISearializedAudioRoom,
 } from "../interface/socket_interface";
@@ -27,7 +28,12 @@ import SocketServer from "../socket_server";
 import { IGiftAudioRocket } from "../../../models/gifts/gift_audio_rocket_model";
 import AdminRepository from "../../../repository/admin/admin_repository";
 import { IBlockedEmailRepository } from "../../../repository/security/blockedEmailRepository";
-import { ROCKET_MILESTONES, ROOM_ENTRY_XP } from "../../Utils/constants";
+import {
+  ROCKET_MILESTONES,
+  ROOM_ENTRY_XP,
+  ROOM_LEVEL_CRITERIA,
+} from "../../Utils/constants";
+import { ServerApiVersion } from "mongodb";
 
 export const registerAudioRoomHandler = async (
   io: Server,
@@ -40,7 +46,7 @@ export const registerAudioRoomHandler = async (
   categoryRepository: IStoreCategoryRepository,
   blockedEmailRepository: IBlockedEmailRepository,
   audioRoomVisitedHistory: Record<string, Record<string, string>>,
-  roomXpTrackingSystem: Record<string, IRoomXPData>
+  roomXpTrackingSystem: Record<string, IRoomXPData>,
 ) => {
   // userId -> mongoose object_id
   const userId = socket.handshake.query.userId as string;
@@ -91,11 +97,17 @@ export const registerAudioRoomHandler = async (
   userObj.equipedStoreItems = await getEquipedItemObjects(
     bucketRepository,
     categoryRepository,
-    userId
+    userId,
   );
 
   // creating policy object
-  const audioRoomPolicy = new AudioRoomPolicy(audioRoom, io, socket);
+  const audioRoomPolicy = new AudioRoomPolicy(
+    audioRoom,
+    io,
+    socket,
+    userRepository,
+  );
+
   // channel to create audio room
   socket.on(
     SocketAudioChannels.CreateAudioRoom,
@@ -106,7 +118,7 @@ export const registerAudioRoomHandler = async (
       const ensureCreateRoom = audioRoomPolicy.ensureCreateRoomPolicy(
         roomId,
         title,
-        numberOfSeats
+        numberOfSeats,
       );
       if (ensureUserIsNotBlocked == false) return;
       if (ensureCreateRoom == false) return;
@@ -162,6 +174,9 @@ export const registerAudioRoomHandler = async (
         isLocked: false,
         hostId: userId,
         isHostPresent: true,
+        uniqueUsers: new Set([userId]),
+        roomLevel: 0,
+        roomPartners: [],
       };
       audioRoom[roomId] = createdRoom;
 
@@ -214,10 +229,12 @@ export const registerAudioRoomHandler = async (
         ranking: createdRoom.ranking,
         chatPrivacy: createdRoom.chatPrivacy,
         duration: Math.floor(
-          (new Date().getTime() - createdRoom.createdAt.getTime()) / 1000
+          (new Date().getTime() - createdRoom.createdAt.getTime()) / 1000,
         ),
         isHostPresent: createdRoom.isHostPresent,
         isLocked: createdRoom.isLocked,
+        roomLevel: createdRoom.roomLevel,
+        roomPartners: createdRoom.roomPartners,
       };
 
       const allRoomSerialized: ISearializedAudioRoom[] = [];
@@ -250,10 +267,12 @@ export const registerAudioRoomHandler = async (
           ranking: roomData.ranking,
           chatPrivacy: roomData.chatPrivacy,
           duration: Math.floor(
-            (new Date().getTime() - roomData.createdAt.getTime()) / 1000
+            (new Date().getTime() - roomData.createdAt.getTime()) / 1000,
           ),
           isHostPresent: roomData.isHostPresent,
           isLocked: roomData.isLocked,
+          roomLevel: roomData.roomLevel,
+          roomPartners: roomData.roomPartners,
         };
         allRoomSerialized.push(obj);
       }
@@ -269,7 +288,7 @@ export const registerAudioRoomHandler = async (
         message: "Successfully room created",
         data: allRoomSerialized,
       });
-    }
+    },
   );
 
   // get all audio rooms
@@ -303,10 +322,12 @@ export const registerAudioRoomHandler = async (
         ranking: roomData.ranking,
         chatPrivacy: roomData.chatPrivacy,
         duration: Math.floor(
-          (new Date().getTime() - roomData.createdAt.getTime()) / 1000
+          (new Date().getTime() - roomData.createdAt.getTime()) / 1000,
         ),
         isHostPresent: roomData.isHostPresent,
         isLocked: roomData.isLocked,
+        roomLevel: roomData.roomLevel,
+        roomPartners: roomData.roomPartners,
       };
 
       serializedRooms.push(obj);
@@ -350,10 +371,12 @@ export const registerAudioRoomHandler = async (
       ranking: room.ranking,
       chatPrivacy: room.chatPrivacy,
       duration: Math.floor(
-        (new Date().getTime() - room.createdAt.getTime()) / 1000
+        (new Date().getTime() - room.createdAt.getTime()) / 1000,
       ),
       isHostPresent: room.isHostPresent,
       isLocked: room.isLocked,
+      roomLevel: room.roomLevel,
+      roomPartners: room.roomPartners,
     };
     socketResponse(io, SocketAudioChannels.RoomDetails, socket.id, {
       success: true,
@@ -367,7 +390,7 @@ export const registerAudioRoomHandler = async (
     const ensureUserCanJoin = audioRoomPolicy.ensureUserCanJoin(
       roomId,
       userId,
-      password
+      password,
     );
     if (ensureUserCanJoin == false) return;
     const room = audioRoom[roomId];
@@ -414,6 +437,27 @@ export const registerAudioRoomHandler = async (
         updateUserXpFunc(userRepository, userId, ROOM_ENTRY_XP, io);
       }
     }
+    // unique User tracking
+    room.uniqueUsers.add(userId);
+
+    // Room level up condition check
+    const currentLevelCriteria = ROOM_LEVEL_CRITERIA[room.roomLevel];
+    if (
+      room.uniqueUsers.size >= currentLevelCriteria.roomVisitor &&
+      room.roomTotalTransaction >= currentLevelCriteria.roomTransactions
+    ) {
+      // increase the level
+      room.roomLevel++;
+      // send level up event to the room
+      socketResponse(io, SocketAudioChannels.RoomLevelUp, roomId, {
+        success: true,
+        message: "Successfully room level up",
+        data: {
+          roomLevel: room.roomLevel,
+        },
+      });
+    }
+
     const message: IRoomMessage = {
       name: userDetails.name as string,
       avatar: userDetails.avatar as string,
@@ -480,7 +524,7 @@ export const registerAudioRoomHandler = async (
         success: true,
         message: "Successfully joined the room",
         data: userDetailsToSend,
-      }
+      },
     );
 
     const isBlocked = await blockedEmailRepository.checkBlockedEmail(userId);
@@ -496,7 +540,7 @@ export const registerAudioRoomHandler = async (
     const ensureJoinSeat = await audioRoomPolicy.ensureJoinSeat(
       roomId,
       userId,
-      seatKey
+      seatKey,
     );
     if (ensureRoomExists == false) return;
     if (ensureJoinSeat == false) return;
@@ -589,7 +633,7 @@ export const registerAudioRoomHandler = async (
     const ensureLeaveSeat = audioRoomPolicy.ensureLeaveSeat(
       roomId,
       userId,
-      seatKey
+      seatKey,
     );
     if (ensureRightSeatType == false) return;
     if (ensureRoomExists == false) return;
@@ -694,7 +738,7 @@ export const registerAudioRoomHandler = async (
     const targetSocketId = onlineUsers.get(targetId);
     if (!targetSocketId) return;
     let targetMember = room.membersDetails.find(
-      (member) => member._id.toString() === targetId
+      (member) => member._id.toString() === targetId,
     );
 
     if (targetId == room.hostDetails?._id) targetMember = room.hostDetails;
@@ -768,10 +812,12 @@ export const registerAudioRoomHandler = async (
       ranking: room.ranking,
       chatPrivacy: room.chatPrivacy,
       duration: Math.floor(
-        (new Date().getTime() - room.createdAt.getTime()) / 1000
+        (new Date().getTime() - room.createdAt.getTime()) / 1000,
       ),
       isHostPresent: room.isHostPresent,
       isLocked: room.isLocked,
+      roomLevel: room.roomLevel,
+      roomPartners: room.roomPartners,
     };
 
     socketResponse(io, SocketAudioChannels.RoomDetails, roomId, {
@@ -837,7 +883,7 @@ export const registerAudioRoomHandler = async (
           sender: userDetails.name,
         },
       });
-    }
+    },
   );
 
   // ban user
@@ -892,7 +938,7 @@ export const registerAudioRoomHandler = async (
     const canMakeAdmin = audioRoomPolicy.ensureCanMakeAdmin(
       roomId,
       userId,
-      targetId
+      targetId,
     );
     if (canMakeAdmin == false) return;
     const room = audioRoom[roomId];
@@ -994,7 +1040,7 @@ export const registerAudioRoomHandler = async (
           const leftUserDetails = room.membersDetails.filter(
             (member) =>
               member._id ==
-              (room.seats[`seat-${i}`].member as IMemberDetails)._id
+              (room.seats[`seat-${i}`].member as IMemberDetails)._id,
           );
           let message: IRoomMessage = {
             name: leftUserDetails[0].name as string,
@@ -1055,17 +1101,19 @@ export const registerAudioRoomHandler = async (
         ranking: room.ranking,
         chatPrivacy: room.chatPrivacy,
         duration: Math.floor(
-          (new Date().getTime() - room.createdAt.getTime()) / 1000
+          (new Date().getTime() - room.createdAt.getTime()) / 1000,
         ),
         isHostPresent: room.isHostPresent,
         isLocked: room.isLocked,
+        roomLevel: room.roomLevel,
+        roomPartners: room.roomPartners,
       };
       socketResponse(io, SocketAudioChannels.RoomDetails, roomId, {
         success: true,
         message: "Successfully fetched room details",
         data: serializedRoom,
       });
-    }
+    },
   );
 
   // update announcement
@@ -1083,7 +1131,7 @@ export const registerAudioRoomHandler = async (
           announcement: room.announcement,
         },
       });
-    }
+    },
   );
 
   // update title
@@ -1136,7 +1184,7 @@ export const registerAudioRoomHandler = async (
           isLocked: room.isLocked,
         },
       });
-    }
+    },
   );
 
   // set chat privacy
@@ -1160,9 +1208,9 @@ export const registerAudioRoomHandler = async (
           data: {
             chatPrivacy: room.chatPrivacy,
           },
-        }
+        },
       );
-    }
+    },
   );
 
   // imvite user to seat
@@ -1173,7 +1221,7 @@ export const registerAudioRoomHandler = async (
       const joinSeat = await audioRoomPolicy.ensureJoinSeat(
         roomId,
         targetId,
-        seatKey
+        seatKey,
       );
       if (joinSeat == false) return;
       if (isHost == false) return;
@@ -1191,14 +1239,14 @@ export const registerAudioRoomHandler = async (
             seatKey,
             targetId,
           },
-        }
+        },
       );
       socketResponse(io, SocketAudioChannels.InviteUserToSeat, socket.id, {
         success: true,
         message: `Successfully invited user to ${seatKey}`,
         data: { seatKey, targetId },
       });
-    }
+    },
   );
 
   // search audio room
@@ -1235,10 +1283,12 @@ export const registerAudioRoomHandler = async (
           ranking: roomData.ranking,
           chatPrivacy: roomData.chatPrivacy,
           duration: Math.floor(
-            (new Date().getTime() - roomData.createdAt.getTime()) / 1000
+            (new Date().getTime() - roomData.createdAt.getTime()) / 1000,
           ),
           isHostPresent: roomData.isHostPresent,
           isLocked: roomData.isLocked,
+          roomLevel: roomData.roomLevel,
+          roomPartners: roomData.roomPartners,
         };
         allRoomSerialized.push(obj);
       }
@@ -1282,10 +1332,12 @@ export const registerAudioRoomHandler = async (
           ranking: roomData.ranking,
           chatPrivacy: roomData.chatPrivacy,
           duration: Math.floor(
-            (new Date().getTime() - roomData.createdAt.getTime()) / 1000
+            (new Date().getTime() - roomData.createdAt.getTime()) / 1000,
           ),
           isHostPresent: roomData.isHostPresent,
           isLocked: roomData.isLocked,
+          roomLevel: roomData.roomLevel,
+          roomPartners: roomData.roomPartners,
         };
         allRoomSerialized.push(obj);
       }
@@ -1312,7 +1364,7 @@ export const registerAudioRoomHandler = async (
           success: true,
           message: "Successfully fetched your recent visited audio rooms",
           data: [],
-        }
+        },
       );
       return;
     }
@@ -1325,7 +1377,7 @@ export const registerAudioRoomHandler = async (
     }
     normalizedVisitHistory.sort(
       (a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
     for (let i = 0; i < normalizedVisitHistory.length; i++) {
       const room = audioRoom[normalizedVisitHistory[i].roomId];
@@ -1355,10 +1407,12 @@ export const registerAudioRoomHandler = async (
         ranking: room.ranking,
         chatPrivacy: room.chatPrivacy,
         duration: Math.floor(
-          (new Date().getTime() - room.createdAt.getTime()) / 1000
+          (new Date().getTime() - room.createdAt.getTime()) / 1000,
         ),
         isHostPresent: room.isHostPresent,
         isLocked: room.isLocked,
+        roomLevel: room.roomLevel,
+        roomPartners: room.roomPartners,
       };
       allRoomSerialized.push(obj);
     }
@@ -1371,19 +1425,52 @@ export const registerAudioRoomHandler = async (
   });
 
   // clear chat history
-  socket.on(SocketAudioChannels.ClearChatHistory, ({roomId}) => {
+  socket.on(SocketAudioChannels.ClearChatHistory, ({ roomId }) => {
     const isHost = audioRoomPolicy.ensureIsHost(roomId, userId);
     if (isHost == false) return;
     const room = audioRoom[roomId];
     room.messages = [];
-    socketResponse(io, SocketAudioChannels.ClearChatHistory, roomId, {
+    const serializedRoom: ISearializedAudioRoom = {
+      title: room.title,
+      numberOfSeats: room.numberOfSeats,
+      announcement: room.announcement,
+      roomId: room.roomId,
+      currentRocketFuel: room.currentRocketFuel,
+      currentRocketLevel: room.currentRocketLevel,
+      currentRocketMilestone: room.currentRocketMilestone,
+      roomTotalTransaction: room.roomTotalTransaction,
+      rocketFuelPercentage:
+        room.currentRocketFuel / room.currentRocketMilestone,
+      hostGifts: room.hostGifts,
+      hostBonus: room.hostBonus,
+      hostDetails: room.hostDetails,
+      adminDetails: room.adminDetails,
+      premiumSeat: room.premiumSeat,
+      seats: room.seats,
+      messages: room.messages,
+      createdAt: room.createdAt,
+      bannedUsers: Array.from(room.bannedUsers),
+      members: Array.from(room.members),
+      membersDetails: room.membersDetails,
+      mutedUsers: Array.from(room.mutedUsers),
+      ranking: room.ranking,
+      chatPrivacy: room.chatPrivacy,
+      duration: Math.floor(
+        (new Date().getTime() - room.createdAt.getTime()) / 1000,
+      ),
+      isHostPresent: room.isHostPresent,
+      isLocked: room.isLocked,
+      roomLevel: room.roomLevel,
+      roomPartners: room.roomPartners,
+    };
+    socketResponse(io, SocketAudioChannels.RoomDetails, roomId, {
       success: true,
       message: "Successfully cleared chat history",
-      data: [],
+      data: serializedRoom,
     });
-  } );
+  });
 
-  // lock all seat 
+  // lock all seat
   socket.on(SocketAudioChannels.LockAllSeat, ({ roomId }) => {
     const isHost = audioRoomPolicy.ensureIsHost(roomId, userId);
     if (isHost == false) return;
@@ -1392,13 +1479,43 @@ export const registerAudioRoomHandler = async (
       room.seats[seatKey].available = false;
     }
     room.premiumSeat.available = false;
-    socketResponse(io, SocketAudioChannels.LockAllSeat, roomId, {
+    const serializedRoom: ISearializedAudioRoom = {
+      title: room.title,
+      numberOfSeats: room.numberOfSeats,
+      announcement: room.announcement,
+      roomId: room.roomId,
+      currentRocketFuel: room.currentRocketFuel,
+      currentRocketLevel: room.currentRocketLevel,
+      currentRocketMilestone: room.currentRocketMilestone,
+      roomTotalTransaction: room.roomTotalTransaction,
+      rocketFuelPercentage:
+        room.currentRocketFuel / room.currentRocketMilestone,
+      hostGifts: room.hostGifts,
+      hostBonus: room.hostBonus,
+      hostDetails: room.hostDetails,
+      adminDetails: room.adminDetails,
+      premiumSeat: room.premiumSeat,
+      seats: room.seats,
+      messages: room.messages,
+      createdAt: room.createdAt,
+      bannedUsers: Array.from(room.bannedUsers),
+      members: Array.from(room.members),
+      membersDetails: room.membersDetails,
+      mutedUsers: Array.from(room.mutedUsers),
+      ranking: room.ranking,
+      chatPrivacy: room.chatPrivacy,
+      duration: Math.floor(
+        (new Date().getTime() - room.createdAt.getTime()) / 1000,
+      ),
+      isHostPresent: room.isHostPresent,
+      isLocked: room.isLocked,
+      roomLevel: room.roomLevel,
+      roomPartners: room.roomPartners,
+    };
+    socketResponse(io, SocketAudioChannels.RoomDetails, roomId, {
       success: true,
       message: "Successfully locked all seats",
-      data: {
-        seats: room.seats,
-        premiumSeat: room.premiumSeat,
-      },
+      data: serializedRoom,
     });
   });
   // unlock all seat
@@ -1410,14 +1527,145 @@ export const registerAudioRoomHandler = async (
       room.seats[seatKey].available = true;
     }
     room.premiumSeat.available = true;
-    socketResponse(io, SocketAudioChannels.UnlockAllSeats, roomId, {
+    const serializedRoom: ISearializedAudioRoom = {
+      title: room.title,
+      numberOfSeats: room.numberOfSeats,
+      announcement: room.announcement,
+      roomId: room.roomId,
+      currentRocketFuel: room.currentRocketFuel,
+      currentRocketLevel: room.currentRocketLevel,
+      currentRocketMilestone: room.currentRocketMilestone,
+      roomTotalTransaction: room.roomTotalTransaction,
+      rocketFuelPercentage:
+        room.currentRocketFuel / room.currentRocketMilestone,
+      hostGifts: room.hostGifts,
+      hostBonus: room.hostBonus,
+      hostDetails: room.hostDetails,
+      adminDetails: room.adminDetails,
+      premiumSeat: room.premiumSeat,
+      seats: room.seats,
+      messages: room.messages,
+      createdAt: room.createdAt,
+      bannedUsers: Array.from(room.bannedUsers),
+      members: Array.from(room.members),
+      membersDetails: room.membersDetails,
+      mutedUsers: Array.from(room.mutedUsers),
+      ranking: room.ranking,
+      chatPrivacy: room.chatPrivacy,
+      duration: Math.floor(
+        (new Date().getTime() - room.createdAt.getTime()) / 1000,
+      ),
+      isHostPresent: room.isHostPresent,
+      isLocked: room.isLocked,
+      roomLevel: room.roomLevel,
+      roomPartners: room.roomPartners,
+    };
+    socketResponse(io, SocketAudioChannels.RoomDetails, roomId, {
       success: true,
       message: "Successfully unlocked all seats",
+      data: serializedRoom,
+    });
+  });
+
+  // add room partners
+  socket.on(
+    SocketAudioChannels.AddRoomPartners,
+    async ({ roomId, partnerId }) => {
+      const canAddPartner = await audioRoomPolicy.ensureAddRoomPartner(
+        roomId,
+        userId,
+        partnerId,
+      );
+      if (canAddPartner == false) return;
+      const room = audioRoom[roomId];
+      //fethcing relevant details of the user
+      const partner = await userRepository.getUserDetailsSelectedField(userId, [
+        "name",
+        "avatar",
+        "uid",
+        "userId",
+        "country",
+        "currentLevelBackground",
+        "currentLevelTag",
+        "level",
+        "activityZone",
+      ]);
+
+      // attaching the equiped items from the store.
+      const userObj = partner!.toObject();
+      userObj.equipedStoreItems = await getEquipedItemObjects(
+        bucketRepository,
+        categoryRepository,
+        userId,
+      );
+
+      // preparing partner object
+      const partnerDetails: IMemberDetails = {
+        name: partner!.name as string,
+        avatar: partner!.avatar as string,
+        uid: partner!.uid as string,
+        userId: partner!.userId as number,
+        country: partner!.country as string,
+        _id: partner!._id as string,
+        currentBackground: partner!.currentLevelBackground as string,
+        currentTag: partner!.currentLevelTag as string,
+        currentLevel: partner!.level as number,
+        equipedStoreItems: userObj.equipedStoreItems,
+        totalGiftSent: 0,
+        isMuted: false,
+      };
+      // adding the partner in the array
+      room.roomPartners.push(partnerDetails);
+      // sending acknowledgement event to the host
+      socketResponse(io, SocketAudioChannels.AddRoomPartners, socket.id, {
+        success: true,
+        message: "Successfully added room partner",
+        data: {
+          roomPartners: room.roomPartners,
+        },
+      });
+    },
+  );
+
+  // remove room partner
+  socket.on(SocketAudioChannels.RemoveRoomPartners, ({ roomId, partnerId }) => {
+    const canRemovePartner = audioRoomPolicy.ensureRemoveRoomPartner(
+      roomId,
+      userId,
+      partnerId,
+    );
+    if (canRemovePartner == false) return;
+    const room = audioRoom[roomId];
+    room.roomPartners = room.roomPartners.filter(
+      (partner) => partner._id != partnerId,
+    );
+    socketResponse(io, SocketAudioChannels.RemoveRoomPartners, socket.id, {
+      success: true,
+      message: "Successfully removed room partner",
       data: {
-        seats: room.seats,
-        premiumSeat: room.premiumSeat,
+        roomPartners: room.roomPartners,
       },
     });
   });
-  
+
+  // get room suport history
+  socket.on(SocketAudioChannels.GetRoomSupportHistory, ({ roomId }) => {
+    const roomExists = audioRoomPolicy.ensureRoomExists(roomId);
+    if (roomExists == false) return;
+    const room = audioRoom[roomId];
+    const socketInstance = SocketServer.getInstance();
+    let supportHistory = {} as Record<string, IRoomSupportHistory>;
+    supportHistory["lastWeek"] = socketInstance.getRoomSupportHistory(roomId);
+    supportHistory["thisWeek"] = {
+      rewardCoin: 0,
+      roomLevel: room.roomLevel,
+      roomTransactions: room.roomTotalTransaction,
+      roomVisitors: room.uniqueUsers.size,
+    };
+    socketResponse(io, SocketAudioChannels.GetRoomSupportHistory, socket.id, {
+      success: true,
+      message: "Successfully fetched room support history",
+      data: supportHistory,
+    });
+  });
 };

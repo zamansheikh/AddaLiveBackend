@@ -30,6 +30,7 @@ import path from "path";
 import globalErrorHandler from "./core/errors/global_error_handlar";
 import CronManager from "./core/corn/corn_manager";
 import { resetRoomXPTrackingSystem } from "./core/corn/jobs/reset_room_xp_tracking_sys";
+import { roomSupportRewardSystem } from "./core/corn/jobs/room_support_jobs";
 
 // Initialize dotenv for environment variables
 dotenv.config();
@@ -122,5 +123,6 @@ mongoose.connect(MONGOURL).then(() => {
     const cronManager = CronManager.getInstance();
     cronManager.start();
     cronManager.register("0 0 * * *", resetRoomXPTrackingSystem); // Everyday at 12:00 AM
+    cronManager.register("0 0 * * 0", roomSupportRewardSystem); // every week at sunday
   });
 });

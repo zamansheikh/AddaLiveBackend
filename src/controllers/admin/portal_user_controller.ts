@@ -76,7 +76,7 @@ export class PortalUserControllers {
     const profile = await this.Service.getMyProfile(id);
     sendResponse(res, {
       statusCode: StatusCodes.OK,
-      success: true,
+      success: true,  
       result: profile,
       message: "profile retrieved succesfully",
     });

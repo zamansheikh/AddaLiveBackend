@@ -24,6 +24,7 @@ import {
   IMemberDetails,
   IRewarededUser,
   IRoomMessage,
+  IRoomSupportHistory,
   IRoomXPData,
   ISearializedAudioRoom,
   RoomData,
@@ -45,7 +46,15 @@ import Admin from "../../models/admin/admin_model";
 import { BlockedEmailRepository } from "../../repository/security/blockedEmailRepository";
 import BlockedEmailModel from "../../models/security/blocked_emails";
 import { CursorTimeoutMode } from "mongodb";
-import { COIN_MAX, COIN_MIN, REWARD_NUMBERS, ROCKET_MILESTONES, XP_MAX, XP_MIN } from "../Utils/constants";
+import {
+  COIN_MAX,
+  COIN_MIN,
+  REWARD_NUMBERS,
+  ROCKET_MILESTONES,
+  ROOM_LEVEL_CRITERIA,
+  XP_MAX,
+  XP_MIN,
+} from "../Utils/constants";
 import StoreItemRepository from "../../repository/store/store_item_repository";
 import StoreItemModel, {
   IStoreItem,
@@ -64,17 +73,18 @@ export default class SocketServer {
     { timeOut: NodeJS.Timeout; roomId?: string }
   >(); // Map<userId, socketId>
   private hostedRooms = {} as Record<string, RoomData>; //roomid : roomdata
-  private hostedAudioRooms = {} as Record<string, IAudioRoomData>; //roomid : roomdata
+  public hostedAudioRooms = {} as Record<string, IAudioRoomData>; //roomid : roomdata
   private audioRoomVisitedHistory = {} as Record<
     string,
     Record<string, string>
   >; // eg. {userId: {roomId: lastVisited}}
   public roomXpTrackingSystem = {} as Record<string, IRoomXPData>; // eg. {userId: {RoomXpData}}
+  public roomSupportHistory = {} as Record<string, IRoomSupportHistory>; // eg. {roomId: IRoomSupportHistory};
   private blockedEmailRepository = new BlockedEmailRepository(
-    BlockedEmailModel
+    BlockedEmailModel,
   );
-  private userRepo = new UserRepository(User);
-  private userStatsRepo = new UserStatsRepository(UserStats);
+  public userRepo = new UserRepository(User);
+  public userStatsRepo = new UserStatsRepository(UserStats);
   private adminRepo = new AdminRepository(Admin);
   private bucketRepo = new MyBucketRepository(MyBucketModel);
   private categoryRepo = new StoreCategoryRepository(StoreCategoryModel);
@@ -101,7 +111,7 @@ export default class SocketServer {
   public static getInstance(): SocketServer {
     if (!SocketServer.instance) {
       throw new Error(
-        "SocketServer not initialized. Call initialize(server) first."
+        "SocketServer not initialized. Call initialize(server) first.",
       );
     }
     return SocketServer.instance;
@@ -125,7 +135,7 @@ export default class SocketServer {
         this.adminRepo,
         this.bucketRepo,
         this.categoryRepo,
-        this.blockedEmailRepository
+        this.blockedEmailRepository,
       );
 
       registerAudioRoomHandler(
@@ -139,7 +149,7 @@ export default class SocketServer {
         this.categoryRepo,
         this.blockedEmailRepository,
         this.audioRoomVisitedHistory,
-        this.roomXpTrackingSystem
+        this.roomXpTrackingSystem,
       );
 
       socket.on("disconnect", () => {
@@ -171,7 +181,7 @@ export default class SocketServer {
 
         // persist audio room connection
         for (const [roomId, roomData] of Object.entries(
-          this.hostedAudioRooms
+          this.hostedAudioRooms,
         )) {
           if (!roomData.members.has(userId)) continue;
           // ! notifying the audio room that a user has been disconnected
@@ -187,7 +197,7 @@ export default class SocketServer {
                 id: userId,
                 seat: getAudioUserSeat(userId, roomData),
               },
-            }
+            },
           );
           const timeOut = setTimeout(() => {
             this.disconnectedUsers.delete(userId);
@@ -215,7 +225,7 @@ export default class SocketServer {
   public async updateRoomCoin(
     roomId: string,
     coin: number,
-    targetUserIds: string[]
+    targetUserIds: string[],
   ): Promise<void> {
     const videoRoom: RoomData | undefined = this.hostedRooms[roomId];
     const audioRoom: IAudioRoomData | undefined = this.hostedAudioRooms[roomId];
@@ -226,13 +236,32 @@ export default class SocketServer {
 
     if (audioRoom) {
       const hasHostId = targetUserIds.filter(
-        (id) => id == audioRoom.hostDetails?._id
+        (id) => id == audioRoom.hostDetails?._id,
       );
       if (hasHostId.length > 0) {
         audioRoom.hostBonus += coin;
       }
       const totalCoins = coin * targetUserIds.length;
       audioRoom.roomTotalTransaction += totalCoins;
+
+      // Room level up condition check
+      const currentLevelCriteria = ROOM_LEVEL_CRITERIA[audioRoom.roomLevel];
+      if (
+        audioRoom.uniqueUsers.size >= currentLevelCriteria.roomVisitor &&
+        audioRoom.roomTotalTransaction >= currentLevelCriteria.roomTransactions
+      ) {
+        // increase the level
+        audioRoom.roomLevel++;
+        // send level up event to the room
+        socketResponse(this.io, SocketAudioChannels.RoomLevelUp, roomId, {
+          success: true,
+          message: "Successfully room level up",
+          data: {
+            roomLevel: audioRoom.roomLevel,
+          },
+        });
+      }
+
       // rocket fuel update
       await this.addFuelToRocket(roomId, totalCoins);
 
@@ -247,7 +276,7 @@ export default class SocketServer {
             hostBonus: audioRoom.hostBonus,
             roomTotalTransaction: audioRoom.roomTotalTransaction,
           },
-        }
+        },
       );
     }
   }
@@ -256,7 +285,7 @@ export default class SocketServer {
     roomId: string,
     userId: string,
     gifts: number,
-    targetUserIds: string[]
+    targetUserIds: string[],
   ) {
     const videoRoom: RoomData | undefined = this.hostedRooms[roomId];
     const audioRoom: IAudioRoomData | undefined = this.hostedAudioRooms[roomId];
@@ -300,7 +329,7 @@ export default class SocketServer {
           currentRocketFuelPercentage:
             room.currentRocketFuel / room.currentRocketMilestone,
         },
-      }
+      },
     );
   }
 
@@ -313,7 +342,7 @@ export default class SocketServer {
     // reward mechanism
     const rewardedUsers = await this.rewardUsersUponLaunch(
       room.currentRocketLevel,
-      roomId
+      roomId,
     );
 
     // notifying the app about the rocket launch
@@ -323,7 +352,7 @@ export default class SocketServer {
         message: "Rocket is about to be launched",
         data: {
           roomId: roomId,
-          rewardedUsers
+          rewardedUsers,
         },
       });
     }
@@ -360,13 +389,13 @@ export default class SocketServer {
           currentRocketFuelPercentage:
             room.currentRocketFuel / room.currentRocketMilestone,
         },
-      }
+      },
     );
   }
 
   public async rewardUsersUponLaunch(
     rocketLevel: number,
-    roomId: string
+    roomId: string,
   ): Promise<IRewarededUser[]> {
     let rewardableUserCount = REWARD_NUMBERS[rocketLevel - 1];
     const room = this.hostedAudioRooms[roomId];
@@ -385,7 +414,7 @@ export default class SocketServer {
       if (i == 0) {
         const asset = await this.addAssetToUser(
           room.ranking[i]._id.toString(),
-          4
+          4,
         );
         const rewardObj: ILaunchGifts = {
           quantity: 4,
@@ -399,7 +428,7 @@ export default class SocketServer {
       if (i < 2) {
         const asset = await this.addAssetToUser(
           room.ranking[i]._id.toString(),
-          3
+          3,
         );
         const rewardObj: ILaunchGifts = {
           quantity: 3,
@@ -439,7 +468,7 @@ export default class SocketServer {
   // this function adds asset to the
   private async addAssetToUser(
     targetUserId: string,
-    duration: number
+    duration: number,
   ): Promise<string> {
     // select a random category
     const categories: { _id: string; name: string }[] = (
@@ -454,7 +483,7 @@ export default class SocketServer {
       categories[Math.floor(Math.random() * categories.length)];
     // select a random item
     const items = await this.storeItemRepository.getAllStoreItemByCategory(
-      randomCategory._id
+      randomCategory._id,
     );
     const randomItem: IStoreItemDocument = items[
       Math.floor(Math.random() * items.length)
@@ -517,7 +546,7 @@ export default class SocketServer {
                 id: userId,
                 seat: getAudioUserSeat(userId, audioRoom),
               },
-            }
+            },
           );
         }
       }
@@ -530,7 +559,7 @@ export default class SocketServer {
   public hanldeUserDisconnect(
     userId: string,
     roomId: string,
-    roomData: RoomData
+    roomData: RoomData,
   ) {
     // remove the users and leave the room when diconnected
 
@@ -560,17 +589,17 @@ export default class SocketServer {
       if (roomData.brodcasters.has(userId)) {
         roomData.brodcasters.delete(userId);
         roomData.broadcastersDetails = roomData.broadcastersDetails.filter(
-          (broadcaster) => broadcaster._id.toString() !== userId
+          (broadcaster) => broadcaster._id.toString() !== userId,
         );
         this.io
           .to(roomId)
           .emit(
             SocketChannels.broadcasterList,
-            Array.from(roomData.broadcastersDetails)
+            Array.from(roomData.broadcastersDetails),
           );
       }
       const objectToDelete = Array.from(roomData.callRequests).find(
-        (request) => request._id.toString() === userId
+        (request) => request._id.toString() === userId,
       );
       if (objectToDelete) {
         roomData.callRequests.delete(objectToDelete);
@@ -578,15 +607,15 @@ export default class SocketServer {
           .to(roomId)
           .emit(
             SocketChannels.joinCallReqList,
-            Array.from(roomData.callRequests)
+            Array.from(roomData.callRequests),
           );
       }
       roomData.members.delete(userId);
       const userDetails = roomData.membersDetails.filter(
-        (member) => member._id.toString() == userId
+        (member) => member._id.toString() == userId,
       );
       roomData.membersDetails = roomData.membersDetails.filter(
-        (member) => member._id.toString() !== userId
+        (member) => member._id.toString() !== userId,
       );
       const socketId = this.onlineUsers.get(userId);
       if (socketId) {
@@ -609,10 +638,10 @@ export default class SocketServer {
     }
   }
 
-  handleAudioRoomDisconnect(
+  public handleAudioRoomDisconnect(
     userId: string,
     roomId: string,
-    roomData: IAudioRoomData
+    roomData: IAudioRoomData,
   ) {
     const isPersistRoom =
       process.env.ROOM_PERSIST && process.env.ROOM_PERSIST == "1";
@@ -653,7 +682,7 @@ export default class SocketServer {
           currentRocketMilestone: roomData.currentRocketMilestone,
           roomTotalTransaction: roomData.roomTotalTransaction,
           rocketFuelPercentage: Math.floor(
-            roomData.currentRocketFuel / roomData.currentRocketMilestone
+            roomData.currentRocketFuel / roomData.currentRocketMilestone,
           ),
           hostGifts: roomData.hostGifts,
           hostBonus: roomData.hostBonus,
@@ -670,10 +699,12 @@ export default class SocketServer {
           ranking: roomData.ranking,
           chatPrivacy: roomData.chatPrivacy,
           duration: Math.floor(
-            (new Date().getTime() - roomData.createdAt.getTime()) / 1000
+            (new Date().getTime() - roomData.createdAt.getTime()) / 1000,
           ),
           isHostPresent: roomData.isHostPresent,
           isLocked: roomData.isLocked,
+          roomLevel: roomData.roomLevel,
+          roomPartners: roomData.roomPartners,
         };
         allRoomSerialized.push(obj);
       }
@@ -737,7 +768,7 @@ export default class SocketServer {
       // message body
 
       const leftUserDetails = roomData.membersDetails.filter(
-        (member) => member._id == userId
+        (member) => member._id == userId,
       );
       let message: IRoomMessage = {
         name: leftUserDetails[0].name as string,
@@ -804,7 +835,7 @@ export default class SocketServer {
       roomData.members.delete(userId);
       // removing from membersDetails
       roomData.membersDetails = roomData.membersDetails.filter(
-        (member) => member._id.toString() !== userId
+        (member) => member._id.toString() !== userId,
       );
 
       // send leave event
@@ -829,5 +860,15 @@ export default class SocketServer {
         }
       }
     }
+  }
+
+  public getRoomSupportHistory(roomId: string): IRoomSupportHistory {
+    if (this.roomSupportHistory[roomId]) return this.roomSupportHistory[roomId];
+    return {
+      rewardCoin: 0,
+      roomLevel: 0,
+      roomTransactions: 0,
+      roomVisitors: 0,
+    };
   }
 }
