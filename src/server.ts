@@ -24,6 +24,7 @@ import StoreRoutes from "./router/store_router";
 import AppVersionRoutes from "./router/app_version_routes";
 import GiftAudioRoketRouter from "./router/gift_audio_rocket_route";
 import BlockedEmail from "./router/blocked_email_routes";
+import DiamondExchangeRouter from "./router/diamond_exchange_route";
 import path from "path";
 
 // error handlers
@@ -95,6 +96,7 @@ app.use("/api/store", StoreRoutes);
 app.use("/release", AppVersionRoutes);
 app.use("/api/gifts-audio-rocket", GiftAudioRoketRouter);
 app.use("/api/blocked-emails", BlockedEmail);
+app.use("/api/diamond-exchange", DiamondExchangeRouter);
 
 // app.get("/release/latest", async (req: Request, res: Response) => {
 //   res.send({

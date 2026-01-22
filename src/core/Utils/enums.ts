@@ -47,6 +47,7 @@ export enum DatabaseNames {
   GiftAudioRoomRockets = "gift_audio_room_rockets",
   BlockedEmails = "blocked_emails",
   UpdateCost = "update_cost",
+  DiamondExchange = "diamond_exchanges",
 }
 
 export enum ReelStatus {
