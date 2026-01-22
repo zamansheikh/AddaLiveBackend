@@ -64,9 +64,10 @@ export class DiamondExchangeController {
 
   exchangeDiamondToCoin = catchAsync(async (req, res) => {
     const { id } = req.params;
+    const userId = req.user!.id;
     validateFieldExistance(id, "id");
     const exchangedCoins =
-      await this.diamondExchangeService.exchangeDiamondToCoin(id);
+      await this.diamondExchangeService.exchangeDiamondToCoin(id, userId);
     sendResponse(res, {
       success: true,
       statusCode: 200,

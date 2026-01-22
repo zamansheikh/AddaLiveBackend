@@ -7,11 +7,17 @@ import { DiamondExchangeService } from '../services/in_app_exchange_service/diam
 import { DiamondExchangeController } from '../controllers/in_app_exchange_controller/diamond_exchange_controller';
 import { authenticate } from '../core/middlewares/auth_middleware';
 import { UserRoles } from '../core/Utils/enums';
+import UserRepository from '../repository/users/user_repository';
+import User from '../models/user/user_model';
+import UserStatsRepository from '../repository/users/userstats_repository';
+import UserStats from '../models/userstats/userstats_model';
 
 const router = express.Router();
 
 const repository = new DiamondExchangeRepository(DiamondEchangeModel);
-const service = new DiamondExchangeService(repository);
+const userRepository = new UserRepository(User);
+const userStatsRepository = new UserStatsRepository(UserStats);
+const service = new DiamondExchangeService(repository, userRepository, userStatsRepository);
 const controller = new DiamondExchangeController(service);
 
 router
