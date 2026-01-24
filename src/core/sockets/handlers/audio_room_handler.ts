@@ -186,6 +186,15 @@ export const registerAudioRoomHandler = async (
         audioRoomVisitedHistory[userId] = {};
       audioRoomVisitedHistory[userId][roomId] = new Date().toISOString();
 
+      // join user tracking system data set up
+      const socketInstance = SocketServer.getInstance();
+      const prevRoomId = socketInstance.joinUserTrackingSystem[userId];
+      if (prevRoomId && prevRoomId !== roomId) {
+        const prevRoom = audioRoom[prevRoomId];
+        socketInstance.handleAudioRoomDisconnect(userId, prevRoomId, prevRoom);
+      }
+      socketInstance.joinUserTrackingSystem[userId] = roomId;
+
       // xp tracking
       if (process.env.XP_MODE == "1") {
         if (!roomXpTrackingSystem[userId]) {
@@ -213,7 +222,6 @@ export const registerAudioRoomHandler = async (
         roomTotalTransaction: createdRoom.roomTotalTransaction,
         rocketFuelPercentage:
           createdRoom.currentRocketFuel / createdRoom.currentRocketMilestone,
-
         hostGifts: createdRoom.hostGifts,
         hostBonus: createdRoom.hostBonus,
         hostDetails: createdRoom.hostDetails,
@@ -411,6 +419,16 @@ export const registerAudioRoomHandler = async (
       totalGiftSent: 0,
       isMuted: false,
     };
+
+    // join user tracking system data set up
+    const socketInstance = SocketServer.getInstance();
+    const prevRoomId = socketInstance.joinUserTrackingSystem[userId];
+    if (prevRoomId && prevRoomId !== roomId) {
+      const prevRoom = audioRoom[prevRoomId];
+      socketInstance.handleAudioRoomDisconnect(userId, prevRoomId, prevRoom);
+    }
+    socketInstance.joinUserTrackingSystem[userId] = roomId;
+
     if (!alreadyUserInRoom) {
       room.members.add(userId);
       if (isHost) room.isHostPresent = true;
@@ -418,6 +436,7 @@ export const registerAudioRoomHandler = async (
       if (!isHost) room.ranking.push(membersDetails);
     }
     socket.join(roomId);
+
     // to keep track of recent joinings in audio rooms
     if (!audioRoomVisitedHistory[userId]) audioRoomVisitedHistory[userId] = {};
     audioRoomVisitedHistory[userId][roomId] = new Date().toISOString();

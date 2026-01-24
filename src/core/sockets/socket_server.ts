@@ -357,9 +357,16 @@ export default class SocketServer {
     });
 
     // update the rocket informations
-    room.currentRocketMilestone = ROCKET_MILESTONES[room.currentRocketLevel];
-    room.currentRocketLevel += 1;
-    room.currentRocketFuel = 0;
+    if (room.currentRocketLevel == 5) {
+      room.currentRocketMilestone = ROCKET_MILESTONES[0];
+      room.currentRocketLevel = 1;
+      room.currentRocketFuel = 0;
+    } else {
+      room.currentRocketMilestone = ROCKET_MILESTONES[room.currentRocketLevel];
+      room.currentRocketLevel += 1;
+      room.currentRocketFuel = 0;
+    }
+
     socketResponse(this.io, SocketAudioChannels.NewRocketLevel, roomId, {
       success: true,
       message: "Successfully rocket leveled up",
