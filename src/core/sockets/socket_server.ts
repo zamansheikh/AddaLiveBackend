@@ -79,6 +79,7 @@ export default class SocketServer {
     Record<string, string>
   >; // eg. {userId: {roomId: lastVisited}}
   public roomXpTrackingSystem = {} as Record<string, IRoomXPData>; // eg. {userId: {RoomXpData}}
+  public joinUserTrackingSystem = {} as Record<string, string>; // eg. {userId: roomId}
   public roomSupportHistory = {} as Record<string, IRoomSupportHistory>; // eg. {roomId: IRoomSupportHistory};
   private blockedEmailRepository = new BlockedEmailRepository(
     BlockedEmailModel,
@@ -346,16 +347,14 @@ export default class SocketServer {
     );
 
     // notifying the app about the rocket launch
-    for (const [id, data] of Object.entries(this.hostedAudioRooms)) {
-      socketResponse(this.io, SocketAudioChannels.LaunchRocket, id, {
-        success: true,
-        message: "Rocket is about to be launched",
-        data: {
-          roomId: roomId,
-          rewardedUsers,
-        },
-      });
-    }
+    this.io.emit(SocketAudioChannels.LaunchRocket, {
+      success: true,
+      message: "Rocket is about to be launched",
+      data: {
+        roomId: roomId,
+        rewardedUsers,
+      },
+    });
 
     // update the rocket informations
     room.currentRocketMilestone = ROCKET_MILESTONES[room.currentRocketLevel];
@@ -485,6 +484,7 @@ export default class SocketServer {
     const items = await this.storeItemRepository.getAllStoreItemByCategory(
       randomCategory._id,
     );
+    if (items.length == 0) return "item-unavailable";
     const randomItem: IStoreItemDocument = items[
       Math.floor(Math.random() * items.length)
     ] as IStoreItemDocument;
