@@ -60,6 +60,7 @@ app.use(
       "http://31.97.222.97:8000",
       "http://dlstarliveplan1.com:8080",
       "http://31.97.222.97:8080",
+      "https://admin.zigoliveapp.xyz",
     ],
     credentials: true,
   })
