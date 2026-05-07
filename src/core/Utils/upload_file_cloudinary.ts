@@ -3,6 +3,16 @@ import cloudinary from "../config/cloudaniay_config";
 import AppError from "../errors/app_errors";
 import { getCloudinaryPublicId } from "./helper_functions";
 
+/**
+ * Cloudinary's single-shot upload endpoint caps the request body at 10 MB on
+ * the free plan. Anything bigger needs to go through the chunked endpoint —
+ * which is allowed up to 100 MB on free and higher on paid plans. We pick a
+ * chunk under the single-shot cap so each chunked request is itself within
+ * the limit.
+ */
+const SINGLE_SHOT_CLOUDINARY_LIMIT = 10 * 1024 * 1024; // 10 MB
+const CHUNK_SIZE = 6 * 1024 * 1024; // 6 MB per chunk — well under the cap
+
 export const uploadFileToCloudinary = ({
   file,
   folder = "user_profiles",
@@ -40,13 +50,20 @@ export const uploadFileToCloudinary = ({
       options.resource_type = "raw";
     }
 
-    const stream = cloudinary.uploader.upload_stream(
-      options,
-      (error, result) => {
-        if (error || !result) return reject(error);
-        resolve(result.secure_url);
-      },
-    );
+    const callback = (error: any, result: any) => {
+      if (error || !result) return reject(error);
+      resolve(result.secure_url);
+    };
+
+    // Files larger than the single-shot cap (10 MB on free) must go through
+    // upload_chunked_stream or Cloudinary returns 400 "File size too large".
+    const useChunked = file.buffer.length > SINGLE_SHOT_CLOUDINARY_LIMIT;
+    const stream = useChunked
+      ? cloudinary.uploader.upload_chunked_stream(
+          { ...options, chunk_size: CHUNK_SIZE },
+          callback,
+        )
+      : cloudinary.uploader.upload_stream(options, callback);
     stream.end(file.buffer);
   });
 };

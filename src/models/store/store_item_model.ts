@@ -43,13 +43,17 @@ export const bundleSchema = new mongoose.Schema<IBundle>({
     type: String,
     required: true,
   },
+  // svgaFile and previewFile are each independently optional — admins may
+  // upload a static-image-only bundle (svgaFile: "") or an svga-only bundle
+  // (previewFile: ""). The application layer enforces that at least one of
+  // the two is non-empty per bundle.
   svgaFile: {
     type: String,
-    required: true,
+    default: "",
   },
   previewFile: {
     type: String,
-    required: true,
+    default: "",
   },
   fileType: {
     type: String,

@@ -54,22 +54,28 @@ export function ValidateStoreItemBatch(
     }
   }
 
+  // svgaFile and previewFile are each independently optional — but a bundle
+  // must include at least one asset per category, so require at least one
+  // of the two arrays to match the categoryNames count exactly.
   const { svgaFile, previewFile } = files;
-  if (!svgaFile || svgaFile.length < 1)
-    throw new AppError(StatusCodes.BAD_REQUEST, "svgaFiles are required");
-  if (!previewFile || previewFile.length < 1)
-    throw new AppError(StatusCodes.BAD_REQUEST, "previewFiles are required");
+  const svgaCount = svgaFile?.length ?? 0;
+  const previewCount = previewFile?.length ?? 0;
+  if (svgaCount < 1 && previewCount < 1)
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      "Each bundle category needs at least one of svgaFile or previewFile",
+    );
 
   const categories = categoryNames.split(",");
-  if (categories.length !== svgaFile.length)
+  if (svgaCount > 0 && categories.length !== svgaCount)
     throw new AppError(
       StatusCodes.BAD_REQUEST,
-      "categoryNames and svgaFiles must be the same length",
+      "categoryNames and svgaFiles must be the same length when svgaFiles are provided",
     );
-  if (categories.length !== previewFile.length)
+  if (previewCount > 0 && categories.length !== previewCount)
     throw new AppError(
       StatusCodes.BAD_REQUEST,
-      "categoryNames and previewFiles must be the same length",
+      "categoryNames and previewFiles must be the same length when previewFiles are provided",
     );
 }
 

@@ -164,23 +164,34 @@ export default class StoreController {
     let categories = categoryNames.split(",");
     categories = categories.map((cat: string) => cat.trim());
     let premiumFiles: IPremiumFiles[] = [];
-    for (let i = 0; i < svgaFiles.length; i++) {
-      if (!isSvgaFile(svgaFiles[i].originalname)) {
+    // svgaFiles and/or previewFiles may be empty — pair by index against
+    // categories, validating each provided file individually. The validator
+    // already ensured at least one of the two arrays matches categories.
+    for (let i = 0; i < categories.length; i++) {
+      const svga = svgaFiles[i];
+      const preview = previewFiles[i];
+      if (svga && !isSvgaFile(svga.originalname)) {
         throw new AppError(
           StatusCodes.BAD_REQUEST,
           `svgaFile[${i}] must be a .svga file`,
         );
       }
-      if (!isImageFile(previewFiles[i].originalname)) {
+      if (preview && !isImageFile(preview.originalname)) {
         throw new AppError(
           StatusCodes.BAD_REQUEST,
           `previewFile[${i}] must be an image`,
         );
       }
+      if (!svga && !preview) {
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          `category[${i}] (${categories[i]}) needs at least one of svgaFile or previewFile`,
+        );
+      }
       premiumFiles.push({
         categoryName: categories[i],
-        svgaFile: svgaFiles[i],
-        previewFile: previewFiles[i],
+        svgaFile: svga,
+        previewFile: preview,
       });
     }
 
@@ -339,23 +350,31 @@ export default class StoreController {
       names = names.map((cat: string) => cat.trim());
       const svgaFiles = files["svgaFile"] || [];
       const previewFiles = files["previewFile"] || [];
-      for (let i = 0; i < svgaFiles.length; i++) {
-        if (!isSvgaFile(svgaFiles[i].originalname)) {
+      for (let i = 0; i < names.length; i++) {
+        const svga = svgaFiles[i];
+        const preview = previewFiles[i];
+        if (svga && !isSvgaFile(svga.originalname)) {
           throw new AppError(
             StatusCodes.BAD_REQUEST,
             `svgaFile[${i}] must be a .svga file`,
           );
         }
-        if (!isImageFile(previewFiles[i].originalname)) {
+        if (preview && !isImageFile(preview.originalname)) {
           throw new AppError(
             StatusCodes.BAD_REQUEST,
             `previewFile[${i}] must be an image`,
           );
         }
+        if (!svga && !preview) {
+          throw new AppError(
+            StatusCodes.BAD_REQUEST,
+            `category[${i}] (${names[i]}) needs at least one of svgaFile or previewFile`,
+          );
+        }
         premiumFiles.push({
           categoryName: names[i],
-          svgaFile: svgaFiles[i],
-          previewFile: previewFiles[i],
+          svgaFile: svga,
+          previewFile: preview,
         });
       }
     }

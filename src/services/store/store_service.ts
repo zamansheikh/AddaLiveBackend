@@ -24,8 +24,10 @@ import { IMyBucketDocument } from "../../models/store/my_bucket_model";
 
 export interface IPremiumFiles {
   categoryName: string;
-  svgaFile: Express.Multer.File;
-  previewFile: Express.Multer.File;
+  /** Optional — admin can upload an SVIP/VIP frame as a static image only. */
+  svgaFile?: Express.Multer.File;
+  /** Optional — admin can upload only an animated svga without a thumbnail. */
+  previewFile?: Express.Multer.File;
 }
 
 export interface IStoreService {
@@ -309,18 +311,19 @@ export default class StoreService implements IStoreService {
         "This is not a premium category",
       );
 
-    // checking category name validity
+    // checking category name validity. Either svgaFile or previewFile (or
+    // both) is present — controller already enforced that.
     for (let i = 0; i < files.length; i++) {
-      const fileSize = files[i].svgaFile.size;
-      const extension = files[i].svgaFile.originalname.split(".").pop();
+      const reference = files[i].svgaFile ?? files[i].previewFile;
+      if (!reference)
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          `category -> ${files[i].categoryName} has no file`,
+        );
+      const extension = reference.originalname.split(".").pop();
       const categoryName = files[i].categoryName;
       const isValidCategory =
         await this.CategoryRepository.isValidCategory(categoryName);
-      // if (fileSize > 10485760)
-      //   throw new AppError(
-      //     StatusCodes.BAD_REQUEST,
-      //     `${files[i].categoryName} is too large`
-      //   );
       if (!extension)
         throw new AppError(StatusCodes.BAD_REQUEST, "Invalid file format");
       if (!isValidCategory)
@@ -329,25 +332,40 @@ export default class StoreService implements IStoreService {
           `category -> ${categoryName} is not valid name`,
         );
     }
-    // to upload and get the links
-    let premimumURLs: IBundle[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const extension = files[i].svgaFile.originalname.split(".").pop();
-      const svgaUrl = await uploadFileToCloudinary({
-        folder: "store_items",
-        file: files[i].svgaFile,
-      });
-      const previewUrl = await uploadFileToCloudinary({
-        folder: "store_items",
-        file: files[i].previewFile,
-      });
-      premimumURLs.push({
-        categoryName: files[i].categoryName,
-        svgaFile: svgaUrl,
-        previewFile: previewUrl,
-        fileType: extension ?? "",
-      });
-    }
+    // Upload all bundle files in parallel. Sequential awaits made the total
+    // wall-clock time = sum of every file's upload latency, which routinely
+    // tripped the upstream proxy/CDN timeout for large batches. Parallel
+    // uploads cap total time at the slowest single file.
+    const premimumURLs: IBundle[] = await Promise.all(
+      files.map(async (entry) => {
+        const svgaSource = entry.svgaFile;
+        const previewSource = entry.previewFile;
+        const extensionSource = svgaSource ?? previewSource!;
+        const extension = extensionSource.originalname.split(".").pop() ?? "";
+
+        const [svgaUrl, previewUrl] = await Promise.all([
+          svgaSource
+            ? uploadFileToCloudinary({
+                folder: "store_items",
+                file: svgaSource,
+              })
+            : Promise.resolve(""),
+          previewSource
+            ? uploadFileToCloudinary({
+                folder: "store_items",
+                file: previewSource,
+              })
+            : Promise.resolve(""),
+        ]);
+
+        return {
+          categoryName: entry.categoryName,
+          svgaFile: svgaUrl,
+          previewFile: previewUrl,
+          fileType: extension,
+        };
+      }),
+    );
 
     let logoUrl: string | undefined;
     if (logoFile) {
@@ -559,33 +577,48 @@ export default class StoreService implements IStoreService {
       }
     }
 
-    for (let i = 0; i < urlsBeDeleted.length; i++) {
-      const deleteFile = await deleteFileFromCloudinary(urlsBeDeleted[i]);
-      if (!deleteFile) {
-        console.error(`Failed to delete file: ${urlsBeDeleted[i]}`);
-        continue;
-      }
-    }
+    // Delete obsolete cloudinary assets in parallel. Failures are logged but
+    // not propagated — the new files have already been chosen and we'd
+    // rather complete the update than block on stale cleanup.
+    await Promise.all(
+      urlsBeDeleted.map(async (url) => {
+        const ok = await deleteFileFromCloudinary(url);
+        if (!ok) console.error(`Failed to delete file: ${url}`);
+      }),
+    );
 
-    let newFilesToBeAdded: IBundle[] = [];
+    // Upload all new bundle files in parallel — same reasoning as the create
+    // path: sequential awaits would multiply timeout risk by the file count.
+    const newFilesToBeAdded: IBundle[] = await Promise.all(
+      files!.map(async (entry) => {
+        const svgaSource = entry.svgaFile;
+        const previewSource = entry.previewFile;
+        const extensionSource = svgaSource ?? previewSource!;
+        const extenstion = extensionSource.originalname.split(".").pop() ?? "";
 
-    for (let i = 0; i < files!.length; i++) {
-      const extenstion = files![i].svgaFile.originalname.split(".").pop();
-      let svgaUrl = await uploadFileToCloudinary({
-        folder: "store_items",
-        file: files![i].svgaFile,
-      });
-      let previewUrl = await uploadFileToCloudinary({
-        folder: "store_items",
-        file: files![i].previewFile,
-      });
-      newFilesToBeAdded.push({
-        categoryName: files![i].categoryName,
-        svgaFile: svgaUrl,
-        previewFile: previewUrl,
-        fileType: extenstion ?? "",
-      });
-    }
+        const [svgaUrl, previewUrl] = await Promise.all([
+          svgaSource
+            ? uploadFileToCloudinary({
+                folder: "store_items",
+                file: svgaSource,
+              })
+            : Promise.resolve(""),
+          previewSource
+            ? uploadFileToCloudinary({
+                folder: "store_items",
+                file: previewSource,
+              })
+            : Promise.resolve(""),
+        ]);
+
+        return {
+          categoryName: entry.categoryName,
+          svgaFile: svgaUrl,
+          previewFile: previewUrl,
+          fileType: extenstion,
+        };
+      }),
+    );
 
     if (logoFile) {
       if (existingItem.logo) {
