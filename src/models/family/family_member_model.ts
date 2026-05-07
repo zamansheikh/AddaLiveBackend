@@ -8,7 +8,7 @@ export interface IFamilyMember {
   familyId: Types.ObjectId | string;
   userId: Types.ObjectId | string;
   role: FamilyMemberRole;
-  giftsSent?: number;
+  giftsReceived?: number;
 }
 
 /**
@@ -43,7 +43,7 @@ const familyMemberSchema = new Schema<IFamilyMemberDocument>(
       enum: Object.values(FamilyMemberRole),
       default: FamilyMemberRole.Member,
     },
-    giftsSent: {
+    giftsReceived: {
       type: Number,
       default: 0,
     }, // per-member contribution

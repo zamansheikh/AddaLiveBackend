@@ -311,6 +311,21 @@ export default class UserRepository implements IUserRepository {
       { $match: { _id: userObjectId } },
       {
         $lookup: {
+          from: DatabaseNames.Family,
+          localField: "familyId",
+          foreignField: "_id",
+          pipeline: [{ $project: { name: 1, _id: 1 } }],
+          as: "familyId",
+        },
+      },
+      {
+        $unwind: {
+          path: "$familyId",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
           from: DatabaseNames.friendships,
           let: { userId: "$_id" },
           pipeline: [

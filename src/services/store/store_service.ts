@@ -332,48 +332,52 @@ export default class StoreService implements IStoreService {
           `category -> ${categoryName} is not valid name`,
         );
     }
-    // Upload all bundle files in parallel. Sequential awaits made the total
-    // wall-clock time = sum of every file's upload latency, which routinely
-    // tripped the upstream proxy/CDN timeout for large batches. Parallel
-    // uploads cap total time at the slowest single file.
-    const premimumURLs: IBundle[] = await Promise.all(
-      files.map(async (entry) => {
-        const svgaSource = entry.svgaFile;
-        const previewSource = entry.previewFile;
-        const extensionSource = svgaSource ?? previewSource!;
-        const extension = extensionSource.originalname.split(".").pop() ?? "";
+    // Build one upload-promise per bundle. Each entry's svgaFile and
+    // previewFile are independently optional — the controller already
+    // enforced that at least one is present. We keep these as promises
+    // (rather than awaiting in place) so the outer Promise.all below can
+    // run them alongside the logo upload, capping total wall-clock time
+    // at the slowest single asset rather than the sum of all of them.
+    const uploadPromises = files.map(async (entry) => {
+      const svgaSource = entry.svgaFile;
+      const previewSource = entry.previewFile;
+      const extensionSource = svgaSource ?? previewSource!;
+      const extension = extensionSource.originalname.split(".").pop() ?? "";
 
-        const [svgaUrl, previewUrl] = await Promise.all([
-          svgaSource
-            ? uploadFileToCloudinary({
-                folder: "store_items",
-                file: svgaSource,
-              })
-            : Promise.resolve(""),
-          previewSource
-            ? uploadFileToCloudinary({
-                folder: "store_items",
-                file: previewSource,
-              })
-            : Promise.resolve(""),
-        ]);
+      const [svgaUrl, previewUrl] = await Promise.all([
+        svgaSource
+          ? uploadFileToCloudinary({
+              folder: "store_items",
+              file: svgaSource,
+            })
+          : Promise.resolve(""),
+        previewSource
+          ? uploadFileToCloudinary({
+              folder: "store_items",
+              file: previewSource,
+            })
+          : Promise.resolve(""),
+      ]);
 
-        return {
-          categoryName: entry.categoryName,
-          svgaFile: svgaUrl,
-          previewFile: previewUrl,
-          fileType: extension,
-        };
-      }),
-    );
+      return {
+        categoryName: entry.categoryName,
+        svgaFile: svgaUrl,
+        previewFile: previewUrl,
+        fileType: extension,
+      };
+    });
 
-    let logoUrl: string | undefined;
-    if (logoFile) {
-      logoUrl = await uploadFileToCloudinary({
-        folder: "store_items",
-        file: logoFile,
-      });
-    }
+    const logoPromise = logoFile
+      ? uploadFileToCloudinary({
+          folder: "store_items",
+          file: logoFile,
+        })
+      : Promise.resolve(undefined);
+
+    const [premimumURLs, logoUrl] = await Promise.all([
+      Promise.all(uploadPromises),
+      logoPromise,
+    ]);
 
     let itemToCreate: IStoreItem = {
       name: item.name,
@@ -580,55 +584,63 @@ export default class StoreService implements IStoreService {
     // Delete obsolete cloudinary assets in parallel. Failures are logged but
     // not propagated — the new files have already been chosen and we'd
     // rather complete the update than block on stale cleanup.
-    await Promise.all(
-      urlsBeDeleted.map(async (url) => {
-        const ok = await deleteFileFromCloudinary(url);
-        if (!ok) console.error(`Failed to delete file: ${url}`);
-      }),
-    );
+    if (urlsBeDeleted.length > 0) {
+      await Promise.all(
+        urlsBeDeleted.map((url) =>
+          deleteFileFromCloudinary(url).catch((err) =>
+            console.error(`Failed to delete file: ${url}`, err),
+          ),
+        ),
+      );
+    }
 
-    // Upload all new bundle files in parallel — same reasoning as the create
-    // path: sequential awaits would multiply timeout risk by the file count.
-    const newFilesToBeAdded: IBundle[] = await Promise.all(
-      files!.map(async (entry) => {
-        const svgaSource = entry.svgaFile;
-        const previewSource = entry.previewFile;
-        const extensionSource = svgaSource ?? previewSource!;
-        const extenstion = extensionSource.originalname.split(".").pop() ?? "";
+    // Build one upload-promise per new bundle. Each entry's svgaFile and
+    // previewFile are independently optional; the controller already
+    // enforced that at least one is present. Promises stay deferred so the
+    // outer Promise.all below can run them alongside the logo upload.
+    const uploadPromises = (files || []).map(async (entry) => {
+      const svgaSource = entry.svgaFile;
+      const previewSource = entry.previewFile;
+      const extensionSource = svgaSource ?? previewSource!;
+      const extenstion = extensionSource.originalname.split(".").pop() ?? "";
 
-        const [svgaUrl, previewUrl] = await Promise.all([
-          svgaSource
-            ? uploadFileToCloudinary({
-                folder: "store_items",
-                file: svgaSource,
-              })
-            : Promise.resolve(""),
-          previewSource
-            ? uploadFileToCloudinary({
-                folder: "store_items",
-                file: previewSource,
-              })
-            : Promise.resolve(""),
-        ]);
+      const [svgaUrl, previewUrl] = await Promise.all([
+        svgaSource
+          ? uploadFileToCloudinary({
+              folder: "store_items",
+              file: svgaSource,
+            })
+          : Promise.resolve(""),
+        previewSource
+          ? uploadFileToCloudinary({
+              folder: "store_items",
+              file: previewSource,
+            })
+          : Promise.resolve(""),
+      ]);
 
-        return {
-          categoryName: entry.categoryName,
-          svgaFile: svgaUrl,
-          previewFile: previewUrl,
-          fileType: extenstion,
-        };
-      }),
-    );
+      return {
+        categoryName: entry.categoryName,
+        svgaFile: svgaUrl,
+        previewFile: previewUrl,
+        fileType: extenstion,
+      };
+    });
 
-    if (logoFile) {
-      if (existingItem.logo) {
-        await deleteFileFromCloudinary(existingItem.logo);
-      }
-      const url = await uploadFileToCloudinary({
-        folder: "store_items",
-        file: logoFile,
-      });
-      item.logo = url;
+    const logoPromise = logoFile
+      ? uploadFileToCloudinary({
+          folder: "store_items",
+          file: logoFile,
+        })
+      : Promise.resolve(undefined);
+
+    const [newFilesToBeAdded, updatedLogoUrl] = await Promise.all([
+      Promise.all(uploadPromises),
+      logoPromise,
+    ]);
+
+    if (updatedLogoUrl) {
+      item.logo = updatedLogoUrl;
     }
 
     let profileToBeUpdated: IStoreItem = {
@@ -670,18 +682,34 @@ export default class StoreService implements IStoreService {
         `Store item with id ${id} not found`,
       );
 
-    // cleaning files
+    // Parallel cleaning of all associated files
+    const deletePromises: Promise<any>[] = [];
+
     if (existingItem.svgaFile)
-      await deleteFileFromCloudinary(existingItem.svgaFile);
+      deletePromises.push(deleteFileFromCloudinary(existingItem.svgaFile));
     if (existingItem.previewFile)
-      await deleteFileFromCloudinary(existingItem.previewFile);
-    if (existingItem.logo) await deleteFileFromCloudinary(existingItem.logo);
+      deletePromises.push(deleteFileFromCloudinary(existingItem.previewFile));
+    if (existingItem.logo)
+      deletePromises.push(deleteFileFromCloudinary(existingItem.logo));
 
     if (existingItem.bundleFiles) {
       for (const bundle of existingItem.bundleFiles) {
-        await deleteFileFromCloudinary(bundle.svgaFile);
-        await deleteFileFromCloudinary(bundle.previewFile);
+        deletePromises.push(deleteFileFromCloudinary(bundle.svgaFile));
+        deletePromises.push(deleteFileFromCloudinary(bundle.previewFile));
       }
+    }
+
+    if (deletePromises.length > 0) {
+      await Promise.all(
+        deletePromises.map((p) =>
+          p.catch((err) =>
+            console.warn(
+              `[StoreService] Non-critical cleanup error for item ${id}:`,
+              err,
+            ),
+          ),
+        ),
+      );
     }
 
     // if this items has been used by some users, we need to deselect them

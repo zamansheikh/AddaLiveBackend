@@ -538,6 +538,8 @@ export default class AuthService implements IAuthService {
     for (const targetUserId of targetUserIds) {
       const targetUserBrief =
         await UserCache.getInstance().getUserBrief(targetUserId);
+      const familyId = targetUserBrief?.familyId;
+
       secondaryUpdates.push(
         GiftUserCache.getInstance().giftRecordRepository.createGiftRecord({
           senderId: myId,
@@ -547,9 +549,20 @@ export default class AuthService implements IAuthService {
           totalCoinCost: gift.coinPrice * qty,
           totalDiamonds: diamonds,
           roomId: isValid ? roomId : undefined, // only adding room id if the room is valid
-          familyId: targetUserBrief?.familyId || "",
+          familyId: familyId || "",
         }),
       );
+
+      // Cache the contribution to the Family Member (Receiver's side)
+      if (familyId) {
+        secondaryUpdates.push(
+          RepositoryProviders.familyMemberRepositoryProvider.incrementContribution(
+            targetUserId,
+            familyId.toString(),
+            gift.coinPrice * qty,
+          ),
+        );
+      }
     }
 
     await Promise.all(secondaryUpdates);

@@ -32,4 +32,8 @@ router
   .route("/ranking/this-week")
   .get(authenticate(), controller.getThisWeekRanking);
 
+router
+  .route("/details/:familyId")
+  .get(authenticate(), controller.getFamilyDetails);
+
 export default router;

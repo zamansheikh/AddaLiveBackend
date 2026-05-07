@@ -176,4 +176,15 @@ export default class FamilyController {
       message: "This week family ranking fetched successfully",
     });
   });
+
+  getFamilyDetails = catchAsync(async (req: Request, res: Response) => {
+    const { familyId } = req.params;
+    const details = await this.Service.getFamilyDetails(familyId);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: details,
+      message: "Family details fetched successfully",
+    });
+  });
 }

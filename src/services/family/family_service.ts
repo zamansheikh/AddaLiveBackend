@@ -35,6 +35,11 @@ import {
 } from "../../repository/gifts/gift_record_repository";
 import { DateHelper } from "../../core/helper_classes/date_helper";
 
+export interface IFamilyDetails {
+  family: IFamilyDocument;
+  topContributors: IFamilyMemberDocument[];
+}
+
 export interface IFamilyService {
   createFamily(data: IFamily): Promise<IFamilyDocument>;
   updateFamilyInformation(
@@ -59,6 +64,7 @@ export interface IFamilyService {
   ): Promise<IFamilyMemberDocument>;
   getLastWeekRanking(): Promise<any>;
   getThisWeekRanking(): Promise<any>;
+  getFamilyDetails(familyId: string): Promise<IFamilyDetails>;
 }
 
 export class FamilyService implements IFamilyService {
@@ -288,7 +294,7 @@ export class FamilyService implements IFamilyService {
     if (!user || !user.familyId) return [];
 
     return await this.familyJoinRequestRepository.findAllByFamily(
-      user.familyId.toString(),
+      user.familyId as string,
       StatusTypes.pending,
     );
   }
@@ -525,6 +531,22 @@ export class FamilyService implements IFamilyService {
       top1FamilyDetails: "UnImplemented",
       weekEnd: DateHelper.getEndOfWeek(new Date()),
       ranking,
+    };
+  }
+
+  async getFamilyDetails(familyId: string): Promise<IFamilyDetails> {
+    const [family, topContributors] = await Promise.all([
+      this.familyRepository.getById(familyId),
+      this.familyMemberRepository.getTopContributors(familyId, 5),
+    ]);
+
+    if (!family) {
+      throw new AppError(StatusCodes.NOT_FOUND, "Family not found");
+    }
+
+    return {
+      family,
+      topContributors,
     };
   }
 
