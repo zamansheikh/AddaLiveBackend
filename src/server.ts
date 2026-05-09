@@ -34,6 +34,8 @@ import MagicBallHostRouter from "./router/magic_ball_host_routes";
 import FamilyRouter from "./router/family_router";
 import CoinBagRouter from "./router/coin_bag_router";
 import FamilyRewardRouter from "./router/family_reward_router";
+import ReferralRouter from "./router/referal_routes";
+
 import path from "path";
 import StoreItemModel from "./models/store/store_item_model";
 import { IStoreCategoryDocument } from "./models/store/store_category_model";
@@ -142,6 +144,7 @@ app.use("/api/magic-ball", MagicBallHostRouter);
 app.use("/api/family", FamilyRouter);
 app.use("/api/family-rewards", FamilyRewardRouter);
 app.use("/api/coin-bag", CoinBagRouter);
+app.use("/api/referral", ReferralRouter);
 
 app.post(
   "/api/upload-file-cloud",
