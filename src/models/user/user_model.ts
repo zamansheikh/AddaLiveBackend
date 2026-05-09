@@ -80,16 +80,6 @@ const userSchema = new mongoose.Schema<IUserDocument>(
       type: mongoose.Schema.Types.ObjectId,
       ref: DatabaseNames.Family,
     },
-    inviteCode: {
-      type: String,
-      unique: true,
-      sparse: true,
-      index: true,
-    },
-    referralCoins: {
-      type: Number,
-      default: 0,
-    },
   },
   {
     timestamps: true,

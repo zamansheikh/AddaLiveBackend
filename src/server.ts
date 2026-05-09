@@ -34,7 +34,7 @@ import MagicBallHostRouter from "./router/magic_ball_host_routes";
 import FamilyRouter from "./router/family_router";
 import CoinBagRouter from "./router/coin_bag_router";
 import FamilyRewardRouter from "./router/family_reward_router";
-import ReferralRouter from "./router/referral_routes";
+import ReferralRouter from "./router/referal_routes";
 
 import path from "path";
 import StoreItemModel from "./models/store/store_item_model";
