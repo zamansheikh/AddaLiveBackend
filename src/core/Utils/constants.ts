@@ -7,7 +7,6 @@ const THOUSAND = 1000;
 export const FAMILY_CREATE_PRICE = 10 * MILLION;
 export const FAMILY_UPDATE_PRICE = 1 * MILLION;
 
-
 // audio room
 export const USER_POPULATED_INFORMATIONS =
   "name avatar uid userId country currentLevelBackground currentLevelTag level";
@@ -33,10 +32,26 @@ export const ROCKET_MILESTONES = [
   150 * MILLION,
 ];
 export const REWARD_NUMBERS = [20, 35, 55, 75, 100];
-export const COIN_MIN = 1000;
-export const COIN_MAX = 10000;
-export const XP_MIN = 1000;
-export const XP_MAX = 10000;
+export let COIN_MIN = 1000;
+export let COIN_MAX = 10000;
+export let XP_MIN = 1000;
+export let XP_MAX = 10000;
+
+/**
+ * Updates the Rocket Reward constants in memory.
+ * This is used by the RocketConfigService to synchronize database values.
+ */
+export const updateRocketConstants = (data: {
+  coinMin?: number;
+  coinMax?: number;
+  xpMin?: number;
+  xpMax?: number;
+}) => {
+  if (data.coinMin !== undefined) COIN_MIN = data.coinMin;
+  if (data.coinMax !== undefined) COIN_MAX = data.coinMax;
+  if (data.xpMin !== undefined) XP_MIN = data.xpMin;
+  if (data.xpMax !== undefined) XP_MAX = data.xpMax;
+};
 
 // Magic Ball Features
 export interface IMAGIC_BALL_CRITERIA {

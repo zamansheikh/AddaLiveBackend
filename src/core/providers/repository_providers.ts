@@ -32,6 +32,8 @@ import FamilyRewardConfigModel from "../../models/family/family_reward_model";
 import FamilyRewardRepository from "../../repository/family/family_reward_repository";
 import RoomLevelCriteriaModel from "../../models/audio_room/room_level_criteria_model";
 import { RoomLevelCriteriaRepository } from "../../repository/audio_room/room_level_criteria_repository";
+import RocketConfigModel from "../../models/audio_room/rocketconfig";
+import { RocketConfigRepository } from "../../repository/audio_room/rocket_config_repository";
 
 export class RepositoryProviders {
   static readonly giftRecordRepositoryProvider = new GiftRecordRepository(
@@ -90,4 +92,6 @@ export class RepositoryProviders {
   );
   static readonly roomLevelCriteriaRepositoryProvider =
     new RoomLevelCriteriaRepository(RoomLevelCriteriaModel);
+  static readonly rocketConfigRepositoryProvider =
+    new RocketConfigRepository(RocketConfigModel);
 }

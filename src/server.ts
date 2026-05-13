@@ -35,6 +35,7 @@ import FamilyRouter from "./router/family_router";
 import CoinBagRouter from "./router/coin_bag_router";
 import FamilyRewardRouter from "./router/family_reward_router";
 import ReferralRouter from "./router/referral_routes";
+import RocketConfigRouter from "./router/rocket_config_routes";
 
 import path from "path";
 import StoreItemModel from "./models/store/store_item_model";
@@ -55,6 +56,7 @@ import RedisConfig from "./core/config/redis_config";
 import { resetMagicBallJob } from "./core/corn/jobs/magic_ball_jobs";
 import { initializeMagicBallTrackers } from "./services/magic_ball";
 import { RoomLevelCriteriaService } from "./services/audio_room/room_level_criteria_service";
+import { RocketConfigService } from "./services/audio_room/rocket_config_service";
 
 // Initialize Magic Ball Trackers
 initializeMagicBallTrackers();
@@ -146,6 +148,7 @@ app.use("/api/family", FamilyRouter);
 app.use("/api/family-rewards", FamilyRewardRouter);
 app.use("/api/coin-bag", CoinBagRouter);
 app.use("/api/referral", ReferralRouter);
+app.use("/api/admin/rocket-config", RocketConfigRouter);
 
 app.post(
   "/api/upload-file-cloud",
@@ -221,11 +224,17 @@ const MONGOURL =
 mongoose.connect(MONGOURL).then(async () => {
   console.log("DB Connected");
 
-  // Sync Room Level Criteria from DB to memory
   try {
     await RoomLevelCriteriaService.bootstrap();
   } catch (err) {
     console.error("Failed to bootstrap Room Level Criteria:", err);
+  }
+
+  // Sync Rocket Configuration from DB to memory
+  try {
+    await RocketConfigService.bootstrap();
+  } catch (err) {
+    console.error("Failed to bootstrap Rocket Configuration:", err);
   }
 
   // Connect to Redis

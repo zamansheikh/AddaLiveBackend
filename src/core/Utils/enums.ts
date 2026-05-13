@@ -68,6 +68,7 @@ export enum DatabaseNames {
   ReferralWithdrawal = "referral_withdrawals",
   ReferralConfig = "referral_configs",
   RoomLevelCriteria = "room_level_criteria",
+  RocketConfig = "rocket_configs",
 }
 
 export enum ReelStatus {
