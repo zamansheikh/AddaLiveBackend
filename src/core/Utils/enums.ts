@@ -69,6 +69,8 @@ export enum DatabaseNames {
   ReferralConfig = "referral_configs",
   RoomLevelCriteria = "room_level_criteria",
   RocketConfig = "rocket_configs",
+  ExchangeOption = "exchange_options",
+  ExchangeTransactionHistory = "exchange_transaction_histories",
 }
 
 export enum ReelStatus {
