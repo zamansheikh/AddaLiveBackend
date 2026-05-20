@@ -20,7 +20,7 @@ export class CoinExchangeService implements ICoinExchangeService {
   private userRepository = RepositoryProviders.userRepositoryProvider;
   private userStatsRepository = RepositoryProviders.userStatsRepositoryProvider;
 
-  constructor() {}
+  constructor() { }
 
   async createExchangeOption(data: IExchangeOption): Promise<IExchangeOptionDocument> {
     if (data.coinsRequired <= 0) {

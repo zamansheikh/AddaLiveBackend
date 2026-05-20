@@ -97,4 +97,46 @@ export class CoinExchangeController {
       result: deleted,
     });
   });
+
+  exchangeCoinsToDiamonds = catchAsync(async (req, res) => {
+    const userId = req.user!.id;
+    const { optionId, idempotencyKey } = req.body;
+
+    validateFieldExistance(optionId, "optionId");
+    validateFieldExistance(idempotencyKey, "idempotencyKey");
+
+    const result = await this.coinExchangeService.exchangeCoinsToDiamonds(
+      userId,
+      optionId,
+      idempotencyKey
+    );
+
+    sendResponse(res, {
+      success: true,
+      statusCode: 200,
+      result,
+    });
+  });
+
+  getMyHistory = catchAsync(async (req, res) => {
+    const userId = req.user!.id;
+    const history = await this.coinExchangeService.getMyHistory(userId);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: 200,
+      result: history,
+    });
+  });
+
+  getAllHistory = catchAsync(async (req, res) => {
+    const history = await this.coinExchangeService.getAllHistory();
+
+    sendResponse(res, {
+      success: true,
+      statusCode: 200,
+      result: history,
+    });
+  });
 }
+
