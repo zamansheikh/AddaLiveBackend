@@ -134,7 +134,7 @@ export class CoinExchangeService implements ICoinExchangeService {
 
       const totalDiamonds = option.diamondsAwarded + option.bonusDiamonds;
 
-      await this.userStatsRepository.updateCoins(userId, -option.coinsRequired, session);
+      await this.userStatsRepository.balanceDeduction(userId, option.coinsRequired, session);
       await this.userStatsRepository.updateDiamonds(userId, totalDiamonds, session);
 
       const historyLog = await this.historyRepository.create({

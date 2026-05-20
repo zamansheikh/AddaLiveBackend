@@ -65,7 +65,7 @@ export default class ExchangeTransactionHistoryRepository
   ): Promise<IExchangeTransactionHistoryDocument> {
     const updatedDocument = await this.Model.findByIdAndUpdate(id, data, {
       new: true,
-      upsert: true,
+      upsert: false,
     });
     if (!updatedDocument) {
       throw new AppError(404, "Exchange transaction history not found");

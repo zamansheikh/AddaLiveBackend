@@ -49,7 +49,7 @@ export default class ExchangeOptionRepository implements IExchangeOptionReposito
   async update(id: string, data: Partial<IExchangeOption>): Promise<IExchangeOptionDocument> {
     const updatedDocument = await this.Model.findByIdAndUpdate(id, data, {
       new: true,
-      upsert: true,
+      upsert: false,
     });
     if (!updatedDocument) {
       throw new AppError(404, "Exchange option not found");
