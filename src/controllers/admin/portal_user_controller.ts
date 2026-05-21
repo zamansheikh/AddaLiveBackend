@@ -142,16 +142,16 @@ export class PortalUserControllers {
 
   assignCoinToUser = catchAsync(async (req: Request, res: Response) => {
     let { userId, coins, userRole } = req.body;
-    if(userRole == UserRoles.Host){
-      userRole = UserRoles.User;
-    }
     const { id, role } = req.user!;
-    if (!userId || !coins)
+    
+    // Validate required fields
+    if (!userId || !coins || !userRole)
       throw new AppError(
         StatusCodes.BAD_REQUEST,
-        "User ID and coins are required"
+        "User ID, coins, and userRole are required"
       );
     
+    // Validate coins
     if (isNaN(Number(coins)))
       throw new AppError(StatusCodes.BAD_REQUEST, "Coins must be a number");
     if (coins <= 0)
@@ -159,6 +159,26 @@ export class PortalUserControllers {
         StatusCodes.BAD_REQUEST,
         "Coins must be greater than 0"
       );
+    
+    // Validate userRole is a valid UserRoles value
+    if (!Object.values(UserRoles).includes(userRole as UserRoles))
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `Invalid userRole: ${userRole}`
+      );
+    
+    // Normalize Host to User
+    if (userRole == UserRoles.Host){
+      userRole = UserRoles.User;
+    }
+    
+    // Block self-transfer
+    if (userId === id)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Self-transfer is not allowed"
+      );
+    
     const updatedUser = await this.Service.assignCoinToUser(
       userId,
       userRole,

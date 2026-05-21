@@ -293,40 +293,71 @@ export default class SharedPowerService implements ISharedPowerService {
     myId: string,
     role: UserRoles,
   ): Promise<IUSerStatsDocument | IPortalUserDocument> {
-    // blocking unconventional transactions
-    if (
-      (role == UserRoles.Admin && userRole != UserRoles.Merchant) ||
-      (role == UserRoles.Merchant &&
-        !(userRole == UserRoles.Reseller || userRole == UserRoles.User)) ||
-      (role == UserRoles.Reseller && userRole != UserRoles.User)
-    )
+    // ── 1. Validate sender eligibility ──────────────────────────────────────
+    const allowedSenders = [UserRoles.Admin, UserRoles.SubAdmin, UserRoles.Reseller];
+    if (!allowedSenders.includes(role)) {
       throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        `${role} cannot assign coins to ${userRole}`,
+        StatusCodes.UNAUTHORIZED,
+        `${role} is not authorized to assign coins`,
       );
+    }
 
-    // fetching my profile;
+    // ── 2. Fetch sender profile from DB (not JWT) ──────────────────────────
     let myProfile;
     if (role == UserRoles.Admin)
       myProfile = await this.AdminRepository.getAdminById(myId);
-    else myProfile = await this.PortalUserRepository.getPortalUserById(myId);
+    else
+      myProfile = await this.PortalUserRepository.getPortalUserById(myId);
 
     if (!myProfile)
       throw new AppError(StatusCodes.NOT_FOUND, "Not valid token");
 
-    // checking for coin sufficiency
+    // ── 3. For SubAdmin, verify coin-distributor permission ─────────────────
+    if (role == UserRoles.SubAdmin) {
+      const hasPermission = canUserUpdate(myProfile, [AdminPowers.CoinDistribute]);
+      if (!hasPermission)
+        throw new AppError(
+          StatusCodes.UNAUTHORIZED,
+          "You do not have the coin-distributor permission to assign coins",
+        );
+    }
+
+    // ── 4. Validate sender → receiver hierarchy ─────────────────────────────
+    // Admin → SubAdmin, Reseller, User
+    // SubAdmin (with coin-distributor) → User
+    // Reseller → User
+    const allowedReceivers: Record<string, UserRoles[]> = {
+      [UserRoles.Admin]: [UserRoles.SubAdmin, UserRoles.Reseller, UserRoles.User],
+      [UserRoles.SubAdmin]: [UserRoles.User],
+      [UserRoles.Reseller]: [UserRoles.User],
+    };
+
+    if (!allowedReceivers[role].includes(userRole)) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `${role} cannot assign coins to ${userRole}`,
+      );
+    }
+
+    // ── 5. Check coin sufficiency ───────────────────────────────────────────
     if (myProfile.coins! < coins)
       throw new AppError(StatusCodes.BAD_REQUEST, "Insufficient coins");
 
-    // fetching target profile
+    // ── 6. Fetch target profile from the correct repository ─────────────────
+    // Portal user targets: sub-admin, reseller
+    // Regular user targets: user (host normalized to user in controller)
+    const portalUserTargets = [UserRoles.SubAdmin, UserRoles.Reseller];
+
     let targetProfile;
-    if (userRole == UserRoles.Merchant || userRole == UserRoles.Reseller)
+    if (portalUserTargets.includes(userRole))
       targetProfile = await this.PortalUserRepository.getPortalUserById(userId);
-    else targetProfile = await this.UserRepository.findUserById(userId);
+    else
+      targetProfile = await this.UserRepository.findUserById(userId);
+
     if (!targetProfile)
       throw new AppError(StatusCodes.NOT_FOUND, "User not found");
 
-    // preparing history body
+    // ── 7. Prepare coin history ─────────────────────────────────────────────
     const historyObj: ICoinHistory = {
       senderRole: role,
       senderId: myId,
@@ -334,19 +365,20 @@ export default class SharedPowerService implements ISharedPowerService {
       receiverId: userId,
       amount: coins,
     };
-    // variable to store return body;
     let returnBody;
 
-    // starting transactions
+    // ── 8. Execute transaction (unchanged logic) ────────────────────────────
     const session = await mongoose.startSession();
     session.startTransaction();
-    // negating coin from myProfile
+
+    // Deduct coins from sender
     if (role == UserRoles.Admin)
       await this.AdminRepository.updateCoin(myId, -coins, session);
-    else await this.PortalUserRepository.updateCoin(myId, -coins, session);
+    else
+      await this.PortalUserRepository.updateCoin(myId, -coins, session);
 
-    // adding coin to targetProfile
-    if (userRole == UserRoles.Merchant || userRole == UserRoles.Reseller) {
+    // Add coins to receiver
+    if (portalUserTargets.includes(userRole)) {
       returnBody = await this.PortalUserRepository.updateCoin(
         userId,
         coins,
@@ -356,16 +388,13 @@ export default class SharedPowerService implements ISharedPowerService {
       const xpEnv = process.env.XP_MODE ?? "0";
       const isXpMode = xpEnv.toString() == "1";
       if (!isXpMode) {
-        // when the target profile is the role user
         const userProfile = targetProfile as IUserDocument;
-        // determine level, bg and tags
         const newLevel = determineUserLevel(
           userProfile.totalBoughtCoins + coins,
         );
         const newTagAndBg = determineUserTagAndBg(newLevel);
         const tagAndBgDocument =
           await this.LevelTagBgRepository.findByLevel(newTagAndBg);
-        // updating the user profile accordingly;
         await this.UserRepository.findUserByIdAndUpdate(userId, {
           totalBoughtCoins: userProfile.totalBoughtCoins + coins,
           level: newLevel,
@@ -374,29 +403,24 @@ export default class SharedPowerService implements ISharedPowerService {
         });
       }
 
-      // adding coin to the user;
       returnBody = await this.UserStatsRepository.updateCoins(
         userId,
         coins,
         session,
       );
     }
+
     await this.CoinHistoryRepository.createHistory(historyObj, session);
 
     await session.commitTransaction();
     session.endSession();
 
-    // --- Referral Recharge Hook ---
-    // Called AFTER commit to prevent phantom rewards if transaction rolls back.
-    if (
-      userRole !== UserRoles.Merchant &&
-      userRole !== UserRoles.Reseller
-    ) {
+    // ── 9. Referral recharge hook (unchanged) ───────────────────────────────
+    if (!portalUserTargets.includes(userRole)) {
       try {
         await this.ReferralService.handleRechargeReferral(userId, coins);
       } catch (error) {
         console.error("Referral recharge tracking failed:", error);
-        // Non-blocking: referral tracking failure should not affect coin assignment
       }
     }
 
