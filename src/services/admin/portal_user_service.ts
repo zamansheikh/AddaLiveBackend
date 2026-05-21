@@ -357,7 +357,15 @@ export default class SharedPowerService implements ISharedPowerService {
     if (!targetProfile)
       throw new AppError(StatusCodes.NOT_FOUND, "User not found");
 
-    // ── 7. Prepare coin history ─────────────────────────────────────────────
+    // ── 7. Verify target user's actual role matches claimed role ────────────
+    if (targetProfile.userRole !== userRole) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `User role mismatch: expected "${userRole}", but the target user has role "${targetProfile.userRole}"`,
+      );
+    }
+
+    // ── 8. Prepare coin history ─────────────────────────────────────────────
     const historyObj: ICoinHistory = {
       senderRole: role,
       senderId: myId,
@@ -396,12 +404,16 @@ export default class SharedPowerService implements ISharedPowerService {
           const newTagAndBg = determineUserTagAndBg(newLevel);
           const tagAndBgDocument =
             await this.LevelTagBgRepository.findByLevel(newTagAndBg);
-          await this.UserRepository.findUserByIdAndUpdate(userId, {
-            totalBoughtCoins: userProfile.totalBoughtCoins + coins,
-            level: newLevel,
-            currentLevelTag: tagAndBgDocument?.levelTag,
-            currentLevelBackground: tagAndBgDocument?.levelBg,
-          });
+          await this.UserRepository.findUserByIdAndUpdate(
+            userId,
+            {
+              totalBoughtCoins: userProfile.totalBoughtCoins + coins,
+              level: newLevel,
+              currentLevelTag: tagAndBgDocument?.levelTag,
+              currentLevelBackground: tagAndBgDocument?.levelBg,
+            },
+            session,
+          );
         }
 
         returnBody = await this.UserStatsRepository.updateCoins(

@@ -160,6 +160,13 @@ export class PortalUserControllers {
         "Coins must be greater than 0"
       );
     
+    // Validate coins is a whole number
+    if (!Number.isInteger(Number(coins)))
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Coins must be a whole number"
+      );
+    
     // Validate userRole is a valid UserRoles value
     if (!Object.values(UserRoles).includes(userRole as UserRoles))
       throw new AppError(

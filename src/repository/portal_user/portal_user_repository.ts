@@ -81,15 +81,20 @@ export default class PortalUserRepository implements IPortalUserRepository {
     coins: number,
     session?: ClientSession
   ): Promise<IPortalUserDocument > {
-    const updated =  await this.Model.findByIdAndUpdate(
-      id,
+    const filter: Record<string, any> = { _id: id };
+    // Guard against negative balances when deducting coins
+    if (coins < 0) {
+      filter.coins = { $gte: Math.abs(coins) };
+    }
+    const updated =  await this.Model.findOneAndUpdate(
+      filter,
       { $inc: { coins: coins } },
       { new: true }
     ).session(session || null);
     if (!updated)
       throw new AppError(
-        StatusCodes.INTERNAL_SERVER_ERROR,
-        "Failed to update coins"
+        StatusCodes.BAD_REQUEST,
+        "Insufficient coins"
       );
     return updated;
   }

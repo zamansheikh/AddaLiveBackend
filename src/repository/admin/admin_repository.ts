@@ -50,7 +50,12 @@ export default class AdminRepository implements IAdminRepository {
     }
 
     async updateCoin(id: string, coins: number, session?: ClientSession): Promise<IAdminDocument | null> {
-        return this.Model.findByIdAndUpdate(id, { $inc: { coins: coins } }, { new: true }).session(session || null);
+        const filter: Record<string, any> = { _id: id };
+        // Guard against negative balances when deducting coins
+        if (coins < 0) {
+            filter.coins = { $gte: Math.abs(coins) };
+        }
+        return this.Model.findOneAndUpdate(filter, { $inc: { coins: coins } }, { new: true }).session(session || null);
     }
 
 }
