@@ -340,7 +340,7 @@ export default class SharedPowerService implements ISharedPowerService {
     }
 
     // ── 5. Check coin sufficiency ───────────────────────────────────────────
-    if (myProfile.coins! < coins)
+    if ((myProfile.coins ?? 0) < coins)
       throw new AppError(StatusCodes.BAD_REQUEST, "Insufficient coins");
 
     // ── 6. Fetch target profile from the correct repository ─────────────────
@@ -371,49 +371,55 @@ export default class SharedPowerService implements ISharedPowerService {
     const session = await mongoose.startSession();
     session.startTransaction();
 
-    // Deduct coins from sender
-    if (role == UserRoles.Admin)
-      await this.AdminRepository.updateCoin(myId, -coins, session);
-    else
-      await this.PortalUserRepository.updateCoin(myId, -coins, session);
+    try {
+      // Deduct coins from sender
+      if (role == UserRoles.Admin)
+        await this.AdminRepository.updateCoin(myId, -coins, session);
+      else
+        await this.PortalUserRepository.updateCoin(myId, -coins, session);
 
-    // Add coins to receiver
-    if (portalUserTargets.includes(userRole)) {
-      returnBody = await this.PortalUserRepository.updateCoin(
-        userId,
-        coins,
-        session,
-      );
-    } else {
-      const xpEnv = process.env.XP_MODE ?? "0";
-      const isXpMode = xpEnv.toString() == "1";
-      if (!isXpMode) {
-        const userProfile = targetProfile as IUserDocument;
-        const newLevel = determineUserLevel(
-          userProfile.totalBoughtCoins + coins,
+      // Add coins to receiver
+      if (portalUserTargets.includes(userRole)) {
+        returnBody = await this.PortalUserRepository.updateCoin(
+          userId,
+          coins,
+          session,
         );
-        const newTagAndBg = determineUserTagAndBg(newLevel);
-        const tagAndBgDocument =
-          await this.LevelTagBgRepository.findByLevel(newTagAndBg);
-        await this.UserRepository.findUserByIdAndUpdate(userId, {
-          totalBoughtCoins: userProfile.totalBoughtCoins + coins,
-          level: newLevel,
-          currentLevelTag: tagAndBgDocument?.levelTag,
-          currentLevelBackground: tagAndBgDocument?.levelBg,
-        });
+      } else {
+        const xpEnv = process.env.XP_MODE ?? "0";
+        const isXpMode = xpEnv.toString() == "1";
+        if (!isXpMode) {
+          const userProfile = targetProfile as IUserDocument;
+          const newLevel = determineUserLevel(
+            userProfile.totalBoughtCoins + coins,
+          );
+          const newTagAndBg = determineUserTagAndBg(newLevel);
+          const tagAndBgDocument =
+            await this.LevelTagBgRepository.findByLevel(newTagAndBg);
+          await this.UserRepository.findUserByIdAndUpdate(userId, {
+            totalBoughtCoins: userProfile.totalBoughtCoins + coins,
+            level: newLevel,
+            currentLevelTag: tagAndBgDocument?.levelTag,
+            currentLevelBackground: tagAndBgDocument?.levelBg,
+          });
+        }
+
+        returnBody = await this.UserStatsRepository.updateCoins(
+          userId,
+          coins,
+          session,
+        );
       }
 
-      returnBody = await this.UserStatsRepository.updateCoins(
-        userId,
-        coins,
-        session,
-      );
+      await this.CoinHistoryRepository.createHistory(historyObj, session);
+
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
     }
-
-    await this.CoinHistoryRepository.createHistory(historyObj, session);
-
-    await session.commitTransaction();
-    session.endSession();
 
     // ── 9. Referral recharge hook (unchanged) ───────────────────────────────
     if (!portalUserTargets.includes(userRole)) {
