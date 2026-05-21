@@ -553,9 +553,9 @@ export class AudioRoomService implements IAudioRoomService {
     if (!user || !targetUser) {
       throw new AppError(404, "User not found");
     }
-    // check authority validation for host only
+    // check authority validation for host or admin
     const audioHelper = AudioRoomHelper.getInstance();
-    audioHelper.checkAuthorityInAudioRoom(myId, audioRoom, 0); // 0 -> host level authorrity
+    audioHelper.checkAuthorityInAudioRoom(myId, audioRoom, 1); // 1 -> admin level authority
     audioHelper.checkUserOnSeat(targetId, audioRoom); // user must be on a seat to be made admin
     // update audio room admins
     await this.audioRoomRepository.findByIdAndUpdate(audioRoom._id as string, {
