@@ -906,6 +906,16 @@ export default class AdminUserController {
       message: "Banned users retrieved successfully",
     });
   });
+
+  getAllUserRoles = catchAsync(async (_req: Request, res: Response) => {
+    const roles = Object.values(UserRoles);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: roles,
+      message: "User roles retrieved successfully",
+    });
+  });
 }
 
 export interface IGiftFile {

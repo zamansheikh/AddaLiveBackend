@@ -327,4 +327,8 @@ router
   .route("/users/banned-users")
   .get(authenticate([UserRoles.Admin]), adminUserController.getBannedUsers);
 
+router
+  .route("/user-roles")
+  .get(authenticate([UserRoles.Admin]), adminUserController.getAllUserRoles);
+
 export default router;
