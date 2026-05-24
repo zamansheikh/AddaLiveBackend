@@ -58,3 +58,32 @@
   3. **`src/controllers/admin/admin_user_controller.ts`** — Added `getAllPortalUsers` handler.
   4. **`src/router/admin_routes.ts`** — Added route at `GET /admin/portal-users`.
 - **Response:** Paginated list of portal user documents (password excluded).
+
+---
+
+### `DELETE /admin/role/:roleId` — `deletePortalUser`
+
+**Date:** 2026-05-24
+**Time:** 16:38
+
+- **Description:** Deletes a portal user by ID. Already existed under the `/role/:roleId` path. Added route alias `DELETE /admin/portal-users/:roleId` for cleaner semantics.
+- **Auth:** Admin only (`authenticate([UserRoles.Admin])`)
+- **Files:**
+  1. **`src/services/admin/admin_user_service.ts`** — `deletePortalUser(id)` (pre-existing)
+  2. **`src/controllers/admin/admin_user_controller.ts`** — `deleteRole` handler (pre-existing)
+  3. **`src/router/admin_routes.ts`** — Added `DELETE /admin/portal-users/:roleId` alias (new)
+- **Response:** Deleted portal user document.
+
+---
+
+### `PUT /admin/portal-users/:roleId` — `updatePortalUser`
+
+**Date:** 2026-05-24
+**Time:** 16:38
+
+- **Description:** Updates a portal user by ID. Admin can update any field (name, password, coins, diamonds, designation, etc.). Password is automatically hashed if provided.
+- **Auth:** Admin only (`authenticate([UserRoles.Admin])`)
+- **Files changed:**
+  1. **`src/services/admin/admin_user_service.ts`** — Added `updatePortalUser(id, data)` to interface + implementation. Validates user exists, hashes password if included, delegates to repository.
+  2. **`src/controllers/admin/admin_user_controller.ts`** — Added `updatePortalUser` handler with validation for non-empty body.
+  3. **`src/router/admin_routes.ts`** — Added `PUT /admin/portal-users/:roleId` with admin auth.

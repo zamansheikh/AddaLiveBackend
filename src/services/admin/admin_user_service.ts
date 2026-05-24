@@ -228,6 +228,10 @@ export interface IAdminUserService {
   getAllPortalUsers(
     query: Record<string, any>
   ): Promise<{ pagination: IPagination; data: IPortalUserDocument[] }>;
+  updatePortalUser(
+    id: string,
+    data: Partial<IPortalUser>
+  ): Promise<IPortalUser>;
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -1260,5 +1264,28 @@ export default class AdminUserService implements IAdminUserService {
     query: Record<string, any>
   ): Promise<{ pagination: IPagination; data: IPortalUserDocument[] }> {
     return await this.PortalUserRepository.getAllPortalUsers(query);
+  }
+
+  async updatePortalUser(
+    id: string,
+    data: Partial<IPortalUser>
+  ): Promise<IPortalUser> {
+    const existingUser = await this.PortalUserRepository.getPortalUserById(id);
+    if (!existingUser) {
+      throw new AppError(StatusCodes.NOT_FOUND, 'Portal user not found');
+    }
+
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, 10);
+    }
+
+    const updatedUser = await this.PortalUserRepository.updatePortalUser(id, data);
+    if (!updatedUser) {
+      throw new AppError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'Failed to update portal user',
+      );
+    }
+    return updatedUser;
   }
 }

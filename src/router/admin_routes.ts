@@ -332,6 +332,11 @@ router
   .get(authenticate([UserRoles.Admin]), adminUserController.getAllPortalUsers);
 
 router
+  .route("/portal-users/:roleId")
+  .put(authenticate([UserRoles.Admin]), adminUserController.updatePortalUser)
+  .delete(authenticate([UserRoles.Admin]), adminUserController.deleteRole);
+
+router
   .route("/user-roles")
   .get(authenticate([UserRoles.Admin]), adminUserController.getAllUserRoles);
 

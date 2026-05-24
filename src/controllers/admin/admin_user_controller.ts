@@ -917,6 +917,29 @@ export default class AdminUserController {
     });
   });
 
+  updatePortalUser = catchAsync(async (req: Request, res: Response) => {
+    const { roleId } = req.params;
+    const updateData = req.body;
+
+    if (!updateData || Object.keys(updateData).length === 0) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        'At least one field is required for update',
+      );
+    }
+
+    const updatedUser = await this.AdminUserService.updatePortalUser(
+      roleId,
+      updateData,
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: updatedUser,
+      message: 'Portal user updated successfully',
+    });
+  });
+
   getAllUserRoles = catchAsync(async (_req: Request, res: Response) => {
     const roles = Object.values(UserRoles);
     sendResponse(res, {
