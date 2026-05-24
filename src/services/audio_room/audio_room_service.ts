@@ -557,7 +557,7 @@ export class AudioRoomService implements IAudioRoomService {
     }
     // check authority validation for host or admin
     const audioHelper = AudioRoomHelper.getInstance();
-    audioHelper.checkAuthorityInAudioRoom(myId, audioRoom, 1); // 1 -> admin level authority
+    audioHelper.checkAuthorityInAudioRoom(myId, audioRoom, 0); // 0 -> host level authority (only host can make admins)
     audioHelper.checkUserOnSeat(targetId, audioRoom); // user must be on a seat to be made admin
     // update audio room admins
     await this.audioRoomRepository.findByIdAndUpdate(audioRoom._id as string, {
