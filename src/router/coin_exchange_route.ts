@@ -23,7 +23,7 @@ router
 // Coin Exchange execution (authenticated users)
 router
   .route("/exchange")
-  .post(authenticate(), controller.exchangeCoinsToDiamonds);
+  .post(authenticate(), controller.exchangeDiamondsToCoins);
 
 // Exchange history for the logged-in user (authenticated users)
 router

@@ -13,21 +13,21 @@ export class CoinExchangeController {
 
   createExchangeOption = catchAsync(async (req, res) => {
     const {
-      coinsRequired,
-      diamondsAwarded,
-      bonusDiamonds,
+      diamondsRequired,
+      coinsAwarded,
+      bonusCoins,
       isActive,
       displayOrder,
     } = req.body;
 
-    validateFieldExistance(coinsRequired, "coinsRequired");
-    validateFieldExistance(diamondsAwarded, "diamondsAwarded");
+    validateFieldExistance(diamondsRequired, "diamondsRequired");
+    validateFieldExistance(coinsAwarded, "coinsAwarded");
     validateFieldExistance(displayOrder, "displayOrder");
 
     const newOption = await this.coinExchangeService.createExchangeOption({
-      coinsRequired,
-      diamondsAwarded,
-      bonusDiamonds: bonusDiamonds ?? 0,
+      diamondsRequired,
+      coinsAwarded,
+      bonusCoins: bonusCoins ?? 0,
       isActive: isActive ?? true,
       displayOrder,
     });
@@ -51,9 +51,9 @@ export class CoinExchangeController {
   updateExchangeOption = catchAsync(async (req, res) => {
     const { id } = req.params;
     const {
-      coinsRequired,
-      diamondsAwarded,
-      bonusDiamonds,
+      diamondsRequired,
+      coinsAwarded,
+      bonusCoins,
       isActive,
       displayOrder,
     } = req.body;
@@ -61,9 +61,9 @@ export class CoinExchangeController {
     validateFieldExistance(id, "id");
 
     if (
-      coinsRequired === undefined &&
-      diamondsAwarded === undefined &&
-      bonusDiamonds === undefined &&
+      diamondsRequired === undefined &&
+      coinsAwarded === undefined &&
+      bonusCoins === undefined &&
       isActive === undefined &&
       displayOrder === undefined
     ) {
@@ -71,9 +71,9 @@ export class CoinExchangeController {
     }
 
     const updatedOption = await this.coinExchangeService.updateExchangeOption(id, {
-      coinsRequired,
-      diamondsAwarded,
-      bonusDiamonds,
+      diamondsRequired,
+      coinsAwarded,
+      bonusCoins,
       isActive,
       displayOrder,
     });
@@ -98,14 +98,14 @@ export class CoinExchangeController {
     });
   });
 
-  exchangeCoinsToDiamonds = catchAsync(async (req, res) => {
+  exchangeDiamondsToCoins = catchAsync(async (req, res) => {
     const userId = req.user!.id;
     const { optionId, idempotencyKey } = req.body;
 
     validateFieldExistance(optionId, "optionId");
     validateFieldExistance(idempotencyKey, "idempotencyKey");
 
-    const result = await this.coinExchangeService.exchangeCoinsToDiamonds(
+    const result = await this.coinExchangeService.exchangeDiamondsToCoins(
       userId,
       optionId,
       idempotencyKey

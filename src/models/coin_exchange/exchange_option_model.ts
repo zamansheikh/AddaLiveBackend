@@ -2,9 +2,9 @@ import mongoose, { Document, Schema } from "mongoose";
 import { DatabaseNames } from "../../core/Utils/enums";
 
 export interface IExchangeOption {
-  coinsRequired: number;
-  diamondsAwarded: number;
-  bonusDiamonds: number;
+  diamondsRequired: number;
+  coinsAwarded: number;
+  bonusCoins: number;
   isActive: boolean;
   displayOrder: number;
 }
@@ -18,16 +18,16 @@ export interface IExchangeOptionModel extends mongoose.Model<IExchangeOptionDocu
 
 const exchangeOptionSchema = new Schema<IExchangeOptionDocument>(
   {
-    coinsRequired: {
+    diamondsRequired: {
       type: Number,
       required: true,
       unique: true,
     },
-    diamondsAwarded: {
+    coinsAwarded: {
       type: Number,
       required: true,
     },
-    bonusDiamonds: {
+    bonusCoins: {
       type: Number,
       required: true,
       default: 0,

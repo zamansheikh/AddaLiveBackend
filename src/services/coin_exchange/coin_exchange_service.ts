@@ -9,7 +9,7 @@ export interface ICoinExchangeService {
   getAllExchangeOptions(): Promise<IExchangeOptionDocument[]>;
   updateExchangeOption(id: string, data: Partial<IExchangeOption>): Promise<IExchangeOptionDocument>;
   deleteExchangeOption(id: string): Promise<boolean>;
-  exchangeCoinsToDiamonds(userId: string, optionId: string, idempotencyKey: string): Promise<IExchangeTransactionHistoryDocument>;
+  exchangeDiamondsToCoins(userId: string, optionId: string, idempotencyKey: string): Promise<IExchangeTransactionHistoryDocument>;
   getMyHistory(userId: string): Promise<IExchangeTransactionHistoryDocument[]>;
   getAllHistory(): Promise<IExchangeTransactionHistoryDocument[]>;
 }
@@ -23,14 +23,14 @@ export class CoinExchangeService implements ICoinExchangeService {
   constructor() { }
 
   async createExchangeOption(data: IExchangeOption): Promise<IExchangeOptionDocument> {
-    if (data.coinsRequired <= 0) {
-      throw new AppError(400, "coinsRequired must be a positive number");
+    if (data.diamondsRequired <= 0) {
+      throw new AppError(400, "diamondsRequired must be a positive number");
     }
-    if (data.diamondsAwarded <= 0) {
-      throw new AppError(400, "diamondsAwarded must be a positive number");
+    if (data.coinsAwarded <= 0) {
+      throw new AppError(400, "coinsAwarded must be a positive number");
     }
-    if (data.bonusDiamonds < 0) {
-      throw new AppError(400, "bonusDiamonds must be a non-negative number");
+    if (data.bonusCoins < 0) {
+      throw new AppError(400, "bonusCoins must be a non-negative number");
     }
     if (data.displayOrder < 0) {
       throw new AppError(400, "displayOrder must be a non-negative number");
@@ -42,10 +42,10 @@ export class CoinExchangeService implements ICoinExchangeService {
       throw new AppError(409, `An exchange option with display order ${data.displayOrder} already exists`);
     }
 
-    // Check for coinsRequired conflict
-    const existingCoinsRequired = await this.exchangeOptionRepository.findByCoinsRequired(data.coinsRequired);
-    if (existingCoinsRequired) {
-      throw new AppError(409, `An exchange option requiring ${data.coinsRequired} coins already exists`);
+    // Check for diamondsRequired conflict
+    const existingDiamondsRequired = await this.exchangeOptionRepository.findByDiamondsRequired(data.diamondsRequired);
+    if (existingDiamondsRequired) {
+      throw new AppError(409, `An exchange option requiring ${data.diamondsRequired} diamonds already exists`);
     }
 
     return await this.exchangeOptionRepository.create(data);
@@ -61,14 +61,14 @@ export class CoinExchangeService implements ICoinExchangeService {
       throw new AppError(404, "Exchange option not found");
     }
 
-    if (data.coinsRequired !== undefined && data.coinsRequired <= 0) {
-      throw new AppError(400, "coinsRequired must be a positive number");
+    if (data.diamondsRequired !== undefined && data.diamondsRequired <= 0) {
+      throw new AppError(400, "diamondsRequired must be a positive number");
     }
-    if (data.diamondsAwarded !== undefined && data.diamondsAwarded <= 0) {
-      throw new AppError(400, "diamondsAwarded must be a positive number");
+    if (data.coinsAwarded !== undefined && data.coinsAwarded <= 0) {
+      throw new AppError(400, "coinsAwarded must be a positive number");
     }
-    if (data.bonusDiamonds !== undefined && data.bonusDiamonds < 0) {
-      throw new AppError(400, "bonusDiamonds must be a non-negative number");
+    if (data.bonusCoins !== undefined && data.bonusCoins < 0) {
+      throw new AppError(400, "bonusCoins must be a non-negative number");
     }
     if (data.displayOrder !== undefined && data.displayOrder < 0) {
       throw new AppError(400, "displayOrder must be a non-negative number");
@@ -81,10 +81,10 @@ export class CoinExchangeService implements ICoinExchangeService {
       }
     }
 
-    if (data.coinsRequired !== undefined) {
-      const existingCoinsRequired = await this.exchangeOptionRepository.findByCoinsRequired(data.coinsRequired);
-      if (existingCoinsRequired && (existingCoinsRequired._id as any).toString() !== id) {
-        throw new AppError(409, `An exchange option requiring ${data.coinsRequired} coins already exists`);
+    if (data.diamondsRequired !== undefined) {
+      const existingDiamondsRequired = await this.exchangeOptionRepository.findByDiamondsRequired(data.diamondsRequired);
+      if (existingDiamondsRequired && (existingDiamondsRequired._id as any).toString() !== id) {
+        throw new AppError(409, `An exchange option requiring ${data.diamondsRequired} diamonds already exists`);
       }
     }
 
@@ -100,7 +100,7 @@ export class CoinExchangeService implements ICoinExchangeService {
     return await this.exchangeOptionRepository.delete(id);
   }
 
-  async exchangeCoinsToDiamonds(userId: string, optionId: string, idempotencyKey: string): Promise<IExchangeTransactionHistoryDocument> {
+  async exchangeDiamondsToCoins(userId: string, optionId: string, idempotencyKey: string): Promise<IExchangeTransactionHistoryDocument> {
     const existingTx = await this.historyRepository.findByIdempotencyKey(idempotencyKey);
     if (existingTx) {
       return existingTx;
@@ -128,21 +128,23 @@ export class CoinExchangeService implements ICoinExchangeService {
         throw new AppError(404, "User stats not found");
       }
 
-      if ((userStats.coins ?? 0) < option.coinsRequired) {
-        throw new AppError(400, "Insufficient coins balance");
+      if ((userStats.diamonds ?? 0) < option.diamondsRequired) {
+        throw new AppError(400, "Insufficient diamonds balance");
       }
 
-      const totalDiamonds = option.diamondsAwarded + option.bonusDiamonds;
+      const totalCoins = option.coinsAwarded + option.bonusCoins;
 
-      await this.userStatsRepository.balanceDeduction(userId, option.coinsRequired, session);
-      await this.userStatsRepository.updateDiamonds(userId, totalDiamonds, session);
+      // Deduct diamonds (pass negative value to $inc)
+      await this.userStatsRepository.updateDiamonds(userId, -option.diamondsRequired, session);
+      // Add coins (pass positive value to $inc)
+      await this.userStatsRepository.updateCoins(userId, totalCoins, session);
 
       const historyLog = await this.historyRepository.create({
         userId,
         exchangeOptionId: optionId,
-        coinsDeducted: option.coinsRequired,
-        diamondsAwarded: option.diamondsAwarded,
-        bonusDiamonds: option.bonusDiamonds,
+        diamondsDeducted: option.diamondsRequired,
+        coinsAwarded: option.coinsAwarded,
+        bonusCoins: option.bonusCoins,
         idempotencyKey,
       }, session);
 

@@ -1,6 +1,6 @@
 # Coin Exchange API Documentation
 
-The **Coin Exchange System** allows users to convert their accumulated in-game/app **Coins** to premium **Diamonds**. This system provides robust features, including administrative management of exchange packages, strict validation checks, history tracking, and idempotency protection to prevent duplicate transactions caused by network retries.
+The **Coin Exchange System** allows users to convert their premium **Diamonds** into in-app **Coins**. This system provides robust features, including administrative management of exchange packages, strict validation checks, history tracking, and idempotency protection to prevent duplicate transactions caused by network retries.
 
 ---
 
@@ -21,24 +21,24 @@ The **Coin Exchange System** allows users to convert their accumulated in-game/a
 ## 1. Exchange Options Management (Admin API)
 
 ### 1.1 Create Exchange Option
-Creates a new exchange package (e.g. convert 100 coins into 10 base diamonds + 2 bonus diamonds).
+Creates a new exchange package (e.g. convert 100 diamonds into 10 base coins + 2 bonus coins).
 
 * **Path**: `POST /`
 * **Access Control**: `Admin` only
 * **Summary**: Adds a new, unique exchange tier that users can select.
 * **Why fields are sent**:
-  * `coinsRequired`: The amount of coins deducted from the user's wallet. (Must be positive and unique).
-  * `diamondsAwarded`: The baseline premium diamonds the user will receive. (Must be positive).
-  * `bonusDiamonds`: Additional promotional/bonus diamonds awarded for this specific package. (Optional, defaults to 0).
+  * `diamondsRequired`: The amount of diamonds deducted from the user's wallet. (Must be positive and unique).
+  * `coinsAwarded`: The baseline coins the user will receive. (Must be positive).
+  * `bonusCoins`: Additional promotional/bonus coins awarded for this specific package. (Optional, defaults to 0).
   * `isActive`: Activates or deactivates the package. (Optional, defaults to true).
   * `displayOrder`: Controls sorting on the frontend UI. (Must be non-negative and unique).
 
 * **Example Request Payload**:
   ```json
   {
-    "coinsRequired": 1000,
-    "diamondsAwarded": 100,
-    "bonusDiamonds": 10,
+    "diamondsRequired": 100,
+    "coinsAwarded": 1000,
+    "bonusCoins": 100,
     "isActive": true,
     "displayOrder": 1
   }
@@ -52,9 +52,9 @@ Creates a new exchange package (e.g. convert 100 coins into 10 base diamonds + 2
     "meta": null,
     "result": {
       "_id": "603d76e73f3248386c91a32a",
-      "coinsRequired": 1000,
-      "diamondsAwarded": 100,
-      "bonusDiamonds": 10,
+      "diamondsRequired": 100,
+      "coinsAwarded": 1000,
+      "bonusCoins": 100,
       "isActive": true,
       "displayOrder": 1,
       "createdAt": "2026-05-20T11:00:00.000Z",
@@ -80,7 +80,7 @@ Modifies an existing exchange package.
 * **Example Request Payload**:
   ```json
   {
-    "bonusDiamonds": 15,
+    "bonusCoins": 150,
     "isActive": false
   }
   ```
@@ -93,9 +93,9 @@ Modifies an existing exchange package.
     "meta": null,
     "result": {
       "_id": "603d76e73f3248386c91a32a",
-      "coinsRequired": 1000,
-      "diamondsAwarded": 100,
-      "bonusDiamonds": 15,
+      "diamondsRequired": 100,
+      "coinsAwarded": 1000,
+      "bonusCoins": 150,
       "isActive": false,
       "displayOrder": 1,
       "createdAt": "2026-05-20T11:00:00.000Z",
@@ -148,9 +148,9 @@ Fetches list of all exchange options.
     "result": [
       {
         "_id": "603d76e73f3248386c91a32a",
-        "coinsRequired": 500,
-        "diamondsAwarded": 50,
-        "bonusDiamonds": 0,
+        "diamondsRequired": 50,
+        "coinsAwarded": 500,
+        "bonusCoins": 0,
         "isActive": true,
         "displayOrder": 0,
         "createdAt": "2026-05-20T10:00:00.000Z",
@@ -159,9 +159,9 @@ Fetches list of all exchange options.
       },
       {
         "_id": "603d76e73f3248386c91a32b",
-        "coinsRequired": 1000,
-        "diamondsAwarded": 100,
-        "bonusDiamonds": 15,
+        "diamondsRequired": 100,
+        "coinsAwarded": 1000,
+        "bonusCoins": 150,
         "isActive": true,
         "displayOrder": 1,
         "createdAt": "2026-05-20T11:00:00.000Z",
@@ -175,15 +175,15 @@ Fetches list of all exchange options.
 
 ---
 
-### 2.2 Execute Coin to Diamond Exchange
-Exchanges a user's coins to diamonds securely.
+### 2.2 Execute Diamond to Coin Exchange
+Exchanges a user's diamonds to coins securely.
 
 * **Path**: `POST /exchange`
 * **Access Control**: Authenticated `User`
-* **Summary**: Subtracts `coinsRequired` from the user's statistics, adds `diamondsAwarded + bonusDiamonds` to their wallet, and creates an audit transaction log in the database.
+* **Summary**: Subtracts `diamondsRequired` from the user's statistics, adds `coinsAwarded + bonusCoins` to their wallet, and creates an audit transaction log in the database.
 * **Why fields are sent**:
-  * `optionId`: Specifies the chosen package. The backend loads coinsRequired and award amounts directly from this database ID to prevent frontend tampering (e.g. client sending forged diamond values).
-  * `idempotencyKey`: A unique UUID generated by the frontend. In case of poor network, if the client sends duplicate retry requests, the backend matches this key and returns the identical transaction immediately without double-deducting coins or double-awarding diamonds.
+  * `optionId`: Specifies the chosen package. The backend loads diamondsRequired and award amounts directly from this database ID to prevent frontend tampering (e.g. client sending forged coin values).
+  * `idempotencyKey`: A unique UUID generated by the frontend. In case of poor network, if the client sends duplicate retry requests, the backend matches this key and returns the identical transaction immediately without double-deducting diamonds or double-awarding coins.
 
 * **Example Request Payload**:
   ```json
@@ -203,9 +203,9 @@ Exchanges a user's coins to diamonds securely.
       "_id": "603d80a13f3248386c91a355",
       "userId": "507f1f77bcf86cd799439011",
       "exchangeOptionId": "603d76e73f3248386c91a32a",
-      "coinsDeducted": 500,
-      "diamondsAwarded": 50,
-      "bonusDiamonds": 0,
+      "diamondsDeducted": 50,
+      "coinsAwarded": 500,
+      "bonusCoins": 0,
       "idempotencyKey": "a821e257-ec23-455b-b9f4-18fa8f9ffea5",
       "createdAt": "2026-05-20T11:10:00.000Z",
       "updatedAt": "2026-05-20T11:10:00.000Z",
@@ -238,9 +238,9 @@ Retrieves past transactions for the logged-in user.
         "_id": "603d80a13f3248386c91a355",
         "userId": "507f1f77bcf86cd799439011",
         "exchangeOptionId": "603d76e73f3248386c91a32a",
-        "coinsDeducted": 500,
-        "diamondsAwarded": 50,
-        "bonusDiamonds": 0,
+        "diamondsDeducted": 50,
+        "coinsAwarded": 500,
+        "bonusCoins": 0,
         "idempotencyKey": "a821e257-ec23-455b-b9f4-18fa8f9ffea5",
         "createdAt": "2026-05-20T11:10:00.000Z",
         "updatedAt": "2026-05-20T11:10:00.000Z",
@@ -271,9 +271,9 @@ Retrieves past transactions for all users.
         "_id": "603d80a13f3248386c91a355",
         "userId": "507f1f77bcf86cd799439011",
         "exchangeOptionId": "603d76e73f3248386c91a32a",
-        "coinsDeducted": 500,
-        "diamondsAwarded": 50,
-        "bonusDiamonds": 0,
+        "diamondsDeducted": 50,
+        "coinsAwarded": 500,
+        "bonusCoins": 0,
         "idempotencyKey": "a821e257-ec23-455b-b9f4-18fa8f9ffea5",
         "createdAt": "2026-05-20T11:10:00.000Z",
         "updatedAt": "2026-05-20T11:10:00.000Z",
@@ -283,9 +283,9 @@ Retrieves past transactions for all users.
         "_id": "603d80b93f3248386c91a361",
         "userId": "507f1f77bcf86cd799439099",
         "exchangeOptionId": "603d76e73f3248386c91a32b",
-        "coinsDeducted": 1000,
-        "diamondsAwarded": 100,
-        "bonusDiamonds": 15,
+        "diamondsDeducted": 100,
+        "coinsAwarded": 1000,
+        "bonusCoins": 150,
         "idempotencyKey": "b932c124-dcf3-412f-981c-f230d0a512ac",
         "createdAt": "2026-05-20T11:12:00.000Z",
         "updatedAt": "2026-05-20T11:12:00.000Z",
@@ -302,11 +302,11 @@ Retrieves past transactions for all users.
 
 The backend responds with standardized JSON errors when rules are violated:
 
-* **`400 Bad Request`**: Sent when input parameters are missing or invalid (e.g. negative coin cost, inactive package selected, or insufficient coin balances in user's profile).
+* **`400 Bad Request`**: Sent when input parameters are missing or invalid (e.g. negative diamond cost, inactive package selected, or insufficient diamond balances in user's profile).
   ```json
   {
     "success": false,
-    "message": "Insufficient coins balance",
+    "message": "Insufficient diamonds balance",
     "meta": null,
     "result": null,
     "access_token": null
@@ -342,11 +342,11 @@ The backend responds with standardized JSON errors when rules are violated:
     "access_token": null
   }
   ```
-* **`409 Conflict`**: An item with the given `displayOrder` or `coinsRequired` value already exists, or there is a database-level concurrency conflict.
+* **`409 Conflict`**: An item with the given `displayOrder` or `diamondsRequired` value already exists, or there is a database-level concurrency conflict.
   ```json
   {
     "success": false,
-    "message": "An exchange option requiring 1000 coins already exists",
+    "message": "An exchange option requiring 100 diamonds already exists",
     "meta": null,
     "result": null,
     "access_token": null

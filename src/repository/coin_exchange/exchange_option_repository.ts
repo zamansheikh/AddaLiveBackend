@@ -10,7 +10,7 @@ export interface IExchangeOptionRepository {
   findAll(): Promise<IExchangeOptionDocument[]>;
   findById(id: string): Promise<IExchangeOptionDocument>;
   findByDisplayOrder(displayOrder: number): Promise<IExchangeOptionDocument | null>;
-  findByCoinsRequired(coinsRequired: number): Promise<IExchangeOptionDocument | null>;
+  findByDiamondsRequired(diamondsRequired: number): Promise<IExchangeOptionDocument | null>;
   update(id: string, data: Partial<IExchangeOption>): Promise<IExchangeOptionDocument>;
   delete(id: string): Promise<boolean>;
 }
@@ -30,8 +30,8 @@ export default class ExchangeOptionRepository implements IExchangeOptionReposito
     return await this.Model.findOne({ displayOrder });
   }
 
-  async findByCoinsRequired(coinsRequired: number): Promise<IExchangeOptionDocument | null> {
-    return await this.Model.findOne({ coinsRequired });
+  async findByDiamondsRequired(diamondsRequired: number): Promise<IExchangeOptionDocument | null> {
+    return await this.Model.findOne({ diamondsRequired });
   }
 
   async findAll(): Promise<IExchangeOptionDocument[]> {

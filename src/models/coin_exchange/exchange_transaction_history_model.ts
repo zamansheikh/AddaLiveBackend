@@ -4,9 +4,9 @@ import { DatabaseNames } from "../../core/Utils/enums";
 export interface IExchangeTransactionHistory {
   userId: mongoose.Schema.Types.ObjectId | string;
   exchangeOptionId: mongoose.Schema.Types.ObjectId | string;
-  coinsDeducted: number;
-  diamondsAwarded: number;
-  bonusDiamonds: number;
+  diamondsDeducted: number;
+  coinsAwarded: number;
+  bonusCoins: number;
   idempotencyKey: string;
 }
 
@@ -31,15 +31,15 @@ const exchangeTransactionHistorySchema =
         ref: DatabaseNames.ExchangeOption,
         required: true,
       },
-      coinsDeducted: {
+      diamondsDeducted: {
         type: Number,
         required: true,
       },
-      diamondsAwarded: {
+      coinsAwarded: {
         type: Number,
         required: true,
       },
-      bonusDiamonds: {
+      bonusCoins: {
         type: Number,
         required: true,
       },
