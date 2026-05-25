@@ -23,12 +23,12 @@ const giftAudioRocketSchema = new mongoose.Schema<IGiftAudioRocketDocument>({
   milestones: {
     type: [Number],
     required: true,
-    min: 0,
-    max: 1,
   },
   giftPercentage: {
     type: Number,
     required: true,
+    min: 0,
+    max: 1,
   },
 });
 

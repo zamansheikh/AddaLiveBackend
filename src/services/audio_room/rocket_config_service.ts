@@ -27,24 +27,30 @@ export class RocketConfigService implements IRocketConfigService {
    * This should be called once during server startup.
    */
   static async bootstrap(): Promise<void> {
-    const repository = RepositoryProviders.rocketConfigRepositoryProvider;
-    const service = new RocketConfigService(repository);
+    try {
+      const repository = RepositoryProviders.rocketConfigRepositoryProvider;
+      const service = new RocketConfigService(repository);
 
-    const config = await service.getConfig();
-    if (!config) {
-      // Seed the database with current constants if empty
-      await service.updateConfig({
-        milestones: ROCKET_MILESTONES,
-        rewardNumbers: REWARD_NUMBERS,
-        coinMin: COIN_MIN,
-        coinMax: COIN_MAX,
-        xpMin: XP_MIN,
-        xpMax: XP_MAX,
-      });
-      console.log("🌱 Rocket Configuration seeded in database from constants.");
-    } else {
-      await service.syncToMemory();
-      console.log("✅ Rocket Configuration synchronized from database.");
+      const config = await service.getConfig();
+      if (!config) {
+        // Seed the database with current constants if empty
+        await service.updateConfig({
+          milestones: ROCKET_MILESTONES,
+          rewardNumbers: REWARD_NUMBERS,
+          coinMin: COIN_MIN,
+          coinMax: COIN_MAX,
+          xpMin: XP_MIN,
+          xpMax: XP_MAX,
+        });
+        console.log("🌱 Rocket Configuration seeded in database from constants.");
+      } else {
+        await service.syncToMemory();
+        console.log("✅ Rocket Configuration synchronized from database.");
+      }
+    } catch (error) {
+      console.error("❌ Rocket Configuration bootstrap failed:", error);
+      console.warn("⚠️ Rocket will use default in-memory constants. Admin can update config via API later.");
+      // Non-fatal: server can start with default constants
     }
   }
 
@@ -72,16 +78,15 @@ export class RocketConfigService implements IRocketConfigService {
     const config = await this.repository.getConfig();
 
     if (config) {
-      // Sync ROCKET_MILESTONES array
+      // Sync ROCKET_MILESTONES array — uses splice for atomic replacement
+      // (avoids the window where the array is empty during length=0 + push)
       if (config.milestones && config.milestones.length > 0) {
-        ROCKET_MILESTONES.length = 0;
-        ROCKET_MILESTONES.push(...config.milestones);
+        ROCKET_MILESTONES.splice(0, ROCKET_MILESTONES.length, ...config.milestones);
       }
 
       // Sync REWARD_NUMBERS array
       if (config.rewardNumbers && config.rewardNumbers.length > 0) {
-        REWARD_NUMBERS.length = 0;
-        REWARD_NUMBERS.push(...config.rewardNumbers);
+        REWARD_NUMBERS.splice(0, REWARD_NUMBERS.length, ...config.rewardNumbers);
       }
 
       // Sync primitive values using the helper function

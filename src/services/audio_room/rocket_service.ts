@@ -19,6 +19,7 @@ import {
   IAudioRoomDocument,
   IMemberDetails,
 } from "../../models/audio_room/audio_room_model";
+import { AudioRoomHelper } from "../../core/helper_classes/audioRoomHelper";
 import { IMyBucket } from "../../models/store/my_bucket_model";
 import { IStoreItemDocument } from "../../models/store/store_item_model";
 
@@ -28,7 +29,7 @@ export interface ILaunchGifts {
   quantity: number;
 }
 
-export interface IRewarededUser extends IMemberDetails {
+export interface IRewardedUser extends IMemberDetails {
   gifts: ILaunchGifts[];
 }
 
@@ -38,7 +39,7 @@ export interface IRocketServiceResponse {
   level: number;
   milestone: number;
   percentage?: number;
-  top1?: IRewarededUser;
+  top1?: IRewardedUser;
 }
 
 export default class RocketService {
@@ -54,8 +55,19 @@ export default class RocketService {
   // Maximum recursive launches per addFuel call to prevent infinite loops
   private static readonly MAX_RECURSION_DEPTH = 20;
 
+  // TTL for Redis rocket state keys (7 days) — prevents memory leak from abandoned rooms
+  private static readonly ROCKET_KEY_TTL = 604800;
+
   // Track pending room launch timeouts to prevent duplicate events
   private static readonly launchTimeouts: Map<string, NodeJS.Timeout> = new Map();
+
+  // Serialize addFuel calls per room to prevent concurrent duplicate launches
+  private static readonly roomOperationQueues: Map<string, Promise<unknown>> = new Map();
+
+  // Cache for non-premium store categories to avoid per-launch DB queries (5-minute refresh)
+  private static cachedCategories: { _id: string; name: string }[] | null = null;
+  private static categoriesCacheTime = 0;
+  private static readonly CATEGORIES_CACHE_TTL_MS = 5 * 60 * 1000;
 
   // repositories
   private giftRecordRepository =
@@ -84,6 +96,36 @@ export default class RocketService {
    * @param roomId ID of the audio room
    * @param amount Amount of fuel to add
    */
+  /**
+   * Serializes per-room rocket operations to prevent concurrent duplicate launches.
+   * Operations for the same room execute sequentially; operations for different rooms run in parallel.
+   */
+  private async withRoomLock<T>(roomId: string, fn: () => Promise<T>): Promise<T> {
+    // Wait for any previous operation on this room to complete (ignore its rejection)
+    const previousOp = RocketService.roomOperationQueues.get(roomId) || Promise.resolve();
+    const settledPrevious = previousOp.catch(() => {});
+
+    const thisOp = settledPrevious.then(() => fn());
+
+    // Store the chain promise (always settled) so the next caller waits for this one
+    const settledOp = thisOp.catch(() => {});
+    RocketService.roomOperationQueues.set(roomId, settledOp);
+
+    // Clean up the queue entry when this operation finishes (if it's still the latest)
+    thisOp.finally(() => {
+      if (RocketService.roomOperationQueues.get(roomId) === settledOp) {
+        RocketService.roomOperationQueues.delete(roomId);
+      }
+    });
+
+    return thisOp;
+  }
+
+  /**
+   * Adds fuel to the rocket in a specific room
+   * @param roomId ID of the audio room
+   * @param amount Amount of fuel to add
+   */
   public async addFuel(roomId: string, amount: number) {
     console.log(`[RocketService] addFuel called for room: ${roomId}, amount: ${amount}`);
     const isValid = await AudioRoomCache.getInstance().validateRoomId(roomId);
@@ -91,11 +133,17 @@ export default class RocketService {
       console.warn(`[RocketService] Invalid roomId: ${roomId}`);
       return;
     }
+
+    // Serialize per-room operations to prevent concurrent duplicate launches
+    return this.withRoomLock(roomId, () => this.addFuelInternal(roomId, amount));
+  }
+
+  private async addFuelInternal(roomId: string, amount: number) {
     const { fuel, level, milestone } =
       await this.setRocketDefaultValues(roomId);
 
     const newFuel = fuel + amount;
-    const fuelPercentage = (newFuel / milestone) * 100;
+    const fuelPercentage = milestone > 0 ? (newFuel / milestone) * 100 : 0;
 
     console.log(`[RocketService] Room: ${roomId}, Current Fuel: ${fuel}, New Fuel: ${newFuel}, Milestone: ${milestone}, Level: ${level}`);
 
@@ -107,7 +155,7 @@ export default class RocketService {
     } else {
       // Step 2: Update the current fuel in Redis and notify the room
       const fuelKey = `${RocketService.FUEL_KEY_PREFIX}${roomId}`;
-      await this.redis.set(fuelKey, newFuel.toString());
+      await this.redis.set(fuelKey, newFuel.toString(), RocketService.ROCKET_KEY_TTL);
       console.log(`[RocketService] Fuel updated in Redis for room: ${roomId}`);
 
       // Notify the whole room about the new fuel
@@ -142,6 +190,25 @@ export default class RocketService {
   }
 
   /**
+   * Cleans up all Redis keys associated with a room's rocket state.
+   * Public so it can be called from the socket server when a room is closed.
+   */
+  public async cleanupRoomRocketState(roomId: string): Promise<void> {
+    const keys = [
+      `${RocketService.FUEL_KEY_PREFIX}${roomId}`,
+      `${RocketService.LEVEL_KEY_PREFIX}${roomId}`,
+      `${RocketService.ROCKET_MILESTONE_KEY_PREFIX}${roomId}`,
+      `${RocketService.REWARDED_USERS_KEY_PREFIX}${roomId}`,
+    ];
+    try {
+      await Promise.all(keys.map((key) => this.redis.del(key)));
+      console.log(`[RocketService] Cleaned up rocket state for deleted room: ${roomId}`);
+    } catch (error) {
+      console.error(`[RocketService] Error cleaning up rocket state for room ${roomId}:`, error);
+    }
+  }
+
+  /**
    * this function will be called when the fuel reaches or exceeds the milestone
    * @param roomId // id of the room
    * @param fuel // the amount of fuel gifted
@@ -155,7 +222,11 @@ export default class RocketService {
   ) {
     console.log(`[RocketService] launchRocket initiated for room: ${roomId}, Level: ${level}, Fuel: ${fuel}`);
     // Always fetch fresh room data to ensure proper hydration of membersArray and latest state
-    const freshRoom = await this.audioRoomRepository.getAudioRoomById(roomId);
+    const freshRoom = await this.audioRoomRepository.getAudioRoomById(roomId);      if (!freshRoom) {
+      console.warn(`[RocketService] Room ${roomId} not found (may have been deleted). Aborting launch.`);
+      await this.cleanupRoomRocketState(roomId);
+      return;
+    }
     console.log(`[RocketService] Fresh room data fetched. Members Count: ${freshRoom.membersArray?.length || 0}`);
 
     // Capture values for the current launch and next state to avoid closure bugs
@@ -171,13 +242,8 @@ export default class RocketService {
     const rewardedUsers = await this.rewardUsers(freshRoom, launchLevel);
     
     // Print a clean summary of rewards for diagnostic purposes
-    console.log(`\n--- [RocketService] REWARDS SUMMARY FOR ROOM: ${freshRoom.title} ---`);
-    console.table(rewardedUsers.map(u => ({
-      Name: u.name,
-      UID: u.uid,
-      Gifts: u.gifts.map(g => `${g.quantity} ${g.type}`).join(", ")
-    })));
-    console.log(`------------------------------------------------------------------\n`);
+    console.log(`[RocketService] Rewards for "${freshRoom.title}":`);
+    rewardedUsers.forEach(u => console.log(`  - ${u.name} (UID: ${u.uid}): ${u.gifts.map(g => `${g.quantity} ${g.type}`).join(", ")}`));
 
     console.log(`[RocketService] Rewards calculated. Eligible Users: ${rewardedUsers.length}`);
     // save the rewarded users for api usages
@@ -229,12 +295,11 @@ export default class RocketService {
     const milestoneKey = `${RocketService.ROCKET_MILESTONE_KEY_PREFIX}${roomId}`;
 
     console.log(`[RocketService] Updating Redis state: Level -> ${nextLevel}, Fuel -> 0`);
-    await this.redis.set(fuelKey, "0");
-    await this.redis.set(levelKey, nextLevel.toString());
-    await this.redis.set(
-      milestoneKey,
-      ROCKET_MILESTONES[nextLevel - 1].toString(),
-    );
+    await Promise.all([
+      this.redis.set(fuelKey, "0", RocketService.ROCKET_KEY_TTL),
+      this.redis.set(levelKey, nextLevel.toString(), RocketService.ROCKET_KEY_TTL),
+      this.redis.set(milestoneKey, ROCKET_MILESTONES[nextLevel - 1].toString(), RocketService.ROCKET_KEY_TTL),
+    ]);
 
     // recursive call (if the remaining fuel is greater than the next milestone)
     if (remainingFuel >= ROCKET_MILESTONES[nextLevel - 1]) {
@@ -278,9 +343,17 @@ export default class RocketService {
     const rewardIndex = Math.min(level - 1, REWARD_NUMBERS.length - 1);
     let rewardableUserCount = REWARD_NUMBERS[rewardIndex] || 0;
 
-    // sort the users based on gift sent
-    const members = (room.membersArray as unknown as IMemberDetails[]) || [];
-    console.log(`[RocketService] Total members found in document: ${members.length}. Eligible count from REWARD_NUMBERS: ${rewardableUserCount}`);
+    // Get the members array — getAudioRoomById() uses an aggregation pipeline that populates it
+    // with enriched user data via lookupEnrichedUsersArray. We map through generateMemberDetails
+    // to ensure proper field mapping (e.g. currentLevelBackground → currentBackground) and
+    // prevent leaking sensitive User document fields into the reward output.
+    const rawMembers = (room.membersArray as any[]) || [];
+    const helper = AudioRoomHelper.getInstance();
+    const members: IMemberDetails[] = rawMembers
+      .filter((u: any) => u && u._id)
+      .map((u: any) => helper.generateMemberDetails(u));
+
+    console.log(`[RocketService] Total members found in document: ${rawMembers.length} (${members.length} valid). Eligible count from REWARD_NUMBERS: ${rewardableUserCount}`);
 
     // randomize the order (shallow copy to avoid mutating the room document)
     const shuffledMembers = [...members];
@@ -301,60 +374,66 @@ export default class RocketService {
      * third user recieves -> Xps and coins
      * nth user recieves -> only coins
      */
-    const rewardPromises = shuffledMembers.slice(0, rewardableUserCount).map(async (user, i) => {
-      if (!user || !user._id) {
+    const rewardPromises = shuffledMembers.slice(0, rewardableUserCount).map(async (member, i) => {
+      if (!member || !member._id) {
         console.warn(`[RocketService] Skipping user at index ${i} - missing data or _id`);
         return null;
       }
 
-      const rewards: ILaunchGifts[] = [];
-      const userIdStr = user._id.toString();
-      const taskPromises: Promise<void>[] = [];
+      try {
+        const rewards: ILaunchGifts[] = [];
+        const userIdStr = member._id.toString();
+        const taskPromises: Promise<void>[] = [];
 
-      if (i === 0) {
-        // first user extra reward (4 days)
+        if (i === 0) {
+          // first user extra reward (4 days)
+          taskPromises.push((async () => {
+            const assetThumbnail = await this.addAssetToUser(userIdStr, 4);
+            rewards.push({ quantity: 4, thumbnail: assetThumbnail, type: LaunchGiftTypes.Assets });
+          })());
+        }
+        
+        if (i < 2) {
+          // top 2 users extra reward (3 days)
+          taskPromises.push((async () => {
+            const assetThumbnail = await this.addAssetToUser(userIdStr, 3);
+            rewards.push({ quantity: 3, thumbnail: assetThumbnail, type: LaunchGiftTypes.Assets });
+          })());
+        }
+
+        if (i < 3) {
+          // top 3 users get XP
+          taskPromises.push((async () => {
+            const xp = await this.addXpToUser(userIdStr);
+            rewards.push({ quantity: xp, thumbnail: "xp", type: LaunchGiftTypes.XP });
+          })());
+        }
+
+        // Everyone gets coins
         taskPromises.push((async () => {
-          const assetThumbnail = await this.addAssetToUser(userIdStr, 4);
-          rewards.push({ quantity: 4, thumbnail: assetThumbnail, type: LaunchGiftTypes.Assets });
+          const coins = await this.addCoinsToUser(userIdStr);
+          rewards.push({ quantity: coins, thumbnail: "coins", type: LaunchGiftTypes.Coins });
         })());
+
+        await Promise.all(taskPromises);
+
+        return {
+          ...member,
+          gifts: rewards,
+        };
+      } catch (error) {
+        console.error(`[RocketService] Failed to reward user ${member._id} at index ${i}:`, error);
+        // Return null so this user is filtered out by the existing .filter(u => u !== null) below
+        return null;
       }
-      
-      if (i < 2) {
-        // top 2 users extra reward (3 days)
-        taskPromises.push((async () => {
-          const assetThumbnail = await this.addAssetToUser(userIdStr, 3);
-          rewards.push({ quantity: 3, thumbnail: assetThumbnail, type: LaunchGiftTypes.Assets });
-        })());
-      }
-
-      if (i < 3) {
-        // top 3 users get XP
-        taskPromises.push((async () => {
-          const xp = await this.addXpToUser(userIdStr);
-          rewards.push({ quantity: xp, thumbnail: "xp", type: LaunchGiftTypes.XP });
-        })());
-      }
-
-      // Everyone gets coins
-      taskPromises.push((async () => {
-        const coins = await this.addCoinsToUser(userIdStr);
-        rewards.push({ quantity: coins, thumbnail: "coins", type: LaunchGiftTypes.Coins });
-      })());
-
-      await Promise.all(taskPromises);
-
-      return {
-        ...user,
-        gifts: rewards,
-      };
     });
 
     const rewardedUsersResults = await Promise.all(rewardPromises);
-    return rewardedUsersResults.filter((u) => u !== null) as IRewarededUser[];
+    return rewardedUsersResults.filter((u) => u !== null) as IRewardedUser[];
   }
 
   private async saveRewardedUsers(
-    rewardedUsers: IRewarededUser[],
+    rewardedUsers: IRewardedUser[],
     roomId: string,
   ) {
     try {
@@ -375,7 +454,7 @@ export default class RocketService {
   public async getRewardedUsers(roomId: string) {
     const key = `${RocketService.REWARDED_USERS_KEY_PREFIX}${roomId}`;
     try {
-      const result = await this.redis.get<IRewarededUser[]>(key);
+      const result = await this.redis.get<IRewardedUser[]>(key);
       console.log(
         `[RocketService] Retrieved rewarded users for room: ${roomId}, Result:`,
         result ? `${result.length} users` : "null",
@@ -396,23 +475,21 @@ export default class RocketService {
     duration: number,
   ): Promise<string> {
     console.log(`[RocketService] addAssetToUser for User: ${targetUserId}, Duration: ${duration}d`);
-    // select a random category
-    const categories: { _id: string; name: string }[] = (
-      await this.storeCategoryRepository.getAllCategories()
-    )
-      .filter((obj) => obj.isPremium != true)
-      .map((obj) => ({ _id: obj._id, name: obj.title })) as {
-      _id: string;
-      name: string;
-    }[];
+    // select a random category — use cached non-premium categories to avoid DB query per launch (refreshed every 5 min)
+    const now = Date.now();
+    if (!RocketService.cachedCategories || now - RocketService.categoriesCacheTime > RocketService.CATEGORIES_CACHE_TTL_MS) {
+      const all = await this.storeCategoryRepository.getAllCategories();
+      RocketService.cachedCategories = all
+        .filter((obj) => obj.isPremium != true)
+        .map((obj: any) => ({ _id: obj._id.toString(), name: obj.title }));
+      RocketService.categoriesCacheTime = now;
+    }
+    const categories = RocketService.cachedCategories;
 
     if (categories.length === 0) {
       console.warn(`[RocketService] No suitable categories available for asset reward`);
-      return "no-categories-available";
-    }
-
-    const randomCategory: { _id: string; name: string } =
-      categories[Math.floor(Math.random() * categories.length)];
+      return "";
+    }    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
 
     // select a random item
     const items = await this.storeItemRepository.getAllStoreItemByCategory(
@@ -420,7 +497,7 @@ export default class RocketService {
     );
     if (items.length == 0) {
       console.warn(`[RocketService] No items in category ${randomCategory.name}`);
-      return "item-unavailable";
+      return "";
     }
     const randomItem: IStoreItemDocument = items[
       Math.floor(Math.random() * items.length)
@@ -443,7 +520,7 @@ export default class RocketService {
       return randomItem.previewFile || randomItem.logo || "asset-thumbnail";
     } catch (error) {
       console.error(`[RocketService] Error adding asset to user bucket:`, error);
-      return "error";
+      return "";
     }
   }
 
@@ -461,7 +538,10 @@ export default class RocketService {
       targetUserId,
       coins,
     );
-    if (!userStats) return 0;
+    if (!userStats) {
+      console.warn(`[RocketService] User stats not found for ${targetUserId} — coins reward skipped`);
+      return 0;
+    }
     return coins;
   }
 
@@ -473,7 +553,7 @@ export default class RocketService {
   public async getRocketInfo(roomId: string): Promise<IRocketServiceResponse> {
     const { fuel, level, milestone } =
       await this.setRocketDefaultValues(roomId);
-    const fuelPercentage = (fuel / milestone) * 100;
+    const fuelPercentage = milestone > 0 ? (fuel / milestone) * 100 : 0;
 
     return {
       roomId,
@@ -506,29 +586,42 @@ export default class RocketService {
       const levelKey = `${RocketService.LEVEL_KEY_PREFIX}${roomId}`;
       const milestoneKey = `${RocketService.ROCKET_MILESTONE_KEY_PREFIX}${roomId}`;
 
-      let fuel: string | null = await this.redis.get(fuelKey);
-      let level: string | null = await this.redis.get(levelKey);
-      let milestone: string | null = await this.redis.get(milestoneKey);
+      const [fuelResult, levelResult, milestoneResult] = await Promise.all([
+        this.redis.get<string>(fuelKey),
+        this.redis.get<string>(levelKey),
+        this.redis.get<string>(milestoneKey),
+      ]);
+      let fuel = fuelResult;
+      let level = levelResult;
+      let milestone = milestoneResult;
 
       if (!fuel) {
-        await this.redis.set(fuelKey, "0");
+        await this.redis.set(fuelKey, "0", RocketService.ROCKET_KEY_TTL);
         fuel = "0";
+      } else {
+        // Refresh TTL on existing keys so they don't expire for active rooms
+        await this.redis.expire(fuelKey, RocketService.ROCKET_KEY_TTL);
       }
 
       if (!level) {
-        await this.redis.set(levelKey, "1");
+        await this.redis.set(levelKey, "1", RocketService.ROCKET_KEY_TTL);
         level = "1";
+      } else {
+        await this.redis.expire(levelKey, RocketService.ROCKET_KEY_TTL);
       }
 
-      if (!milestone) {
-        await this.redis.set(milestoneKey, ROCKET_MILESTONES[0]);
-        milestone = ROCKET_MILESTONES[0].toString();
+      if (!milestone || parseInt(milestone) <= 0) {
+        const defaultMilestone = ROCKET_MILESTONES[0] || 1;
+        await this.redis.set(milestoneKey, defaultMilestone.toString(), RocketService.ROCKET_KEY_TTL);
+        milestone = defaultMilestone.toString();
+      } else {
+        await this.redis.expire(milestoneKey, RocketService.ROCKET_KEY_TTL);
       }
 
       return {
         fuel: parseInt(fuel), // Good idea to parse them here for easier use
         level: parseInt(level),
-        milestone: parseInt(milestone),
+        milestone: parseInt(milestone) || 1, // Guard against 0 to prevent division by zero
       };
     } catch (error) {
       throw error;

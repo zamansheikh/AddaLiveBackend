@@ -1,6 +1,6 @@
 import AppError from "../../core/errors/app_errors";
 import RocketService, {
-  IRewarededUser,
+  IRewardedUser,
   IRocketServiceResponse,
 } from "./rocket_service";
 import { isValidObjectId } from "mongoose";
@@ -161,7 +161,7 @@ export interface IAudioRoomService {
     roomId: string,
     period: RankingPeriods,
   ): Promise<any>;
-  getRewardedUsers(roomId: string): Promise<IRewarededUser[] | null>;
+  getRewardedUsers(roomId: string): Promise<IRewardedUser[] | null>;
 }
 
 export class AudioRoomService implements IAudioRoomService {
@@ -1610,7 +1610,7 @@ export class AudioRoomService implements IAudioRoomService {
     };
   }
 
-  async getRewardedUsers(roomId: string): Promise<IRewarededUser[]> {
+  async getRewardedUsers(roomId: string): Promise<IRewardedUser[]> {
     return (await RocketService.getInstance().getRewardedUsers(roomId)) || [];
   }
 

@@ -519,14 +519,13 @@ export default class AuthService implements IAuthService {
     const coinCost = gift.coinPrice * qty * targetUserIds.length;
     const diamonds = gift.diamonds * qty;
     const senderDiamonds = targetUserIds.includes(myId) ? diamonds : 0;
-    // deducting coins from sender and adding diamonds to sender if he is also a receiver
-    await this.UserStatsRepository.updateSenderStats(
-      myId,
-      coinCost,
-      senderDiamonds,
-    );
-
+    // deducting coins from sender and adding diamonds to sender if he is also a receiver — moved into secondaryUpdates to prevent coin deduction before other operations
     const secondaryUpdates: Promise<any>[] = [
+      this.UserStatsRepository.updateSenderStats(
+        myId,
+        coinCost,
+        senderDiamonds,
+      ),
       this.GiftRepository.updateGiftSendCount(
         giftId,
         qty * targetUserIds.length,
@@ -558,9 +557,12 @@ export default class AuthService implements IAuthService {
     let isValid = false;
     if (roomId)
       isValid = await AudioRoomCache.getInstance().validateRoomId(roomId);
+    // Fetch all target user briefs in a single batch call instead of sequential per-user fetches
+    const allTargetBriefs = await UserCache.getInstance().getUsersBriefs(targetUserIds);
     for (const targetUserId of targetUserIds) {
-      const targetUserBrief =
-        await UserCache.getInstance().getUserBrief(targetUserId);
+      const targetUserBrief = allTargetBriefs.find(
+        (b: any) => b._id?.toString() === targetUserId || b.userId === targetUserId,
+      );
       const familyId = targetUserBrief?.familyId;
 
       secondaryUpdates.push(

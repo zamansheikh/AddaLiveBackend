@@ -28,6 +28,7 @@ import { CurrentRoomMemberRepository } from "../../repository/audio_room/current
 import CurrentRoomMemberModel from "../../models/audio_room/current_room_member";
 import { AudioRoomHelper } from "../helper_classes/audioRoomHelper";
 import { UserCache } from "../cache/user_chache";
+import RocketService from "../../services/audio_room/rocket_service";
 
 export interface IOnlineUserBrief {
   _id: string;
@@ -456,6 +457,10 @@ export default class SingletonSocketServer {
         this.emitToRoom("", AudioRoomChannels.AudioRoomClosed, {
           roomId: room.roomId,
         });
+        // Clean up rocket Redis state since no one is in the room anymore
+        RocketService.getInstance().cleanupRoomRocketState(room.roomId).catch(err =>
+          console.error(`[RocketService] Failed to cleanup state for room ${room.roomId}:`, err)
+        );
       }
 
       // 8. Socket leave
