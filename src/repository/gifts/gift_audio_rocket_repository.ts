@@ -13,7 +13,6 @@ export interface IGiftAudioRocketRepository {
   updateGiftAudioRocket(
     giftAudioRocket: Partial<IGiftAudioRocket>
   ): Promise<IGiftAudioRocketDocument>;
-  getGiftAudioRocketById(id: string): Promise<IGiftAudioRocketDocument>;
   getRocketInfoForAudioRoom(): Promise<IGiftAudioRocketDocument | {}>;
 }
 
@@ -45,10 +44,8 @@ export class GiftAudioRocketRepository implements IGiftAudioRocketRepository {
   async updateGiftAudioRocket(
     giftAudioRocket: Partial<IGiftAudioRocket>
   ): Promise<IGiftAudioRocketDocument> {
-    const id = await this.Model.findOne();
-    if (!id) throw new AppError(404, "Gift Audio Rocket not found");
-    const updatedGiftAudioRocket = await this.Model.findByIdAndUpdate(
-      id?._id,
+    const updatedGiftAudioRocket = await this.Model.findOneAndUpdate(
+      {},
       giftAudioRocket,
       { new: true }
     );
@@ -57,14 +54,6 @@ export class GiftAudioRocketRepository implements IGiftAudioRocketRepository {
     }
     return updatedGiftAudioRocket;
   }
-  async getGiftAudioRocketById(id: string): Promise<IGiftAudioRocketDocument> {
-    const giftAudioRocket = await this.Model.findById(id);
-    if (!giftAudioRocket) {
-      throw new AppError(404, "Gift Audio Rocket not found");
-    }
-    return giftAudioRocket;
-  }
-
   async getRocketInfoForAudioRoom(): Promise<IGiftAudioRocketDocument | {}> {
     const giftAudioRocket = await this.Model.findOne();
     if (!giftAudioRocket) {

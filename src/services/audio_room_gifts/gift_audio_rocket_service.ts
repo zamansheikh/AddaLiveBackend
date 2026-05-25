@@ -32,7 +32,6 @@ export class GiftAudioRocketService implements IGiftAudioRocketService {
   async updateGiftAudioRocket(
     giftAudioRocket: Partial<IGiftAudioRocketDocument>
   ): Promise<IGiftAudioRocketDocument> {
-    await this.repository.getGiftAudioRocket();
-    return await this.repository.updateGiftAudioRocket( giftAudioRocket);
+    return await this.repository.updateGiftAudioRocket(giftAudioRocket);
   }
 }

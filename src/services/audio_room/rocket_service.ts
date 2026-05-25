@@ -54,6 +54,9 @@ export default class RocketService {
   // Maximum recursive launches per addFuel call to prevent infinite loops
   private static readonly MAX_RECURSION_DEPTH = 20;
 
+  // Track pending room launch timeouts to prevent duplicate events
+  private static readonly launchTimeouts: Map<string, NodeJS.Timeout> = new Map();
+
   // repositories
   private giftRecordRepository =
     RepositoryProviders.giftRecordRepositoryProvider;
@@ -123,6 +126,18 @@ export default class RocketService {
       );
     }
 
+    // Return fresh state after launch so the return value is accurate
+    if (newFuel >= milestone) {
+      try {
+        // Recursive launches may have advanced several levels, so fetch fresh state
+        return await this.setRocketDefaultValues(roomId);
+      } catch {
+        // Room may have been deleted during launch — fall back to computed values
+        const nextLevel = (level % ROCKET_MILESTONES.length) + 1;
+        return { fuel: 0, level: nextLevel, milestone: ROCKET_MILESTONES[nextLevel - 1] };
+      }
+    }
+
     return { fuel: newFuel, level, milestone };
   }
 
@@ -136,7 +151,6 @@ export default class RocketService {
     roomId: string,
     fuel: number,
     level: number,
-    room?: IAudioRoomDocument,
     recursionDepth: number = 0,
   ) {
     console.log(`[RocketService] launchRocket initiated for room: ${roomId}, Level: ${level}, Fuel: ${fuel}`);
@@ -146,7 +160,7 @@ export default class RocketService {
 
     // Capture values for the current launch and next state to avoid closure bugs
     const launchLevel = level;
-    const nextLevel = (level % 5) + 1;
+    const nextLevel = (level % ROCKET_MILESTONES.length) + 1;
 
     // calculate the remaining fuel
     const remainingFuel = fuel - ROCKET_MILESTONES[level - 1];
@@ -180,9 +194,18 @@ export default class RocketService {
       roomPhoto: freshRoom.roomPhoto || "",
     });
 
+    // Clear any previous pending timeout for this room to prevent duplicate events
+    const existingTimeout = RocketService.launchTimeouts.get(roomId);
+    if (existingTimeout) {
+      console.log(`[RocketService] Clearing previous pending timeout for room: ${roomId}`);
+      clearTimeout(existingTimeout);
+    }
+
     // Schedule the room-specific events for 10s later
     console.log(`[RocketService] Scheduling room-specific events for 10s later...`);
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
+      // Clean up the timeout map entry now that it has fired
+      RocketService.launchTimeouts.delete(roomId);
       console.log(`[RocketService] 10s timeout reached. Emitting room events for ${roomId}`);
       // notifying the app about the rocket launch (scope: room)
       socketServer.emitToRoom(roomId, AudioRoomChannels.LaunchRocket, {
@@ -198,6 +221,7 @@ export default class RocketService {
         milestone: ROCKET_MILESTONES[nextLevel - 1],
       } as IRocketServiceResponse);
     }, 10000);
+    RocketService.launchTimeouts.set(roomId, timeout);
 
     // update the rocket informations (update level, update milestone, update fuel) - IMMEDIATE
     const fuelKey = `${RocketService.FUEL_KEY_PREFIX}${roomId}`;
@@ -231,7 +255,7 @@ export default class RocketService {
         console.log(`[RocketService] Remaining fuel (${remainingFuel}) exceeds next milestone (${ROCKET_MILESTONES[nextLevel - 1]}). Triggering recursive launch...`);
         // delay the next launch by 45 seconds
         await new Promise((resolve) => setTimeout(resolve, 45000));
-        await this.launchRocket(roomId, remainingFuel, nextLevel, undefined, recursionDepth + 1);
+        await this.launchRocket(roomId, remainingFuel, nextLevel, recursionDepth + 1);
         return;
       }
     }
@@ -258,16 +282,17 @@ export default class RocketService {
     const members = (room.membersArray as unknown as IMemberDetails[]) || [];
     console.log(`[RocketService] Total members found in document: ${members.length}. Eligible count from REWARD_NUMBERS: ${rewardableUserCount}`);
 
-    // randomize the order
-    for (let i = members.length - 1; i > 0; i--) {
+    // randomize the order (shallow copy to avoid mutating the room document)
+    const shuffledMembers = [...members];
+    for (let i = shuffledMembers.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [members[i], members[j]] = [members[j], members[i]];
+      [shuffledMembers[i], shuffledMembers[j]] = [shuffledMembers[j], shuffledMembers[i]];
     }
 
     // adjust the number if the number of room users is less than the number of users eligible for reward
-    if (members.length < rewardableUserCount) {
-      console.log(`[RocketService] Capping rewardableUserCount to members.length: ${members.length}`);
-      rewardableUserCount = members.length;
+    if (shuffledMembers.length < rewardableUserCount) {
+      console.log(`[RocketService] Capping rewardableUserCount to shuffledMembers.length: ${shuffledMembers.length}`);
+      rewardableUserCount = shuffledMembers.length;
     }
     // to store the rewarded user informations
     /**
@@ -276,7 +301,7 @@ export default class RocketService {
      * third user recieves -> Xps and coins
      * nth user recieves -> only coins
      */
-    const rewardPromises = members.slice(0, rewardableUserCount).map(async (user, i) => {
+    const rewardPromises = shuffledMembers.slice(0, rewardableUserCount).map(async (user, i) => {
       if (!user || !user._id) {
         console.warn(`[RocketService] Skipping user at index ${i} - missing data or _id`);
         return null;
