@@ -6,17 +6,11 @@ import MyBucketRepository from "../../repository/store/my_bucket_repository";
 import StoreCategoryRepository from "../../repository/store/store_category_repository";
 import UserRepository from "../../repository/users/user_repository";
 import SingletonSocketServer from "../sockets/singleton_socket_server";
-import { xpLevels } from "../Utils/constants";
 import { AudioRoomChannels } from "../Utils/enums";
+import { XpConfigService } from "../../services/admin/xp_config_service";
 
 export class XpHelper {
   private static instance: XpHelper;
-  private readonly GIFT_SEND_XP = 600;
-  private readonly MULTIPLIER_CACHE_TTL = 60 * 60 * 1000; // 1 hour
-  private svipMultiplierCache = new Map<
-    string,
-    { value: number; expiry: number }
-  >();
 
   //   repositories
   public userRepository = new UserRepository(User);
@@ -37,7 +31,14 @@ export class XpHelper {
   public async updateUserXp(userId: string, xpAmount: number) {
     const user = await this.userRepository.findUserById(userId);
     if (!user) return;
-    const level = this.determineUserLevelFromXp(user.totalEarnedXp + xpAmount);
+
+    const config = await XpConfigService.getConfig();
+    if (!config) return;
+
+    const level = this.determineUserLevelFromXp(
+      user.totalEarnedXp + xpAmount,
+      config.xpLevels,
+    );
     if (level > (user.level || 0)) {
       const socketInstance = SingletonSocketServer.getInstance();
       socketInstance.emitToUser(userId, AudioRoomChannels.LevelUp, { level });
@@ -51,10 +52,17 @@ export class XpHelper {
     const user = await this.userRepository.findUserById(userId);
     if (!user) return;
 
+    const config = await XpConfigService.getConfig();
+    if (!config) return;
+
     const xpAmount =
-      (coins / this.GIFT_SEND_XP) *
-      (await this.calculateSvipMultiplier(userId));
-    const level = this.determineUserLevelFromXp(user.totalEarnedXp + xpAmount);
+      (coins / config.giftSendXp) *
+      (await this.calculateSvipMultiplier(userId, config.svipMultipliers));
+
+    const level = this.determineUserLevelFromXp(
+      user.totalEarnedXp + xpAmount,
+      config.xpLevels,
+    );
     if (level > (user.level || 0)) {
       const socketInstance = SingletonSocketServer.getInstance();
       socketInstance.emitToUser(userId, AudioRoomChannels.LevelUp, { level });
@@ -64,24 +72,18 @@ export class XpHelper {
     await user.save();
   }
 
-  private async calculateSvipMultiplier(userId: string): Promise<number> {
-    const cached = this.svipMultiplierCache.get(userId);
-    if (cached && cached.expiry > Date.now()) return cached.value;
-
+  private async calculateSvipMultiplier(
+    userId: string,
+    svipMultipliers: { minLevel: number; multiplier: number }[],
+  ): Promise<number> {
     const highestSvip = await this.getHighestSvipLevel(userId);
-
-    let multiplier = 1;
-
-    if (highestSvip >= 9) multiplier = 1.4;
-    else if (highestSvip >= 7) multiplier = 1.3;
-    else if (highestSvip >= 2) multiplier = 1.2;
-
-    this.svipMultiplierCache.set(userId, {
-      value: multiplier,
-      expiry: Date.now() + this.MULTIPLIER_CACHE_TTL,
-    });
-
-    return multiplier;
+    const sorted = [...svipMultipliers].sort(
+      (a, b) => b.minLevel - a.minLevel,
+    );
+    for (const tier of sorted) {
+      if (highestSvip >= tier.minLevel) return tier.multiplier;
+    }
+    return 1.0;
   }
 
   public async getHighestSvipLevel(userId: string): Promise<number> {
@@ -98,12 +100,15 @@ export class XpHelper {
     return highestSvip;
   }
 
-  private determineUserLevelFromXp(xpCount: number): number {
+  private determineUserLevelFromXp(
+    xpCount: number,
+    xpLevels: number[],
+  ): number {
     for (let i = 0; i < xpLevels.length; i++) {
       if (xpCount < xpLevels[i]) {
         return i; // Levels start from 0
       }
     }
-    return 52; // at maximum level
+    return xpLevels.length; // at maximum level
   }
 }
