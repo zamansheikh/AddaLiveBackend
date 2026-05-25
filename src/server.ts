@@ -37,6 +37,7 @@ import ReferralRouter from "./router/referral_routes";
 import RocketConfigRouter from "./router/rocket_config_routes";
 import CoinExchangeRouter from "./router/coin_exchange_route";
 import RoomLevelCriteriaRouter from "./router/room_level_criteria_router";
+import CoinPurchaseRouter from "./router/coin_purchase_route";
 
 import path from "path";
 import StoreItemModel from "./models/store/store_item_model";
@@ -151,6 +152,7 @@ app.use("/api/referral", ReferralRouter);
 app.use("/api/admin/rocket-config", RocketConfigRouter);
 app.use("/api/admin/room-level-criteria", RoomLevelCriteriaRouter);
 app.use("/api/coin-exchange", CoinExchangeRouter);
+app.use("/api/coin-purchase", CoinPurchaseRouter);
 
 app.post(
   "/api/upload-file-cloud",

@@ -70,6 +70,7 @@ export enum DatabaseNames {
   RocketConfig = "rocket_configs",
   ExchangeOption = "exchange_options",
   ExchangeTransactionHistory = "exchange_transaction_histories",
+  CoinPurchaseOption = "coin_purchase_options",
 }
 
 export enum ReelStatus {

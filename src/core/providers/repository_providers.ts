@@ -38,6 +38,8 @@ import ExchangeOptionModel from "../../models/coin_exchange/exchange_option_mode
 import ExchangeTransactionHistoryModel from "../../models/coin_exchange/exchange_transaction_history_model";
 import ExchangeOptionRepository from "../../repository/coin_exchange/exchange_option_repository";
 import ExchangeTransactionHistoryRepository from "../../repository/coin_exchange/exchange_transaction_history_repository";
+import CoinPurchaseOptionModel from "../../models/in_app_purchase/coin_purchase_option_model";
+import CoinPurchaseOptionRepository from "../../repository/in_app_purchase/coin_purchase_option_repository";
 
 export class RepositoryProviders {
   static readonly giftRecordRepositoryProvider = new GiftRecordRepository(
@@ -103,4 +105,6 @@ export class RepositoryProviders {
   );
   static readonly exchangeTransactionHistoryRepositoryProvider =
     new ExchangeTransactionHistoryRepository(ExchangeTransactionHistoryModel);
+  static readonly coinPurchaseOptionRepositoryProvider =
+    new CoinPurchaseOptionRepository(CoinPurchaseOptionModel);
 }
