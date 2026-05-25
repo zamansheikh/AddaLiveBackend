@@ -33,7 +33,10 @@ export class XpHelper {
     if (!user) return;
 
     const config = await XpConfigService.getConfig();
-    if (!config) return;
+    if (!config) {
+      console.warn(`[XpHelper] updateUserXp skipped for user ${userId}: XP config not loaded`);
+      return;
+    }
 
     const level = this.determineUserLevelFromXp(
       user.totalEarnedXp + xpAmount,
@@ -53,7 +56,10 @@ export class XpHelper {
     if (!user) return;
 
     const config = await XpConfigService.getConfig();
-    if (!config) return;
+    if (!config) {
+      console.warn(`[XpHelper] updateUserXpFromCoin skipped for user ${userId}: XP config not loaded`);
+      return;
+    }
 
     const xpAmount =
       (coins / config.giftSendXp) *

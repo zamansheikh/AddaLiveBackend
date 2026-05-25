@@ -42,6 +42,15 @@ export class XpConfigService {
   /** In-memory cache — null until first load or after restart. */
   private static configCache: IXpConfig | null = null;
 
+  /** True once a DB fetch has completed (whether or not a document existed). */
+  private static configLoaded = false;
+
+  /**
+   * Shared promise for in-flight DB reads — prevents race conditions and
+   * deduplicates concurrent getConfig() calls.
+   */
+  private static loadingPromise: Promise<IXpConfig | null> | null = null;
+
   /** Lazily-resolved repository reference. */
   private static get repository(): IXpConfigRepository {
     return RepositoryProviders.xpConfigRepositoryProvider;
@@ -55,8 +64,10 @@ export class XpConfigService {
   static async bootstrap(): Promise<void> {
     const dbConfig = await XpConfigService.repository.getConfig();
     if (!dbConfig) {
-      // First deploy — seed defaults into DB
-      await XpConfigService.repository.updateConfig(DEFAULT_XP_CONFIG);
+      // First deploy — seed defaults into DB via the service layer
+      // (updateConfig sets configCache + configLoaded, preventing race
+      // conditions with concurrent getConfig() calls during startup).
+      await XpConfigService.updateConfig(DEFAULT_XP_CONFIG);
       console.log("🌱 XP Configuration seeded in database from defaults.");
     }
 
@@ -67,24 +78,50 @@ export class XpConfigService {
 
   /**
    * Returns the XP configuration from the in-memory cache.
-   * If the cache is empty (null), it lazy-loads from the database first.
-   * Subsequent calls return immediately with zero I/O.
+   *
+   * - First call: lazy-loads from the database using a shared promise.
+   * - Subsequent calls: returns the cached value immediately (zero I/O).
+   * - If the DB document is missing: configLoaded is set to true and null
+   *   is returned without re-hitting the DB on every call.
+   * - Safe against race conditions with updateConfig() via the
+   *   configLoaded guard inside the loadingPromise.
    */
   static async getConfig(): Promise<IXpConfig | null> {
-    if (XpConfigService.configCache) {
+    // Fast path — cache is already populated (or confirmed absent)
+    if (XpConfigService.configLoaded) {
       return XpConfigService.configCache;
     }
 
-    // Lazy load from DB — only happens once (or after a server restart)
-    const dbConfig = await XpConfigService.repository.getConfig();
-    if (dbConfig) {
-      XpConfigService.configCache = {
-        xpLevels: dbConfig.xpLevels,
-        giftSendXp: dbConfig.giftSendXp,
-        svipMultipliers: dbConfig.svipMultipliers,
-      };
+    // Create a shared promise so concurrent callers share one DB fetch
+    if (!XpConfigService.loadingPromise) {
+      XpConfigService.loadingPromise = (async () => {
+        try {
+          const dbConfig = await XpConfigService.repository.getConfig();
+
+          // Guard: skip if updateConfig() already populated the cache
+          // while the DB fetch was in flight (race condition prevention).
+          if (!XpConfigService.configLoaded) {
+            XpConfigService.configLoaded = true;
+            if (dbConfig) {
+              XpConfigService.configCache = {
+                xpLevels: dbConfig.xpLevels,
+                giftSendXp: dbConfig.giftSendXp,
+                svipMultipliers: dbConfig.svipMultipliers,
+              };
+            }
+          }
+
+          return XpConfigService.configCache;
+        } finally {
+          // Always reset loadingPromise — even if the DB fetch throws.
+          // This allows subsequent callers to retry with a fresh promise
+          // instead of being permanently stuck with a rejected one.
+          XpConfigService.loadingPromise = null;
+        }
+      })();
     }
-    return XpConfigService.configCache;
+
+    return XpConfigService.loadingPromise;
   }
 
   /**
@@ -103,6 +140,7 @@ export class XpConfigService {
       svipMultipliers: updated.svipMultipliers,
     };
     XpConfigService.configCache = result;
+    XpConfigService.configLoaded = true;
 
     return result;
   }

@@ -459,18 +459,6 @@ export function determineUserLevel(coins: number): number {
   return 40; // at maximum level
 }
 
-export function determineUserLevelFromXp(
-  xpCount: number,
-  xpLevels: number[],
-): number {
-  for (let i = 0; i < xpLevels.length; i++) {
-    if (xpCount < xpLevels[i]) {
-      return i; // Levels start from 0
-    }
-  }
-  return xpLevels.length; // at maximum level
-}
-
 export function determineUserTagAndBg(level: number): string {
   if (level >= 1 && level <= 5) return "1-5";
   else if (level >= 6 && level <= 10) return "6-10";

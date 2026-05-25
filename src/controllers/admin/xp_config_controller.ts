@@ -41,6 +41,13 @@ export class XpConfigController {
   private validateData(data: any) {
     const { xpLevels, giftSendXp, svipMultipliers } = data;
 
+    if (xpLevels === undefined && giftSendXp === undefined && svipMultipliers === undefined) {
+      throw new AppError(
+        400,
+        "At least one field is required: xpLevels, giftSendXp, or svipMultipliers",
+      );
+    }
+
     if (xpLevels !== undefined) {
       if (!Array.isArray(xpLevels) || xpLevels.length === 0) {
         throw new AppError(400, "xpLevels must be a non-empty array of numbers");
