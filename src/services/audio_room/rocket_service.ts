@@ -51,6 +51,9 @@ export default class RocketService {
   private static readonly ROCKET_MILESTONE_KEY_PREFIX = `${this.ROCKET_SERVICE_FOLDER}:milestone:`;
   private static readonly REWARDED_USERS_KEY_PREFIX = `${this.ROCKET_SERVICE_FOLDER}:rewarded_users:`;
 
+  // Maximum recursive launches per addFuel call to prevent infinite loops
+  private static readonly MAX_RECURSION_DEPTH = 20;
+
   // repositories
   private giftRecordRepository =
     RepositoryProviders.giftRecordRepositoryProvider;
@@ -134,6 +137,7 @@ export default class RocketService {
     fuel: number,
     level: number,
     room?: IAudioRoomDocument,
+    recursionDepth: number = 0,
   ) {
     console.log(`[RocketService] launchRocket initiated for room: ${roomId}, Level: ${level}, Fuel: ${fuel}`);
     // Always fetch fresh room data to ensure proper hydration of membersArray and latest state
@@ -210,11 +214,26 @@ export default class RocketService {
 
     // recursive call (if the remaining fuel is greater than the next milestone)
     if (remainingFuel >= ROCKET_MILESTONES[nextLevel - 1]) {
-      console.log(`[RocketService] Remaining fuel (${remainingFuel}) exceeds next milestone (${ROCKET_MILESTONES[nextLevel - 1]}). Triggering recursive launch...`);
-      // delay the next launch by 45 seconds
-      await new Promise((resolve) => setTimeout(resolve, 45000));
-      await this.launchRocket(roomId, remainingFuel, nextLevel);
-      return;
+      if (recursionDepth >= RocketService.MAX_RECURSION_DEPTH) {
+        console.warn(`[RocketService] Max recursion depth (${RocketService.MAX_RECURSION_DEPTH}) reached for room: ${roomId}. Remaining fuel ${remainingFuel} not further processed.`);
+        // Emit final fuel notification so the room knows the leftover fuel
+        socketServer.emitToRoom(roomId, AudioRoomChannels.NewRocketFuelPercentage, {
+          roomId,
+          fuel: remainingFuel,
+          level: nextLevel,
+          milestone: ROCKET_MILESTONES[nextLevel - 1],
+          percentage: parseFloat(
+            ((remainingFuel / ROCKET_MILESTONES[nextLevel - 1]) * 100).toFixed(2),
+          ),
+        } as IRocketServiceResponse);
+        return;
+      } else {
+        console.log(`[RocketService] Remaining fuel (${remainingFuel}) exceeds next milestone (${ROCKET_MILESTONES[nextLevel - 1]}). Triggering recursive launch...`);
+        // delay the next launch by 45 seconds
+        await new Promise((resolve) => setTimeout(resolve, 45000));
+        await this.launchRocket(roomId, remainingFuel, nextLevel, undefined, recursionDepth + 1);
+        return;
+      }
     }
     // fuel notification (scope: room)
     socketServer.emitToRoom(roomId, AudioRoomChannels.NewRocketFuelPercentage, {
