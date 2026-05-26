@@ -73,7 +73,7 @@ router
 router
   .route("/give-coins")
   .put(
-    authenticate([UserRoles.Reseller]),
+    authenticate(),
     appResellerController.giveCoinsToUser,
   );
 
