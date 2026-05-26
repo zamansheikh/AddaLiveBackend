@@ -170,7 +170,7 @@ export default class SharedPowerService implements ISharedPowerService {
       throw new AppError(
         StatusCodes.FORBIDDEN,
         "Your account is temporarily blocked till " +
-          existingUser.activityZone.expire!.toDateString(),
+        existingUser.activityZone.expire!.toDateString(),
       );
     if (existingUser.activityZone?.zone == ActivityZoneState.permanentBlock)
       throw new AppError(

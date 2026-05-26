@@ -14,7 +14,7 @@
 import { StatusCodes } from "http-status-codes";
 import mongoose from "mongoose";
 import AppError from "../../core/errors/app_errors";
-import { UserRoles } from "../../core/Utils/enums";
+import { AdminPowers, UserRoles } from "../../core/Utils/enums";
 import { IUserRepository } from "../../repository/users/user_repository";
 import { IPagination } from "../../core/Utils/query_builder";
 import { IUserDocument } from "../../models/user/user_model_interface";
@@ -23,10 +23,13 @@ import { ICoinHistoryRepository } from "../../repository/coins/coinHistoryReposi
 import { ICoinHistory } from "../../models/coins/coinHistoryModel";
 import { ILevelTagBgRepository } from "../../repository/users/level_tag_bg_repository";
 import {
+  canUserUpdate,
   determineUserLevel,
   determineUserTagAndBg,
 } from "../../core/Utils/helper_functions";
 import { IReferralService } from "../referral/referral_service";
+import { IAdminRepository } from "../../repository/admin/admin_repository";
+import { IPortalUserRepository } from "../../repository/portal_user/portal_user_repository";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Interface
@@ -70,6 +73,29 @@ export interface IAppResellerService {
     sender: { id: string; coins: number };
     receiver: { id: string; coins: number };
   }>;
+
+  /**
+   * Transfer coins from an Admin or SubAdmin to a reseller (app user).
+   * 
+   * Admin's coins are stored in the `admins` collection.
+   * SubAdmin's coins are stored in the `portal_users` collection.
+   * The reseller's coins are stored in the `UserStats` collection.
+   *
+   * @param senderId   - _id of the Admin or SubAdmin (from JWT)
+   * @param senderRole - role of the sender (Admin or SubAdmin)
+   * @param resellerId - _id of the target reseller receiving the coins
+   * @param coins      - amount to transfer (must be a positive integer)
+   * @returns Updated coin balances for both sender and receiver
+   */
+  giveCoinsToReseller(
+    senderId: string,
+    senderRole: UserRoles,
+    resellerId: string,
+    coins: number,
+  ): Promise<{
+    sender: { id: string; coins: number };
+    receiver: { id: string; coins: number };
+  }>;
 }
 
 
@@ -84,6 +110,8 @@ export default class AppResellerService implements IAppResellerService {
   CoinHistoryRepository: ICoinHistoryRepository;
   LevelTagBgRepository: ILevelTagBgRepository;
   ReferralService: IReferralService;
+  AdminRepository: IAdminRepository;
+  PortalUserRepository: IPortalUserRepository;
 
   constructor(
     UserRepository: IUserRepository,
@@ -91,12 +119,16 @@ export default class AppResellerService implements IAppResellerService {
     CoinHistoryRepository: ICoinHistoryRepository,
     LevelTagBgRepository: ILevelTagBgRepository,
     ReferralService: IReferralService,
+    AdminRepository: IAdminRepository,
+    PortalUserRepository: IPortalUserRepository,
   ) {
     this.UserRepository = UserRepository;
     this.UserStatsRepository = UserStatsRepository;
     this.CoinHistoryRepository = CoinHistoryRepository;
     this.LevelTagBgRepository = LevelTagBgRepository;
     this.ReferralService = ReferralService;
+    this.AdminRepository = AdminRepository;
+    this.PortalUserRepository = PortalUserRepository;
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -347,6 +379,178 @@ export default class AppResellerService implements IAppResellerService {
       await this.ReferralService.handleRechargeReferral(userId, coins);
     } catch (error) {
       console.error("Referral recharge tracking failed:", error);
+    }
+
+    return {
+      sender: updatedSender,
+      receiver: updatedReceiver,
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  //  giveCoinsToReseller
+  // ──────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Transfers coins from an Admin or SubAdmin to a reseller (app user).
+   *
+   * **Key design decisions:**
+   * - Admin's coins are stored in the `admins` collection.
+   * - SubAdmin's coins are stored in the `portal_users` collection.
+   * - The reseller is an **app user** with role `"re-seller"`. Their coin
+   *   balance lives in the `UserStats` collection.
+   * - The transfer is wrapped in a MongoDB transaction so that either both
+   *   the deduction AND the addition succeed, or neither does.
+   * - A coin history record is created for audit purposes.
+   *
+   * @throws AppError(400) if coins <= 0 or the sender tries self-transfer
+   * @throws AppError(400) if the sender has insufficient coins
+   * @throws AppError(404) if the reseller is not found
+   * @throws AppError(401) if the sender is not an Admin or SubAdmin
+   */
+  async giveCoinsToReseller(
+    senderId: string,
+    senderRole: UserRoles,
+    resellerId: string,
+    coins: number,
+  ): Promise<{
+    sender: { id: string; coins: number };
+    receiver: { id: string; coins: number };
+  }> {
+    // ── 1. Validate inputs ──────────────────────────────────────────────────
+    if (!coins || coins <= 0) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Coins must be greater than 0",
+      );
+    }
+
+    // Only Admin and SubAdmin are allowed to use this endpoint
+    const allowedSenders = [UserRoles.Admin, UserRoles.SubAdmin];
+    if (!allowedSenders.includes(senderRole)) {
+      throw new AppError(
+        StatusCodes.UNAUTHORIZED,
+        `"${senderRole}" is not authorized to give coins to resellers`,
+      );
+    }
+
+    if (senderId === resellerId) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Self-transfer is not allowed",
+      );
+    }
+
+    // ── 2. Verify the sender exists and has the expected role ───────────────
+    let senderProfile;
+    if (senderRole === UserRoles.Admin) {
+      senderProfile = await this.AdminRepository.getAdminById(senderId);
+    } else {
+      senderProfile = await this.PortalUserRepository.getPortalUserById(senderId);
+    }
+
+    if (!senderProfile) {
+      throw new AppError(StatusCodes.NOT_FOUND, "Sender not found");
+    }
+    if (senderProfile.userRole !== senderRole) {
+      throw new AppError(
+        StatusCodes.UNAUTHORIZED,
+        `Sender role mismatch: expected "${senderRole}", found "${senderProfile.userRole}"`,
+      );
+    }
+
+    // ── 3. For SubAdmin, verify coin-distributor permission ─────────────────
+    if (senderRole === UserRoles.SubAdmin) {
+      const hasPermission = canUserUpdate(senderProfile, [
+        AdminPowers.CoinDistribute,
+      ]);
+      if (!hasPermission) {
+        throw new AppError(
+          StatusCodes.UNAUTHORIZED,
+          "You do not have the coin-distributor permission to assign coins",
+        );
+      }
+    }
+
+    // ── 4. Verify the target reseller exists and has the "re-seller" role ────
+    const reseller = await this.UserRepository.findUserById(resellerId);
+    if (!reseller) {
+      throw new AppError(StatusCodes.NOT_FOUND, "Reseller not found");
+    }
+    if (reseller.userRole !== UserRoles.Reseller) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `Target user is not a reseller (role: "${reseller.userRole}")`,
+      );
+    }
+
+    // ── 4. Execute the transfer inside a MongoDB transaction ────────────────
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    let updatedSender: { id: string; coins: number };
+    let updatedReceiver: { id: string; coins: number };
+
+    try {
+      // 4a. Deduct coins from the sender's balance.
+      //     Both AdminRepository.updateCoin and PortalUserRepository.updateCoin
+      //     atomically check `coins >= amount` before deducting.
+      if (senderRole === UserRoles.Admin) {
+        const adminAfterDeduction = await this.AdminRepository.updateCoin(
+          senderId,
+          -coins,
+          session,
+        );
+        updatedSender = {
+          id: senderId,
+          coins: adminAfterDeduction.coins ?? 0,
+        };
+      } else {
+        const subAdminAfterDeduction =
+          await this.PortalUserRepository.updateCoin(
+            senderId,
+            -coins,
+            session,
+          );
+        updatedSender = {
+          id: senderId,
+          coins: subAdminAfterDeduction.coins ?? 0,
+        };
+      }
+
+      // 4b. Add the same amount of coins to the reseller's userstats.
+      const receiverStats = await this.UserStatsRepository.updateCoins(
+        resellerId,
+        coins,
+        session,
+      );
+
+
+
+      // 4d. Persist an audit record so we can trace who gave coins to whom.
+      const historyObj: ICoinHistory = {
+        senderRole: senderRole,
+        senderId: senderId,
+        receiverRole: UserRoles.Reseller,
+        receiverId: resellerId,
+        amount: coins,
+      };
+      await this.CoinHistoryRepository.createHistory(historyObj, session);
+
+      // 4e. Commit — all operations above are now permanent.
+      await session.commitTransaction();
+
+      updatedReceiver = {
+        id: resellerId,
+        coins: receiverStats.coins ?? 0,
+      };
+    } catch (error) {
+      // If anything went wrong, roll back every change made in this session.
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      // Always release the session resources, regardless of success or failure.
+      session.endSession();
     }
 
     return {

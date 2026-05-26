@@ -20,6 +20,10 @@ import { ReferralConfigRepository } from "../repository/referral/referral_config
 import { ReferralConfigModel } from "../models/referral/referralConfigModel";
 import { authenticate } from "../core/middlewares/auth_middleware";
 import { UserRoles } from "../core/Utils/enums";
+import AdminRepository from "../repository/admin/admin_repository";
+import Admin from "../models/admin/admin_model";
+import PortalUserRepository from "../repository/portal_user/portal_user_repository";
+import PortalUser from "../models/portal_users/protal_user_model";
 
 const router = express.Router();
 
@@ -27,6 +31,8 @@ const userRepository = new UserRepository(User);
 const userStatsRepository = new UserStatsRepository(UserStats);
 const coinHistoryRepository = new CoinHistoryRepository(CoinHistoryModel);
 const levelTagBgRepository = new LevelTagBgRepository(LevelTagBgModel);
+const adminRepository = new AdminRepository(Admin);
+const portalUserRepository = new PortalUserRepository(PortalUser);
 
 const referralRepository = new ReferralRepository(ReferralModel);
 const walletRepository = new ReferralWalletRepository(ReferralWalletModel);
@@ -50,6 +56,8 @@ const appResellerService = new AppResellerService(
   coinHistoryRepository,
   levelTagBgRepository,
   referralService,
+  adminRepository,
+  portalUserRepository,
 );
 const appResellerController = new AppResellerController(appResellerService);
 
@@ -75,6 +83,14 @@ router
   .put(
     authenticate(),
     appResellerController.giveCoinsToUser,
+  );
+
+// Route for Admin/SubAdmin to give coins to app resellers
+router
+  .route("/give-coins-to-reseller")
+  .put(
+    authenticate([UserRoles.Admin, UserRoles.SubAdmin]),
+    appResellerController.giveCoinsToReseller,
   );
 
 export default router;

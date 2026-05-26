@@ -98,4 +98,49 @@ export default class AppResellerController {
       message: `User role updated successfully to "${role}"`,
     });
   });
+
+  giveCoinsToReseller = catchAsync(async (req: Request, res: Response) => {
+    const { userId: resellerId, coins } = req.body;
+    const { id: senderId, role: senderRole } = req.user!;
+
+    if (!resellerId) {
+      throw new AppError(StatusCodes.BAD_REQUEST, "userId is required");
+    }
+
+    if (coins === undefined || coins === null) {
+      throw new AppError(StatusCodes.BAD_REQUEST, "coins is required");
+    }
+
+    if (isNaN(Number(coins))) {
+      throw new AppError(StatusCodes.BAD_REQUEST, "Coins must be a number");
+    }
+
+    if (Number(coins) <= 0) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Coins must be greater than 0",
+      );
+    }
+
+    if (!Number.isInteger(Number(coins))) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Coins must be a whole number",
+      );
+    }
+
+    const result = await this.Service.giveCoinsToReseller(
+      senderId,
+      senderRole as UserRoles,
+      resellerId,
+      Number(coins),
+    );
+
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result,
+      message: `Successfully assigned ${coins} coins to reseller`,
+    });
+  });
 }
