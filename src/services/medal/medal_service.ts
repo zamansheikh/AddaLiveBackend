@@ -110,7 +110,7 @@ export default class MedalService implements IMedalService {
     }
 
     if (icon) {
-      await deleteFileFromCloudinary(existing.icon);
+      // Upload new icon first, then delete old one — if upload fails, old icon is preserved
       const iconUrl = await uploadFileToCloudinary({
         folder: CloudinaryFolder.MedalAssets,
         file: icon,
@@ -121,6 +121,7 @@ export default class MedalService implements IMedalService {
           "Failed to upload medal icon",
         );
       }
+      await deleteFileFromCloudinary(existing.icon);
       data.icon = iconUrl;
     }
 
