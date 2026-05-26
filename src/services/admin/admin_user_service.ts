@@ -65,6 +65,7 @@ import {
   IUpdateCost,
   IUpdateCostDocument,
 } from "../../models/admin/update_cost_model";
+import { XpHelper } from "../../core/helper_classes/xp_helper";
 
 export interface IAdminUserService {
   loginAdmin(credentials: {
@@ -232,6 +233,11 @@ export interface IAdminUserService {
     id: string,
     data: Partial<IPortalUser>
   ): Promise<IPortalUser>;
+
+  updateUserXp(
+    userId: string,
+    xpAmount: number
+  ): Promise<{ totalEarnedXp: number; level: number }>;
 }
 
 export default class AdminUserService implements IAdminUserService {
@@ -1258,6 +1264,32 @@ export default class AdminUserService implements IAdminUserService {
   ): Promise<{ pagination: IPagination; users: IUserDocument[] }> {
     const blockedUsers = await this.UserRepository.getBannedUsers(query);
     return blockedUsers;
+  }
+
+  async updateUserXp(
+    userId: string,
+    xpAmount: number,
+  ): Promise<{ totalEarnedXp: number; level: number }> {
+    const user = await this.UserRepository.findUserById(userId);
+    if (!user) {
+      throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+    }
+
+    if (xpAmount <= 0) {
+      throw new AppError(StatusCodes.BAD_REQUEST, "XP amount must be greater than 0");
+    }
+
+    await XpHelper.getInstance().updateUserXp(userId, xpAmount);
+
+    const updatedUser = await this.UserRepository.findUserById(userId);
+    if (!updatedUser) {
+      throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, "Failed to update user XP");
+    }
+
+    return {
+      totalEarnedXp: updatedUser.totalEarnedXp,
+      level: updatedUser.level ?? 0,
+    };
   }
 
   async getAllPortalUsers(

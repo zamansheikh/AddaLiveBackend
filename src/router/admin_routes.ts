@@ -324,6 +324,10 @@ router
   );
 
 router
+  .route("/users/xp/:userId")
+  .put(authenticate([UserRoles.Admin]), adminUserController.updateUserXp);
+
+router
   .route("/users/banned-users")
   .get(authenticate([UserRoles.Admin]), adminUserController.getBannedUsers);
 

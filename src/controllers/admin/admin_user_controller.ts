@@ -940,6 +940,28 @@ export default class AdminUserController {
     });
   });
 
+  updateUserXp = catchAsync(async (req: Request, res: Response) => {
+    const { userId } = req.params;
+    const { xpAmount } = req.body;
+
+    if (!xpAmount || isNaN(Number(xpAmount))) {
+      throw new AppError(StatusCodes.BAD_REQUEST, "xpAmount must be a valid number");
+    }
+
+    const amount = Number(xpAmount);
+    if (amount <= 0) {
+      throw new AppError(StatusCodes.BAD_REQUEST, "xpAmount must be greater than 0");
+    }
+
+    const result = await this.AdminUserService.updateUserXp(userId, amount);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result,
+      message: "User XP updated successfully",
+    });
+  });
+
   getAllUserRoles = catchAsync(async (_req: Request, res: Response) => {
     const roles = Object.values(UserRoles);
     sendResponse(res, {
