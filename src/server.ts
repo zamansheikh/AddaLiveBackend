@@ -43,6 +43,7 @@ import XpConfigRouter from "./router/xp_config_routes";
 import MedalRouter from "./router/medal_routes";
 import AppResellerRouter from "./router/app_reseller_routes";
 
+import fs from "fs";
 import path from "path";
 import StoreItemModel from "./models/store/store_item_model";
 import { IStoreCategoryDocument } from "./models/store/store_category_model";
@@ -282,6 +283,16 @@ mongoose.connect(MONGOURL).then(async () => {
     cronManager.register("0 0 * * *", resetMagicBallJob); // Everyday at 12:00 AM reset xp tracking system
   });
 });
+
+// ─── Crash log — writes the error to crash.log so you can read it after the server dies ───
+const logError = (type: string, err: unknown) => {
+  const entry = `[${new Date().toISOString()}] ${type}: ${err instanceof Error ? err.stack || err.message : String(err)}\n`;
+  fs.appendFileSync(path.join(process.cwd(), "crash.log"), entry);
+  console.error(entry.trim());
+};
+
+process.on("unhandledRejection", (reason) => logError("UNHANDLED REJECTION", reason));
+process.on("uncaughtException", (err) => { logError("UNCAUGHT EXCEPTION", err); process.exit(1); });
 
 // Graceful shutdown
 process.on("SIGTERM", async () => {
