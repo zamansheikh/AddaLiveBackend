@@ -387,6 +387,7 @@ export default class StoreService implements IStoreService {
       prices: item.prices,
       bundleFiles: premimumURLs,
       privilege: item.privilege,
+      canUserBuyThis: true,
     };
     return await this.ItemRepository.createStoreItem(itemToCreate);
   }
