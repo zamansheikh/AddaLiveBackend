@@ -16,8 +16,6 @@ import IUserStatsRepository from "../../repository/users/userstats_repository_in
 import AppError from "../../core/errors/app_errors";
 import {
   canUserUpdate,
-  determineUserLevel,
-  determineUserTagAndBg,
 } from "../../core/Utils/helper_functions";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
@@ -35,6 +33,7 @@ import { IAgencyJoinRequest } from "../../models/request/agencyJoinRequset";
 import { IAgencyJoinRequestRepository } from "../../repository/request/AgencyJoinRequestRepository";
 import { ILevelTagBg } from "../../models/user/level_tag_bg_model";
 import { ILevelTagBgRepository } from "../../repository/users/level_tag_bg_repository";
+import { creditRegularUserCoins } from "../coin/coin_utils";
 
 export interface ISharedPowerService {
   loginPortalUser(
@@ -394,36 +393,25 @@ export default class SharedPowerService implements ISharedPowerService {
           session,
         );
       } else {
-        const xpEnv = process.env.XP_MODE ?? "0";
-        const isXpMode = xpEnv.toString() == "1";
-        if (!isXpMode) {
-          const userProfile = targetProfile as IUserDocument;
-          const newLevel = determineUserLevel(
-            userProfile.totalBoughtCoins + coins,
-          );
-          const newTagAndBg = determineUserTagAndBg(newLevel);
-          const tagAndBgDocument =
-            await this.LevelTagBgRepository.findByLevel(newTagAndBg);
-          await this.UserRepository.findUserByIdAndUpdate(
-            userId,
-            {
-              totalBoughtCoins: userProfile.totalBoughtCoins + coins,
-              level: newLevel,
-              currentLevelTag: tagAndBgDocument?.levelTag,
-              currentLevelBackground: tagAndBgDocument?.levelBg,
-            },
-            session,
-          );
-        }
-
-        returnBody = await this.UserStatsRepository.updateCoins(
+        returnBody = await creditRegularUserCoins({
           userId,
           coins,
+          targetUser: targetProfile as IUserDocument,
+          userRepository: this.UserRepository,
+          userStatsRepository: this.UserStatsRepository,
+          levelTagBgRepository: this.LevelTagBgRepository,
+          coinHistoryRepository: this.CoinHistoryRepository,
+          senderRole: role,
+          senderId: myId,
+          receiverRole: userRole,
           session,
-        );
+        });
       }
 
-      await this.CoinHistoryRepository.createHistory(historyObj, session);
+      // Portal-user path: create history here (regular users get it via creditRegularUserCoins)
+      if (portalUserTargets.includes(userRole)) {
+        await this.CoinHistoryRepository.createHistory(historyObj, session);
+      }
 
       await session.commitTransaction();
     } catch (error) {

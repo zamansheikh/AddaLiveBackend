@@ -24,12 +24,11 @@ import { ICoinHistory } from "../../models/coins/coinHistoryModel";
 import { ILevelTagBgRepository } from "../../repository/users/level_tag_bg_repository";
 import {
   canUserUpdate,
-  determineUserLevel,
-  determineUserTagAndBg,
 } from "../../core/Utils/helper_functions";
 import { IReferralService } from "../referral/referral_service";
 import { IAdminRepository } from "../../repository/admin/admin_repository";
 import { IPortalUserRepository } from "../../repository/portal_user/portal_user_repository";
+import { creditRegularUserCoins } from "../coin/coin_utils";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Interface
@@ -304,45 +303,20 @@ export default class AppResellerService implements IAppResellerService {
         );
       }
 
-      // 4b. Add the same amount of coins to the target user's stats.
-      const receiverStats = await this.UserStatsRepository.updateCoins(
+      // 4b. Credit the receiver using the shared utility (updates coins, level, and history).
+      const receiverStats = await creditRegularUserCoins({
         userId,
         coins,
-        session,
-      );
-
-      // 4c. XP mode check — if XP mode is OFF, recalculate the user's level
-      //     and level-tag/background based on cumulative bought coins.
-      const xpEnv = process.env.XP_MODE ?? "0";
-      const isXpMode = xpEnv.toString() === "1";
-      if (!isXpMode) {
-        const newLevel = determineUserLevel(
-          (targetUser.totalBoughtCoins ?? 0) + coins,
-        );
-        const newTagAndBg = determineUserTagAndBg(newLevel);
-        const tagAndBgDocument =
-          await this.LevelTagBgRepository.findByLevel(newTagAndBg);
-        await this.UserRepository.findUserByIdAndUpdate(
-          userId,
-          {
-            totalBoughtCoins: (targetUser.totalBoughtCoins ?? 0) + coins,
-            level: newLevel,
-            currentLevelTag: tagAndBgDocument?.levelTag,
-            currentLevelBackground: tagAndBgDocument?.levelBg,
-          },
-          session,
-        );
-      }
-
-      // 4d. Persist an audit record so we can trace who gave coins to whom.
-      const historyObj: ICoinHistory = {
+        targetUser,
+        userRepository: this.UserRepository,
+        userStatsRepository: this.UserStatsRepository,
+        levelTagBgRepository: this.LevelTagBgRepository,
+        coinHistoryRepository: this.CoinHistoryRepository,
         senderRole: UserRoles.Reseller,
         senderId: resellerId,
         receiverRole: UserRoles.User,
-        receiverId: userId,
-        amount: coins,
-      };
-      await this.CoinHistoryRepository.createHistory(historyObj, session);
+        session,
+      });
 
       // 4e. Commit — all operations above are now permanent.
       await session.commitTransaction();
