@@ -74,6 +74,8 @@ export enum DatabaseNames {
   AgoraConfig = "agora_configs",
   XpConfig = "xp_configs",
   Medals = "medals",
+  SvipConfig = "svip_configs",
+  UserSvip = "user_svip",
 }
 
 export enum ReelStatus {

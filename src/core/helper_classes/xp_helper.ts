@@ -10,6 +10,7 @@ import { AudioRoomChannels } from "../Utils/enums";
 import { XpConfigService } from "../../services/admin/xp_config_service";
 import MedalModel from "../../models/medal/medal_model";
 import MedalRepository from "../../repository/medal/medal_repository";
+import UserSvipModel from "../../models/svip/user_svip_model";
 
 export class XpHelper {
   private static instance: XpHelper;
@@ -127,16 +128,32 @@ export class XpHelper {
   }
 
   public async getHighestSvipLevel(userId: string): Promise<number> {
+    // ── 1. Check store-bucket SVIP items (legacy purchase-based) ─────────
     const svipPackages = (
       await this.bucketRepository.getAllPremiumItems(userId)
     )
-      .filter((item) => item.itemId) // Ensure itemId is populated/not null
+      .filter((item) => item.itemId)
       .map((item) => (item.itemId as IStoreItem).name)
       .filter((name) => name.includes("SVIP"))
       .map((name) => parseInt(name.split("SVIP-")?.[1] || "0") || 0);
 
-    const highestSvip =
+    let highestSvip =
       svipPackages.length === 0 ? 0 : Math.max(...svipPackages);
+
+    // ── 2. Also check milestone-based SVIP tier (new system) ────────────
+    try {
+      const svipRecord = await UserSvipModel.findOne({ userId }).lean();
+      if (svipRecord && svipRecord.currentTier > highestSvip) {
+        highestSvip = svipRecord.currentTier;
+      }
+    } catch (error) {
+      // Non-critical — fall back to store-bucket result
+      console.warn(
+        `[XpHelper] Failed to read SVIP record for user ${userId}:`,
+        error,
+      );
+    }
+
     return highestSvip;
   }
 

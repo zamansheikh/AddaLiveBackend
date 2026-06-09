@@ -42,6 +42,10 @@ import CoinPurchaseOptionModel from "../../models/in_app_purchase/coin_purchase_
 import CoinPurchaseOptionRepository from "../../repository/in_app_purchase/coin_purchase_option_repository";
 import XpConfigModel from "../../models/admin/xp_config_model";
 import { XpConfigRepository } from "../../repository/admin/xp_config_repository";
+import SvipConfigModel from "../../models/admin/svip_config_model";
+import { SvipConfigRepository } from "../../repository/admin/svip_config_repository";
+import UserSvipModel from "../../models/svip/user_svip_model";
+import { UserSvipRepository } from "../../repository/svip/user_svip_repository";
 
 export class RepositoryProviders {
   static readonly giftRecordRepositoryProvider = new GiftRecordRepository(
@@ -111,5 +115,13 @@ export class RepositoryProviders {
     new CoinPurchaseOptionRepository(CoinPurchaseOptionModel);
   static readonly xpConfigRepositoryProvider = new XpConfigRepository(
     XpConfigModel,
+  );
+
+  static readonly svipConfigRepositoryProvider = new SvipConfigRepository(
+    SvipConfigModel,
+  );
+
+  static readonly userSvipRepositoryProvider = new UserSvipRepository(
+    UserSvipModel,
   );
 }

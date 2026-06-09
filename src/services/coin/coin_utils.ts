@@ -20,6 +20,7 @@ import { ILevelTagBgRepository } from "../../repository/users/level_tag_bg_repos
 import { IUserRepository } from "../../repository/users/user_repository";
 import IUserStatsRepository from "../../repository/users/userstats_repository_interface";
 import { IUSerStatsDocument } from "../../entities/userstats/userstats_interface";
+import { SvipService } from "../svip/svip_service";
 
 export interface CreditRegularUserCoinsParams {
   /** The receiving user's MongoDB _id. */
@@ -108,6 +109,9 @@ export async function creditRegularUserCoins(
     amount: coins,
   };
   await coinHistoryRepository.createHistory(historyObj, session);
+
+  // ── 4. SVIP milestone tracking — runs inside the same transaction ──────
+  await SvipService.trackRecharge(userId, coins, session);
 
   return stats;
 }

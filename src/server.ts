@@ -1,4 +1,5 @@
 // src/server.ts
+import "reflect-metadata";
 import dns from "node:dns";
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 import express, { Application, Request, Response } from "express";
@@ -42,6 +43,7 @@ import AgoraConfigRouter from "./router/agora_config_routes";
 import XpConfigRouter from "./router/xp_config_routes";
 import MedalRouter from "./router/medal_routes";
 import AppResellerRouter from "./router/app_reseller_routes";
+import SvipRouter from "./router/svip_routes";
 
 import fs from "fs";
 import path from "path";
@@ -65,6 +67,8 @@ import { initializeMagicBallTrackers } from "./services/magic_ball";
 import { RoomLevelCriteriaService } from "./services/audio_room/room_level_criteria_service";
 import { RocketConfigService } from "./services/audio_room/rocket_config_service";
 import { XpConfigService } from "./services/admin/xp_config_service";
+import { SvipConfigService } from "./services/admin/svip_config_service";
+import { svipMonthlyRetentionJob } from "./core/corn/jobs/svip_jobs";
 
 // Initialize Magic Ball Trackers
 initializeMagicBallTrackers();
@@ -165,6 +169,9 @@ app.use("/api/admin/xp-config", XpConfigRouter);
 // Medal routes
 app.use("/api/medals", MedalRouter);
 
+// SVIP routes
+app.use("/api/svip", SvipRouter);
+
 // App Reseller routes
 app.use("/api/app-reseller", AppResellerRouter);
 
@@ -262,6 +269,13 @@ mongoose.connect(MONGOURL).then(async () => {
     console.error("Failed to bootstrap XP Configuration:", err);
   }
 
+  // Bootstrap SVIP Configuration (seed defaults + warm cache)
+  try {
+    await SvipConfigService.bootstrap();
+  } catch (err) {
+    console.error("Failed to bootstrap SVIP Configuration:", err);
+  }
+
   // Connect to Redis
   try {
     await RedisConfig.connect();
@@ -281,6 +295,7 @@ mongoose.connect(MONGOURL).then(async () => {
     // cronManager.register("0 0 * * *", resetRoomXPTrackingSystem); // Everyday at 12:00 AM reset xp tracking system
     cronManager.register("0 0 * * *", roomSupportRewardSystem); // every week at sunday room support reset
     cronManager.register("0 0 * * *", resetMagicBallJob); // Everyday at 12:00 AM reset xp tracking system
+    cronManager.register("0 0 1 * *", svipMonthlyRetentionJob); // 1st of every month at midnight — SVIP retention check
   });
 });
 
