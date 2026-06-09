@@ -101,6 +101,14 @@ router
   .route("/privileges")
   .get(authenticate([UserRoles.Admin, UserRoles.SubAdmin]), controller.getPrivileges);
 
+// 📌 grant item (admin only — exclusive items with canUserBuyThis: false)
+router
+  .route("/items/grant")
+  .post(
+    authenticate([UserRoles.Admin, UserRoles.SubAdmin]),
+    controller.grantStoreItem,
+  );
+
 // 📌 my buckets
 router
   .route("/bucket")

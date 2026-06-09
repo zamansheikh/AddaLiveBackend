@@ -88,6 +88,11 @@ export interface IStoreService {
     userCount: number;
   }>;
   // 📌 my buckets
+  grantItemToUser(
+    userId: string,
+    itemId: string,
+    validity: number,
+  ): Promise<IMyBucketDocument>;
   buyStoreItem(
     ownerId: string,
     itemId: string,
@@ -744,6 +749,66 @@ export default class StoreService implements IStoreService {
     const parts = name.split("-");
     const tier = parseInt(parts[parts.length - 1], 10);
     return isNaN(tier) ? 0 : tier;
+  }
+
+  async grantItemToUser(
+    userId: string,
+    itemId: string,
+    validity: number,
+  ): Promise<IMyBucketDocument> {
+    // Validate user exists
+    const user = await this.UserRepository.findUserById(userId);
+    if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+
+    // Validate item exists
+    const item = await this.ItemRepository.getStoreItemById(itemId);
+    if (!item) throw new AppError(StatusCodes.NOT_FOUND, "Item not found");
+
+    // Validate validity is a positive number
+    if (isNaN(validity) || validity <= 0)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "validity must be a positive number",
+      );
+
+    // Only non-premium items can be granted
+    if (item.isPremium)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Cannot grant premium items",
+      );
+
+    // Only items with canUserBuyThis: false can be granted
+    if (item.canUserBuyThis !== false)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Only exclusive non-purchasable items can be granted",
+      );
+
+    // Check if user already owns this item
+    const existingBucket = await this.BucketRepository.findBucketByOwnerAndItem(
+      userId,
+      itemId,
+    );
+    if (existingBucket)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "User already owns this item",
+      );
+
+    // Calculate expiry
+    const expireAt = new Date(
+      Date.now() + validity * 24 * 60 * 60 * 1000,
+    );
+
+    // Create bucket
+    return await this.BucketRepository.createNewBucket({
+      itemId: item._id as string,
+      ownerId: userId,
+      categoryId: item.categoryId,
+      expireAt,
+      useStatus: false,
+    });
   }
 
   async buyStoreItem(
