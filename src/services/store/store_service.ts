@@ -89,7 +89,7 @@ export interface IStoreService {
   }>;
   // 📌 my buckets
   grantItemToUser(
-    userId: string,
+    userId: number,
     itemId: string,
     validity: number,
   ): Promise<IMyBucketDocument>;
@@ -752,13 +752,14 @@ export default class StoreService implements IStoreService {
   }
 
   async grantItemToUser(
-    userId: string,
+    userId: number,
     itemId: string,
     validity: number,
   ): Promise<IMyBucketDocument> {
-    // Validate user exists
-    const user = await this.UserRepository.findUserById(userId);
+    // Validate user exists by numeric userId (e.g., 100001)
+    const user = await this.UserRepository.findUserByShortId(userId);
     if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+    const userObjectId = user._id as string;
 
     // Validate item exists
     const item = await this.ItemRepository.getStoreItemById(itemId);
@@ -787,7 +788,7 @@ export default class StoreService implements IStoreService {
 
     // Check if user already owns this item
     const existingBucket = await this.BucketRepository.findBucketByOwnerAndItem(
-      userId,
+      userObjectId,
       itemId,
     );
     if (existingBucket)
@@ -801,10 +802,10 @@ export default class StoreService implements IStoreService {
       Date.now() + validity * 24 * 60 * 60 * 1000,
     );
 
-    // Create bucket
+    // Create bucket using the user's MongoDB _id
     return await this.BucketRepository.createNewBucket({
       itemId: item._id as string,
-      ownerId: userId,
+      ownerId: userObjectId,
       categoryId: item.categoryId,
       expireAt,
       useStatus: false,

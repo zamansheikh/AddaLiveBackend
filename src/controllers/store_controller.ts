@@ -481,20 +481,11 @@ export default class StoreController {
   //  📌 my buckets
 
   grantStoreItem = catchAsync(async (req: Request, res: Response) => {
-    const { id: adminId } = req.user!;
     const { userId, itemId, validity } = req.body;
-    validateFieldExistance(userId, "userId");
-    validateFieldExistance(itemId, "itemId");
-    validateFieldExistance(validity, "validity");
-    if (isNaN(Number(validity)) || Number(validity) <= 0)
-      throw new AppError(
-        StatusCodes.BAD_REQUEST,
-        "validity must be a positive number",
-      );
     const bucket = await this.Service.grantItemToUser(
       userId,
       itemId,
-      Number(validity),
+      validity,
     );
     sendResponse(res, {
       statusCode: 200,

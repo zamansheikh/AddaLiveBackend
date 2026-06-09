@@ -1,5 +1,7 @@
 import express from "express";
 import { authenticate } from "../core/middlewares/auth_middleware";
+import { validateRequest } from "../core/middlewares/validate_request";
+import { GrantItemDto } from "../dtos/store/grant_item_dto";
 import { UserRoles } from "../core/Utils/enums";
 import StoreCategoryRepository from "../repository/store/store_category_repository";
 import StoreCategoryModel from "../models/store/store_category_model";
@@ -106,6 +108,7 @@ router
   .route("/items/grant")
   .post(
     authenticate([UserRoles.Admin, UserRoles.SubAdmin]),
+    validateRequest(GrantItemDto),
     controller.grantStoreItem,
   );
 
