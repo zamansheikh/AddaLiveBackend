@@ -1,8 +1,11 @@
-import { ClientSession } from "mongoose";
+import { ClientSession, Types } from "mongoose";
 import { RepositoryProviders } from "../../core/providers/repository_providers";
 import { IUserSvipRepository } from "../../repository/svip/user_svip_repository";
 import { SvipConfigService } from "../admin/svip_config_service";
 import { IUserSvipDocument } from "../../models/svip/user_svip_model";
+import { IMyBucketRepository } from "../../repository/store/my_bucket_repository";
+import { IStoreCategoryRepository } from "../../repository/store/store_category_repository";
+import { IStoreItemRepository } from "../../repository/store/store_item_repository";
 
 /**
  * Service that handles SVIP tier upgrades when users recharge coins
@@ -14,6 +17,18 @@ import { IUserSvipDocument } from "../../models/svip/user_svip_model";
 export class SvipService {
   private static get userSvipRepo(): IUserSvipRepository {
     return RepositoryProviders.userSvipRepositoryProvider;
+  }
+
+  private static get bucketRepo(): IMyBucketRepository {
+    return RepositoryProviders.myBucketRepositoryProvider;
+  }
+
+  private static get categoryRepo(): IStoreCategoryRepository {
+    return RepositoryProviders.storeCategoryRepositoryProvider;
+  }
+
+  private static get storeItemRepo(): IStoreItemRepository {
+    return RepositoryProviders.storeItemRepositoryProvider;
   }
 
   // ────────────────────────────────────────────────────────────────────────
@@ -102,12 +117,107 @@ export class SvipService {
           session,
         );
         (svipRecord as any).currentTier = highestQualifiedTier;
+
+        // ── 5. Auto-grant the corresponding SVIP store item to bucket ──
+        await SvipService.syncBucketWithTier(
+          userId,
+          highestQualifiedTier,
+          session,
+        );
       }
     }
     // If no config, milestones can't be checked — the counter was still
     // incremented above, so no progress is lost when config comes back.
 
     return svipRecord;
+  }
+
+  // ────────────────────────────────────────────────────────────────────────
+  //  Bucket sync helper — called from trackRecharge and runMonthlyRetention
+  // ────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Creates or updates the user's SVIP bucket item to match their current tier.
+   *
+   * - If the tier's storeItemId is null → logs a warning (item not linked yet).
+   * - If the user already has an SVIP bucket → replaces the itemId.
+   * - If not → creates a new bucket entry with useStatus: true.
+   * - If tier is 0 → removes the SVIP bucket item entirely.
+   *
+   * This runs **inside the same transaction** as the recharge.
+   */
+  private static async syncBucketWithTier(
+    userId: string,
+    tier: number,
+    session?: ClientSession,
+  ): Promise<void> {
+    if (tier < 1) {
+      // Downgraded to 0 — remove SVIP bucket item
+      const svipCategory = await SvipService.categoryRepo.getCategoryByTitle("SVIP");
+      if (svipCategory) {
+        const existing = await SvipService.bucketRepo.findBucketByOwnerAndCategory(
+          userId,
+          (svipCategory as any)._id.toString(),
+          session,
+        );
+        if (existing) {
+          await SvipService.bucketRepo.deleteBucket((existing as any)._id.toString());
+        }
+      }
+      return;
+    }
+
+    const config = await SvipConfigService.getConfig();
+    if (!config) return;
+
+    const tierConfig = config.tiers.find((t) => t.tier === tier);
+    if (!tierConfig || !tierConfig.storeItemId) {
+      console.warn(
+        `[SVIP] No storeItemId linked for tier ${tier} — cannot grant bucket item. ` +
+          `Admin must create an SVIP-${tier} store item.`,
+      );
+      return;
+    }
+
+    const svipCategory = await SvipService.categoryRepo.getCategoryByTitle("SVIP");
+    if (!svipCategory) {
+      console.warn("[SVIP] SVIP category not found — cannot grant bucket item.");
+      return;
+    }
+
+    const svipCategoryId = (svipCategory as any)._id.toString();
+
+    // Check if user already has an SVIP bucket
+    const existingBucket = await SvipService.bucketRepo.findBucketByOwnerAndCategory(
+      userId,
+      svipCategoryId,
+      session,
+    );
+
+    if (existingBucket) {
+      // Replace existing bucket item
+      await SvipService.bucketRepo.updateBucket(
+        (existingBucket as any)._id.toString(),
+        {
+          itemId: tierConfig.storeItemId.toString(),
+          useStatus: true,
+        },
+        session,
+      );
+    } else {
+      // Create new bucket entry with useStatus: true
+      // expireAt is a far-future date — no TTL needed, lifecycle managed by cron
+      await SvipService.bucketRepo.createNewBucket(
+        {
+          itemId: tierConfig.storeItemId as any,
+          ownerId: userId,
+          categoryId: svipCategoryId,
+          useStatus: true,
+          expireAt: new Date(2100, 0, 1),
+        },
+        session,
+      );
+    }
   }
 
   // ────────────────────────────────────────────────────────────────────────
@@ -193,6 +303,13 @@ export class SvipService {
       await SvipService.userSvipRepo.bulkResetForNewMonth(updates);
     }
 
+    // ── Sync bucket items to match new tiers ───────────────────────────
+    // Run outside the bulkWrite — bucket operations are on a different collection.
+    // Each operation targets a different user's document, so parallel is safe.
+    await Promise.all(
+      updates.map((u) => SvipService.syncBucketWithTier(u.userId, u.currentTier)),
+    );
+
     console.log(
       `[SVIP Cron] Retention complete: ${retained} retained, ${downgraded} downgraded, ${activeUsers.length} processed.`,
     );
@@ -219,6 +336,12 @@ export class SvipService {
       currentProgress: number;
       meetsRequirement: boolean;
     } | null;
+    currentItem: {
+      name: string | null;
+      logo: string | null;
+      svgaFile: string | null;
+      previewFile: string | null;
+    };
   }> {
     const config = await SvipConfigService.getConfig();
     const record = await SvipService.userSvipRepo.findByUserId(userId);
@@ -256,6 +379,35 @@ export class SvipService {
       }
     }
 
+    // Current SVIP store item details
+    let currentItem: {
+      name: string | null;
+      logo: string | null;
+      svgaFile: string | null;
+      previewFile: string | null;
+    } = { name: null, logo: null, svgaFile: null, previewFile: null };
+
+    if (currentTier > 0 && config) {
+      const tierConfig = sortedTiers.find((t) => t.tier === currentTier);
+      if (tierConfig && tierConfig.storeItemId) {
+        const storeItem = await SvipService.storeItemRepo.getStoreItemById(
+          tierConfig.storeItemId.toString(),
+        );
+        if (storeItem) {
+          // Find the "svga_tag" bundle entry for svgaFile/previewFile
+          const tagBundle = storeItem.bundleFiles?.find(
+            (b) => b.categoryName === "svga_tag",
+          );
+          currentItem = {
+            name: storeItem.name,
+            logo: storeItem.logo ?? null,
+            svgaFile: tagBundle?.svgaFile ?? null,
+            previewFile: tagBundle?.previewFile ?? null,
+          };
+        }
+      }
+    }
+
     return {
       currentTier,
       monthlyRechargeCoins,
@@ -263,6 +415,7 @@ export class SvipService {
       nextMilestone,
       progressPercent,
       retentionStatus,
+      currentItem,
     };
   }
 }

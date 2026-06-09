@@ -6,6 +6,13 @@ export interface ISvipTier {
   tier: number;
   /** Coins needed in a single month to reach this tier. */
   milestoneCoins: number;
+  /**
+   * The store item _id that visually represents this tier.
+   * Set automatically when an admin creates/updates a store item
+   * whose name starts with "SVIP-" followed by this tier number.
+   * Null until the admin creates the corresponding store item.
+   */
+  storeItemId?: mongoose.Types.ObjectId | null;
 }
 
 export interface ISvipConfig {
@@ -29,6 +36,11 @@ const SvipConfigSchema = new Schema<ISvipConfigDocument, ISvipConfigModel>(
         {
           tier: { type: Number, required: true },
           milestoneCoins: { type: Number, required: true },
+          storeItemId: {
+            type: Schema.Types.ObjectId,
+            ref: DatabaseNames.StoreItem,
+            default: null,
+          },
         },
       ],
       required: true,

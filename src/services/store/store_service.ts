@@ -19,8 +19,9 @@ import { profile } from "console";
 import { IUserRepository } from "../../repository/users/user_repository";
 import { IMyBucketRepository } from "../../repository/store/my_bucket_repository";
 import IUserStatsRepository from "../../repository/users/userstats_repository_interface";
-import mongoose, { mongo } from "mongoose";
+import mongoose, { mongo, Types } from "mongoose";
 import { IMyBucketDocument } from "../../models/store/my_bucket_model";
+import { SvipConfigService } from "../admin/svip_config_service";
 
 export interface IPremiumFiles {
   categoryName: string;
@@ -394,7 +395,17 @@ export default class StoreService implements IStoreService {
       privilege: item.privilege,
       canUserBuyThis: true,
     };
-    return await this.ItemRepository.createStoreItem(itemToCreate);
+    const createdItem = await this.ItemRepository.createStoreItem(itemToCreate);
+
+    // ── Auto-sync SVIP config if this item is an SVIP tier item ──────────
+    await this.syncSvipConfigWithStoreItem(
+      createdItem.name,
+      createdItem._id as string,
+      createdItem.prices,
+      'set',
+    );
+
+    return createdItem;
   }
 
   async getStoreItemById(id: string): Promise<IStoreItemDocument> {
@@ -663,6 +674,32 @@ export default class StoreService implements IStoreService {
       id,
       profileToBeUpdated,
     );
+
+    // ── Auto-sync SVIP config if the updated item is an SVIP tier item ───
+    const effectiveName = item.name || existingItem.name;
+    const effectivePrices = item.prices || existingItem.prices;
+
+    // If renamed away from SVIP- format, clear the old reference
+    if (
+      existingItem.name.startsWith("SVIP-") &&
+      item.name &&
+      !item.name.startsWith("SVIP-")
+    ) {
+      await this.syncSvipConfigWithStoreItem(
+        existingItem.name,
+        existingItem._id as string,
+        existingItem.prices,
+        'clear',
+      );
+    }
+
+    await this.syncSvipConfigWithStoreItem(
+      effectiveName,
+      updated._id as string,
+      effectivePrices,
+      'set',
+    );
+
     return updated;
   }
 
@@ -718,6 +755,14 @@ export default class StoreService implements IStoreService {
       );
     }
 
+    // ── Clear SVIP config reference if this is an SVIP item ─────────────
+    await this.syncSvipConfigWithStoreItem(
+      existingItem.name,
+      id,
+      existingItem.prices,
+      'clear',
+    );
+
     // if this items has been used by some users, we need to deselect them
     await this.BucketRepository.updateBucketUseStatus(
       { itemId: id, useStatus: true },
@@ -739,7 +784,7 @@ export default class StoreService implements IStoreService {
     });
   }
 
-  // 📌 my buckets
+  // ── SVIP auto-sync helper ──────────────────────────────────────────────
 
   /**
    * Extracts the numeric tier from a premium item name.
@@ -749,6 +794,73 @@ export default class StoreService implements IStoreService {
     const parts = name.split("-");
     const tier = parseInt(parts[parts.length - 1], 10);
     return isNaN(tier) ? 0 : tier;
+  }
+
+  /**
+   * Checks if an item name starts with "SVIP-" and, if so, syncs the SVIP
+   * config tier with the item's storeItemId and milestoneCoins.
+   *
+   * - `action: 'set'`  → stores the item's _id + first price in the config
+   * - `action: 'clear'` → sets the storeItemId to null (item was deleted /
+   *   renamed away from SVIP)
+   */
+  private async syncSvipConfigWithStoreItem(
+    itemName: string,
+    itemId: string | Types.ObjectId,
+    prices?: { price: number }[],
+    action: 'set' | 'clear' = 'set',
+  ): Promise<void> {
+    if (!itemName.startsWith("SVIP-")) return;
+
+    const tierNumber = this.extractPremiumTier(itemName);
+    if (tierNumber < 1) return; // "SVIP-abc" or "SVIP-0" — skip
+
+    const config = await SvipConfigService.getConfig();
+    if (!config) {
+      console.warn(
+        `[StoreService] SVIP config not loaded — cannot sync item "${itemName}"`,
+      );
+      return;
+    }
+
+    const tierIndex = config.tiers.findIndex((t) => t.tier === tierNumber);
+    if (tierIndex === -1) {
+      console.warn(
+        `[StoreService] No SVIP config tier ${tierNumber} found for item "${itemName}". ` +
+          `Add the tier to the SVIP config first.`,
+      );
+      return;
+    }
+
+    const updatedTiers = [...config.tiers];
+    const current = updatedTiers[tierIndex];
+
+    if (action === 'clear') {
+      updatedTiers[tierIndex] = {
+        ...current,
+        storeItemId: null,
+      };
+    } else {
+      // Only update milestoneCoins if a price was provided and it differs
+      const newMilestoneCoins =
+        prices && prices.length > 0 ? prices[0].price : current.milestoneCoins;
+      const milestoneChanged = newMilestoneCoins !== current.milestoneCoins;
+
+      updatedTiers[tierIndex] = {
+        ...current,
+        storeItemId:
+          typeof itemId === 'string'
+            ? new Types.ObjectId(itemId)
+            : (itemId as Types.ObjectId),
+        ...(milestoneChanged ? { milestoneCoins: newMilestoneCoins } : {}),
+      };
+    }
+
+    await SvipConfigService.updateConfig({ tiers: updatedTiers });
+
+    console.log(
+      `[StoreService] SVIP config synced: tier ${tierNumber} → ${action === 'clear' ? 'cleared' : 'set to item ' + itemId}`,
+    );
   }
 
   async grantItemToUser(
@@ -826,6 +938,18 @@ export default class StoreService implements IStoreService {
     if (!stats)
       throw new AppError(StatusCodes.NOT_FOUND, "User stats not found");
     if (!item) throw new AppError(StatusCodes.NOT_FOUND, "Item not found");
+
+    // ── Block SVIP item purchases — earned only via recharge milestones ─
+    const itemCategory = await this.CategoryRepository.getCategoryById(
+      item.categoryId.toString(),
+    );
+    if (itemCategory && itemCategory.title === "SVIP") {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "SVIP items can only be earned through monthly recharge milestones, not purchased directly.",
+      );
+    }
+    // ────────────────────────────────────────────────────────────────────
 
     // ── canUserBuyThis guard (non-premium items only) ───────────────────
     if (!item.isPremium && item.canUserBuyThis === false) {
