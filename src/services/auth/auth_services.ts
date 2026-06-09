@@ -1,6 +1,7 @@
 import { StatusCodes } from "http-status-codes";
 import AppError from "../../core/errors/app_errors";
 import {
+  ActivityZoneState,
   AgencyJoinStatus,
   CloudinaryFolder,
   StatusTypes,
@@ -203,6 +204,25 @@ export default class AuthService implements IAuthService {
       return { user: userWithStats, token, referralMessage };
     }
 
+    // ── Activity zone check for existing users ─────────────────────────
+    if (
+      existingUser.activityZone?.zone === ActivityZoneState.temporaryBlock &&
+      existingUser.activityZone.expire &&
+      existingUser.activityZone.expire.toISOString() > new Date().toISOString()
+    ) {
+      throw new AppError(
+        StatusCodes.FORBIDDEN,
+        `Your account is temporarily blocked till ${existingUser.activityZone.expire.toDateString()}`,
+      );
+    }
+    if (existingUser.activityZone?.zone === ActivityZoneState.permanentBlock) {
+      throw new AppError(
+        StatusCodes.FORBIDDEN,
+        "Your account is permanently blocked",
+      );
+    }
+    // ────────────────────────────────────────────────────────────────────
+
     let userStats = await this.UserStatsRepository.getUserStats(
       existingUser._id as string,
     );
@@ -244,6 +264,26 @@ export default class AuthService implements IAuthService {
     );
     if (!isPasswordValid)
       throw new AppError(StatusCodes.BAD_REQUEST, "incorrect password");
+
+    // ── Activity zone check ────────────────────────────────────────────
+    if (
+      existingUser.activityZone?.zone === ActivityZoneState.temporaryBlock &&
+      existingUser.activityZone.expire &&
+      existingUser.activityZone.expire.toISOString() > new Date().toISOString()
+    ) {
+      throw new AppError(
+        StatusCodes.FORBIDDEN,
+        `Your account is temporarily blocked till ${existingUser.activityZone.expire.toDateString()}`,
+      );
+    }
+    if (existingUser.activityZone?.zone === ActivityZoneState.permanentBlock) {
+      throw new AppError(
+        StatusCodes.FORBIDDEN,
+        "Your account is permanently blocked",
+      );
+    }
+    // ────────────────────────────────────────────────────────────────────
+
     const SECRET = process.env.JWT_SECRET || "jwt_secret";
     let userStats = await this.UserStatsRepository.getUserStats(
       existingUser._id as string,
