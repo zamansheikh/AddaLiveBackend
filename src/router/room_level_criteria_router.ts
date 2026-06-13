@@ -22,7 +22,7 @@ const controller = new RoomLevelCriteriaController(service);
 router
   .route("/")
   /** Get all configured levels sorted by level number */
-  .get(authenticate([UserRoles.Admin, UserRoles.SubAdmin]), controller.getAllLevels)
+  .get(authenticate(), controller.getAllLevels) 
   /** Create or update a specific level's criteria */
   .post(authenticate([UserRoles.Admin, UserRoles.SubAdmin]), controller.upsertLevel);
 
