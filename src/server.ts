@@ -54,6 +54,9 @@ import { IStoreCategoryDocument } from "./models/store/store_category_model";
 import globalErrorHandler from "./core/errors/global_error_handlar";
 import CronManager from "./core/corn/corn_manager";
 import { roomSupportRewardSystem } from "./core/corn/jobs/room_support_jobs";
+import { getCronSchedule } from "./core/config/cron_schedules";
+import { resetMagicBallJob } from "./core/corn/jobs/magic_ball_jobs";
+import { svipMonthlyRetentionJob } from "./core/corn/jobs/svip_jobs";
 import {
   deleteFileApiFunction,
   saveToLocalFileApiFunction,
@@ -62,13 +65,11 @@ import {
 import { upload } from "./core/middlewares/multer";
 import SingletonSocketServer from "./core/sockets/singleton_socket_server";
 import RedisConfig from "./core/config/redis_config";
-import { resetMagicBallJob } from "./core/corn/jobs/magic_ball_jobs";
 import { initializeMagicBallTrackers } from "./services/magic_ball";
 import { RoomLevelCriteriaService } from "./services/audio_room/room_level_criteria_service";
 import { RocketConfigService } from "./services/audio_room/rocket_config_service";
 import { XpConfigService } from "./services/admin/xp_config_service";
 import { SvipConfigService } from "./services/admin/svip_config_service";
-import { svipMonthlyRetentionJob } from "./core/corn/jobs/svip_jobs";
 
 // Initialize Magic Ball Trackers
 initializeMagicBallTrackers();
@@ -292,10 +293,10 @@ mongoose.connect(MONGOURL).then(async () => {
     // Starting corn server
     const cronManager = CronManager.getInstance();
     cronManager.start();
-    // cronManager.register("0 0 * * *", resetRoomXPTrackingSystem); // Everyday at 12:00 AM reset xp tracking system
-    cronManager.register("0 0 * * *", roomSupportRewardSystem); // every week at sunday room support reset
-    cronManager.register("0 0 * * *", resetMagicBallJob); // Everyday at 12:00 AM reset xp tracking system
-    cronManager.register("0 0 1 * *", svipMonthlyRetentionJob); // 1st of every month at midnight — SVIP retention check
+    // cronManager.register(getCronSchedule("ROOM_XP"), resetRoomXPTrackingSystem); // Everyday at 12:00 AM reset xp tracking system
+    cronManager.register(getCronSchedule("ROOM_SUPPORT"), roomSupportRewardSystem); // every week at sunday room support reset
+    cronManager.register(getCronSchedule("MAGIC_BALL"), resetMagicBallJob); // Everyday at 12:00 AM reset xp tracking system
+    cronManager.register(getCronSchedule("SVIP_MONTHLY"), svipMonthlyRetentionJob); // 1st of every month at midnight — SVIP retention check
   });
 });
 

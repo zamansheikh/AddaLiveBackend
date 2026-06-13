@@ -1,3 +1,38 @@
+# API Changes — June 13, 2026
+
+This document lists all backend changes that affect the frontend. Only API changes visible to the client are included.
+
+---
+
+## 14. New: Room Support Details — `nextCalculationTime` & `cronSchedule` Fields
+
+The `GET /api/room-support/:roomId` response now includes two new fields at the top level of `result`:
+
+### New Response Shape
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Room support details fetched successfully",
+  "result": {
+    "thisWeek": { ... },
+    "lastWeek": { ... },
+    "nextCalculationTime": "2026-06-14T00:00:00.000Z",
+    "cronSchedule": "0 0 * * *"
+  }
+}
+```
+
+### New Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `nextCalculationTime` | string (ISO date) | The next date/time the room support reward calculation will run |
+| `cronSchedule` | string | The cron expression for the reward calculation schedule (e.g. `"0 0 * * *"`) |
+
+---
+
 # API Changes — June 9, 2026
 
 This document lists all backend changes that affect the frontend. Only API changes visible to the client are included.

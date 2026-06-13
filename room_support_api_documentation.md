@@ -60,8 +60,7 @@ Fetches the current week's support metrics and the previous week's history for a
 {
   "success": true,
   "statusCode": 200,
-  "message": "Room support details fetched successfully",
-  "result": {
+  "message": "Room support details fetched successfully",    "result": {
     "thisWeek": {
       "roomId": "663f7a2b1f4e3c001a2b3c4e",
       "numberOfUniqueUsers": 12,
@@ -73,7 +72,9 @@ Fetches the current week's support metrics and the previous week's history for a
       "numberOfUniqueUsers": 8,
       "roomTransaction": 2100000,
       "roomLevel": 0
-    }
+    },
+    "nextCalculationTime": "2026-06-14T00:00:00.000Z",
+    "cronSchedule": "0 0 * * *"
   }
 }
 ```
@@ -84,6 +85,8 @@ Fetches the current week's support metrics and the previous week's history for a
 | `thisWeek.roomTransaction` | number | Total transaction volume this week (in coin units) |
 | `thisWeek.roomLevel` | number | Current room support level |
 | `lastWeek.*` | number | Snapshot of metrics from the previous week (0 if no history) |
+| `nextCalculationTime` | string (ISO date) | The next date/time when the room support reward calculation will run |
+| `cronSchedule` | string | The cron expression for the reward calculation schedule (e.g., `"0 0 * * *"`) |
 
 #### Error Responses
 
@@ -357,7 +360,9 @@ If the level does not exist, the response returns `data: null`.
 
 ### Weekly Reward Distribution (Cron Job)
 
-- **Schedule**: Runs daily at midnight (`0 0 * * *`)
+- **Schedule**: Runs daily at midnight (`0 0 * * *`) — defined in `src/core/config/cron_schedules.ts` as `ROOM_SUPPORT`
+- **Schedule Source**: All cron expressions are now centralized in `src/core/config/cron_schedules.ts` and accessed via `getCronSchedule()`. See the [Cron Schedule Configuration](#cron-schedule-configuration) section below.
+- **Timing Service**: The `RoomSupportTimingService` (in `src/services/audio_room/room_support_timing_service.ts`) provides the schedule string and calculates the next run time, which is exposed via the `GET /:roomId` API response.
 - **Logic**:
   1. Fetches all rooms with `roomLevel >= 1`
   2. For each room, looks up the host and distributes `ownerCoin` from the level criteria
@@ -451,6 +456,29 @@ These are the **default** values configured in `src/core/Utils/constants.ts`. Th
 | 22 | 2500 | 5,100,000,000 | 605,000,000 | 306,000,000 | 23,000,000 | 13 |
 | 23 | 3000 | 6,600,000,000 | 780,400,000 | 382,800,000 | 28,400,000 | 14 |
 | 24 | 3000 | 9,000,000,000 | 1,045,800,000 | 504,000,000 | 38,700,000 | 14 |
+
+---
+
+## Cron Schedule Configuration
+
+All recurring job schedules are centralized in `src/core/config/cron_schedules.ts`:
+
+```typescript
+export const CRON_SCHEDULES = {
+  ROOM_XP: "0 0 * * *",           // Daily at midnight — XP tracking reset
+  ROOM_SUPPORT: "0 0 * * *",      // Daily at midnight — Room support reward calculation
+  MAGIC_BALL: "0 0 * * *",       // Daily at midnight — Magic ball reset
+  SVIP_MONTHLY: "0 0 1 * *",     // 1st of every month — SVIP retention check
+};
+```
+
+Schedules are consumed via the helper:
+```typescript
+import { getCronSchedule } from "../../core/config/cron_schedules";
+cronManager.register(getCronSchedule("ROOM_SUPPORT"), roomSupportRewardSystem);
+```
+
+The `RoomSupportTimingService` exposes the `ROOM_SUPPORT` schedule and computes the next calculation time dynamically.
 
 ---
 

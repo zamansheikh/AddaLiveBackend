@@ -7,10 +7,13 @@ import { UserCache } from "../../core/cache/user_chache";
 import { IRoomSupportHistory } from "../../models/audio_room/room_support_history_model";
 import { RepositoryProviders } from "../../core/providers/repository_providers";
 import { IMemberDetails } from "../../models/audio_room/audio_room_model";
+import { RoomSupportTimingService } from "./room_support_timing_service";
 
 interface IRoomSupportDetails {
   thisWeek: IRoomSupportHistory;
   lastWeek: IRoomSupportHistory;
+  nextCalculationTime: Date;
+  cronSchedule: string;
 }
 
 export interface IRoomSupportService {
@@ -28,8 +31,14 @@ export interface IRoomSupportService {
 
 export class RoomSupportService implements IRoomSupportService {
   RoomSupportRepository: IRoomSupportRepository;
-  constructor(RoomSupportRepository: IRoomSupportRepository) {
+  private timingService: typeof RoomSupportTimingService;
+
+  constructor(
+    RoomSupportRepository: IRoomSupportRepository,
+    timingService: typeof RoomSupportTimingService = RoomSupportTimingService
+  ) {
     this.RoomSupportRepository = RoomSupportRepository;
+    this.timingService = timingService;
   }
 
   private roomSupportHistoryRepo =
@@ -56,6 +65,8 @@ export class RoomSupportService implements IRoomSupportService {
         roomTransaction: supportHistory?.roomTransaction || 0,
         roomLevel: supportHistory?.roomLevel || 0,
       },
+      nextCalculationTime: await this.timingService.getNextCalculationTime(),
+      cronSchedule: this.timingService.getCronSchedule(),
     };
 
     return response;
