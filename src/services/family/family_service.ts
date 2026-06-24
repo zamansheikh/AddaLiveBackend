@@ -106,6 +106,7 @@ export interface IThisWeekFamilyRankingResult extends IFamilyRankingResult {
 export interface IFamilyDetails {
   family: IFamilyDocument;
   topContributors: IFamilyMemberDocument[];
+  featuredMembers: IFamilyMemberDocument[];
 }
 
 export interface IFamilyService {
@@ -656,10 +657,57 @@ export class FamilyService implements IFamilyService {
       throw new AppError(StatusCodes.NOT_FOUND, "Family not found");
     }
 
+    const featuredMembers = await this.getFeaturedMembers(familyId);
+
     return {
       family,
       topContributors,
+      featuredMembers,
     };
+  }
+
+  private async getFeaturedMembers(
+    familyId: string,
+  ): Promise<IFamilyMemberDocument[]> {
+    const MAX_FEATURED = 5;
+    const MAX_CO_LEADERS = 4;
+
+    const leader = await this.familyMemberRepository.getLeader(familyId);
+    const featured: IFamilyMemberDocument[] = leader ? [leader] : [];
+
+    const coLeaderCount = await this.familyMemberRepository.countByRole(
+      familyId,
+      FamilyMemberRole.CoLeader,
+    );
+
+    const coLeaderSlotsNeeded = Math.min(
+      MAX_CO_LEADERS,
+      MAX_FEATURED - featured.length,
+    );
+
+    if (coLeaderCount > 0) {
+      const shouldRandomize = coLeaderCount > coLeaderSlotsNeeded;
+      const coLeaders = await this.familyMemberRepository.getMembersByRole(
+        familyId,
+        FamilyMemberRole.CoLeader,
+        coLeaderSlotsNeeded,
+        shouldRandomize,
+      );
+      featured.push(...coLeaders);
+    }
+
+    const memberSlotsRemaining = MAX_FEATURED - featured.length;
+
+    if (memberSlotsRemaining > 0) {
+      const members = await this.familyMemberRepository.getMembersByRole(
+        familyId,
+        FamilyMemberRole.Member,
+        memberSlotsRemaining,
+      );
+      featured.push(...members);
+    }
+
+    return featured;
   }
 
   private async checkLeadershipPrivileges(

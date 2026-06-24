@@ -1,4 +1,6 @@
+import { Types } from "mongoose";
 import { IFamilyMember, IFamilyMemberDocument, IFamilyMemberModel } from "../../models/family/family_member_model";
+import { FamilyMemberRole } from "../../core/Utils/enums";
 
 export interface IFamilyMemberRepository {
   create(data: IFamilyMember, session?: any): Promise<IFamilyMemberDocument>;
@@ -16,6 +18,15 @@ export interface IFamilyMemberRepository {
   getTopContributors(
     familyId: string,
     limit: number,
+  ): Promise<IFamilyMemberDocument[]>;
+  getLeader(
+    familyId: string,
+  ): Promise<IFamilyMemberDocument | null>;
+  getMembersByRole(
+    familyId: string,
+    role: string,
+    limit: number,
+    random?: boolean,
   ): Promise<IFamilyMemberDocument[]>;
 }
 
@@ -68,4 +79,43 @@ export class FamilyMemberRepository implements IFamilyMemberRepository {
       .limit(limit)
       .populate("userId", "name _id avatar");
   }
-}
+
+  async getLeader(
+    familyId: string,
+  ): Promise<IFamilyMemberDocument | null> {
+    return await this.model
+      .findOne({ familyId })
+      .where("role")
+      .equals(FamilyMemberRole.Leader)
+      .populate("userId", "name _id avatar");
+  }
+
+  async getMembersByRole(
+    familyId: string,
+    role: FamilyMemberRole,
+    limit: number,
+    random: boolean = false,
+  ): Promise<IFamilyMemberDocument[]> {
+    if (random) {
+      return await this.model.aggregate([
+        { $match: { familyId: new Types.ObjectId(familyId), role } },
+        { $sample: { size: limit } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "userId",
+            pipeline: [{ $project: { name: 1, _id: 1, avatar: 1 } }],
+          },
+        },
+        { $unwind: "$userId" },
+      ]);
+    }
+
+    return await this.model
+      .find({ familyId, role })
+      .limit(limit)
+      .populate("userId", "name _id avatar");
+  }
+}
