@@ -3,6 +3,7 @@ export const CRON_SCHEDULES = {
   ROOM_SUPPORT: "0 0 * * *",
   MAGIC_BALL: "0 0 * * *",
   SVIP_MONTHLY: "0 0 1 * *",
+  FAMILY_SUPPORT_REWARD: "0 0 * * 0",
 } as const;
 
 export type CronScheduleKey = keyof typeof CRON_SCHEDULES;

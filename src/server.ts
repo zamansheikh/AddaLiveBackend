@@ -60,6 +60,7 @@ import { roomSupportRewardSystem } from "./core/corn/jobs/room_support_jobs";
 import { getCronSchedule } from "./core/config/cron_schedules";
 import { resetMagicBallJob } from "./core/corn/jobs/magic_ball_jobs";
 import { svipMonthlyRetentionJob } from "./core/corn/jobs/svip_jobs";
+import { distributeFamilySupportRewards } from "./core/corn/jobs/family_support_reward_job";
 import {
   deleteFileApiFunction,
   saveToLocalFileApiFunction,
@@ -305,6 +306,7 @@ mongoose.connect(MONGOURL).then(async () => {
     cronManager.register(getCronSchedule("ROOM_SUPPORT"), roomSupportRewardSystem); // every week at sunday room support reset
     cronManager.register(getCronSchedule("MAGIC_BALL"), resetMagicBallJob); // Everyday at 12:00 AM reset xp tracking system
     cronManager.register(getCronSchedule("SVIP_MONTHLY"), svipMonthlyRetentionJob); // 1st of every month at midnight — SVIP retention check
+    cronManager.register(getCronSchedule("FAMILY_SUPPORT_REWARD"), distributeFamilySupportRewards); // Every Sunday at midnight — distribute family support rewards
   });
 });
 
