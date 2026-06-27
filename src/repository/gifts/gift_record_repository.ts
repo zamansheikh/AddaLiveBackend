@@ -65,6 +65,7 @@ export interface IGiftRecordRepository {
     endDate: Date,
     limit: number,
   ): Promise<{ receiverId: string; weeklyContribution: number }[]>;
+  getWeeklyContribution(familyId: string): Promise<number>;
 }
 
 export class GiftRecordRepository implements IGiftRecordRepository {
@@ -717,5 +718,28 @@ export class GiftRecordRepository implements IGiftRecordRepository {
       { $sort: { weeklyContribution: -1 } },
       { $limit: limit },
     ]);
+  }
+
+  async getWeeklyContribution(familyId: string): Promise<number> {
+    const now = new Date();
+    const startDate = DateHelper.getStartOfWeek(now);
+    const endDate = DateHelper.getEndOfWeek(now);
+
+    const result = await this.Model.aggregate([
+      {
+        $match: {
+          familyId,
+          createdAt: { $gte: startDate, $lte: endDate },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$totalCoinCost" },
+        },
+      },
+    ]);
+
+    return result[0]?.total || 0;
   }
 }

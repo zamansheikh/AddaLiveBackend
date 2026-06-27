@@ -11,6 +11,9 @@ export interface IFamilySupportRewardRepository {
     level: number,
     data: Partial<IFamilySupportReward>,
   ): Promise<IFamilySupportRewardDocument | null>;
+  getNextLevelInfo(
+    currentContribution: number,
+  ): Promise<{ nextLevel: number | null; nextLevelTarget: number | null }>;
 }
 
 export class FamilySupportRewardRepository
@@ -35,5 +38,23 @@ export class FamilySupportRewardRepository
     data: Partial<IFamilySupportReward>,
   ): Promise<IFamilySupportRewardDocument | null> {
     return await this.model.findOneAndUpdate({ level }, data, { new: true });
+  }
+
+  async getNextLevelInfo(
+    currentContribution: number,
+  ): Promise<{ nextLevel: number | null; nextLevelTarget: number | null }> {
+    const levels = await this.getAll();
+    if (levels.length === 0) {
+      return { nextLevel: null, nextLevelTarget: null };
+    }
+
+    const next = levels.find((l) => l.targetPoints > currentContribution);
+
+    if (next) {
+      return { nextLevel: next.level, nextLevelTarget: next.targetPoints };
+    }
+
+    const max = levels[levels.length - 1];
+    return { nextLevel: max.level, nextLevelTarget: max.targetPoints };
   }
 }

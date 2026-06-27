@@ -107,6 +107,11 @@ export interface IFamilyDetails {
   family: IFamilyDocument;
   topContributors: IFamilyMemberDocument[];
   featuredMembers: IFamilyMemberDocument[];
+  rewardProgress: {
+    currentWeeklyContribution: number;
+    nextLevel: number | null;
+    nextLevelTarget: number | null;
+  };
 }
 
 export interface IFamilyService {
@@ -150,6 +155,8 @@ export class FamilyService implements IFamilyService {
     RepositoryProviders.familyJoinRequestRepositoryProvider;
   GiftRecordRepository: IGiftRecordRepository =
     RepositoryProviders.giftRecordRepositoryProvider;
+  familySupportRewardRepository =
+    RepositoryProviders.familySupportRewardRepositoryProvider;
 
   async createFamily(data: IFamily): Promise<IFamilyDocument> {
     //step1: validate leaderId
@@ -791,10 +798,23 @@ export class FamilyService implements IFamilyService {
 
     const featuredMembers = await this.getFeaturedMembers(familyId);
 
+    const currentWeeklyContribution =
+      await this.GiftRecordRepository.getWeeklyContribution(familyId);
+
+    const { nextLevel, nextLevelTarget } =
+      await this.familySupportRewardRepository.getNextLevelInfo(
+        currentWeeklyContribution,
+      );
+
     return {
       family,
       topContributors,
       featuredMembers,
+      rewardProgress: {
+        currentWeeklyContribution,
+        nextLevel,
+        nextLevelTarget,
+      },
     };
   }
 
