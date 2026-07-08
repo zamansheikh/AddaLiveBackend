@@ -25,6 +25,11 @@ export default class GreedyGameController {
       throw new AppError(StatusCodes.BAD_REQUEST, "All fields are required");
     }
 
+    const allowedTypes = ["game_bet", "game_payout", "refund"];
+    if (!allowedTypes.includes(type)) {
+      throw new AppError(StatusCodes.BAD_REQUEST, `Invalid type. Allowed values: ${allowedTypes.join(", ")}`);
+    }
+
     const result = await this.GreedyGameService.debit({
       userId,
       currency,
@@ -36,6 +41,6 @@ export default class GreedyGameController {
       refId,
     });
 
-    res.status(200).json(result);
+    res.status(result.status).json(result.body);
   });
 }

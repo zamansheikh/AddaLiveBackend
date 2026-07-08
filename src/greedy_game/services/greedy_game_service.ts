@@ -21,7 +21,7 @@ export interface IDebitRequest {
 
 export interface IGreedyGameService {
   getUserBalance(userId: string): Promise<{ coins: number; diamonds: number; frozen: boolean }>;
-  debit(data: IDebitRequest): Promise<{ txn: { id: string } }>;
+  debit(data: IDebitRequest): Promise<{ status: number; body: any }>;
 }
 
 export default class GreedyGameService implements IGreedyGameService {
@@ -50,17 +50,28 @@ export default class GreedyGameService implements IGreedyGameService {
     };
   }
 
-  async debit(data: IDebitRequest): Promise<{ txn: { id: string } }> {
+  async debit(data: IDebitRequest): Promise<{ status: number; body: any }> {
     const existing = await this.WalletTransactionRepo.findByIdempotencyKey(data.idempotencyKey);
     if (existing) {
-      return { txn: { id: (existing._id as any).toString() } };
+      return { status: 200, body: { txn: { id: (existing._id as any).toString() } } };
     }
 
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      await this.UserStatsRepo.balanceDeduction(data.userId, data.amount, session);
+      try {
+        await this.UserStatsRepo.balanceDeduction(data.userId, data.amount, session);
+      } catch (error) {
+        await session.abortTransaction();
+        return {
+          status: 400,
+          body: {
+            success: false,
+            error: { code: "INSUFFICIENT_BALANCE", message: "Not enough coins" },
+          },
+        };
+      }
 
       const transaction = await this.WalletTransactionRepo.create({
         userId: data.userId,
@@ -75,9 +86,8 @@ export default class GreedyGameService implements IGreedyGameService {
 
       await session.commitTransaction();
       return {
-        txn: {
-          id: (transaction._id as any).toString(),
-        },
+        status: 200,
+        body: { txn: { id: (transaction._id as any).toString() } },
       };
     } catch (error) {
       await session.abortTransaction();
