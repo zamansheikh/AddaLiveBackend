@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { StatusCodes } from "http-status-codes";
 import AppError from "../../core/errors/app_errors";
 import IUserStatsRepository from "../../repository/users/userstats_repository_interface";
+import { IUserRepository } from "../../repository/users/user_repository";
 import {
   IWalletTransaction,
   IWalletTransactionDocument,
@@ -24,18 +25,22 @@ export interface IGreedyGameService {
   debit(data: IDebitRequest): Promise<{ status: number; body: any }>;
   credit(data: IDebitRequest): Promise<{ status: number; body: any }>;
   getTransactionByidempotencyKey(idempotencyKey: string): Promise<{ status: number; body: any }>;
+  getUserNames(userIds: string[]): Promise<{ status: number; body: any }>;
 }
 
 export default class GreedyGameService implements IGreedyGameService {
   UserStatsRepo: IUserStatsRepository;
   WalletTransactionRepo: IWalletTransactionRepository;
+  UserRepo: IUserRepository;
 
   constructor(
     UserStatsRepo: IUserStatsRepository,
     WalletTransactionRepo: IWalletTransactionRepository,
+    UserRepo: IUserRepository,
   ) {
     this.UserStatsRepo = UserStatsRepo;
     this.WalletTransactionRepo = WalletTransactionRepo;
+    this.UserRepo = UserRepo;
   }
 
   async getUserBalance(userId: string): Promise<{ coins: number; diamonds: number; frozen: boolean }> {
@@ -157,6 +162,23 @@ export default class GreedyGameService implements IGreedyGameService {
           type: transaction.type,
           createdAt: transaction.createdAt,
         },
+      },
+    };
+  }
+
+  async getUserNames(userIds: string[]): Promise<{ status: number; body: any }> {
+    const users = await this.UserRepo.findUsersByIds(userIds);
+
+    return {
+      status: 200,
+      body: {
+        users: users.map((user) => ({
+          userId: (user._id as any).toString(),
+          displayName: user.name ?? "",
+          username: user.username ?? "",
+          avatarUrl: user.avatar ?? "",
+          numericId: user.userId,
+        })),
       },
     };
   }

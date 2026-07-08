@@ -77,4 +77,16 @@ export default class GreedyGameController {
 
     res.status(result.status).json(result.body);
   });
+
+  getUserNames = catchAsync(async (req, res) => {
+    const { userIds } = req.body;
+
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      throw new AppError(StatusCodes.BAD_REQUEST, "userIds must be a non-empty array");
+    }
+
+    const result = await this.GreedyGameService.getUserNames(userIds);
+
+    res.status(result.status).json(result.body);
+  });
 }
