@@ -65,7 +65,7 @@ const appResellerController = new AppResellerController(appResellerService);
 router
   .route("/")
   .get(
-    authenticate([UserRoles.Admin, UserRoles.SubAdmin]),
+    authenticate(),
     appResellerController.getAllResellers,
   );
 
