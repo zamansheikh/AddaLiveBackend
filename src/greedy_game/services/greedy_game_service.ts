@@ -22,6 +22,7 @@ export interface IDebitRequest {
 export interface IGreedyGameService {
   getUserBalance(userId: string): Promise<{ coins: number; diamonds: number; frozen: boolean }>;
   debit(data: IDebitRequest): Promise<{ status: number; body: any }>;
+  credit(data: IDebitRequest): Promise<{ status: number; body: any }>;
 }
 
 export default class GreedyGameService implements IGreedyGameService {
@@ -72,6 +73,42 @@ export default class GreedyGameService implements IGreedyGameService {
           },
         };
       }
+
+      const transaction = await this.WalletTransactionRepo.create({
+        userId: data.userId,
+        currency: data.currency,
+        amount: data.amount,
+        type: data.type,
+        idempotencyKey: data.idempotencyKey,
+        description: data.description,
+        refType: data.refType,
+        refId: data.refId,
+      }, session);
+
+      await session.commitTransaction();
+      return {
+        status: 200,
+        body: { txn: { id: (transaction._id as any).toString() } },
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+
+  async credit(data: IDebitRequest): Promise<{ status: number; body: any }> {
+    const existing = await this.WalletTransactionRepo.findByIdempotencyKey(data.idempotencyKey);
+    if (existing) {
+      return { status: 200, body: { txn: { id: (existing._id as any).toString() } } };
+    }
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      await this.UserStatsRepo.updateCoins(data.userId, data.amount, session);
 
       const transaction = await this.WalletTransactionRepo.create({
         userId: data.userId,
