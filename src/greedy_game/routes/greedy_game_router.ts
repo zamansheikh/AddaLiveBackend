@@ -7,8 +7,11 @@ import WalletTransactionModel from "../models/wallet_transaction_model";
 import WalletTransactionRepository from "../repository/wallet_transaction_repository";
 import GreedyGameService from "../services/greedy_game_service";
 import GreedyGameController from "../controllers/greedy_game_controller";
+import verifyGamesRequest from "../../core/middlewares/verify_games_signature";
 
 const router = express.Router();
+
+router.use(verifyGamesRequest);
 
 const userStatsRepository = new UserStatsRepository(UserStats);
 const walletTransactionRepository = new WalletTransactionRepository(WalletTransactionModel);

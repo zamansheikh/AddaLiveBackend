@@ -126,7 +126,11 @@ app.use(
 
 app.use(morgan("dev")); // Logging middleware
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json()); // Parse JSON request bodies
+app.use(express.json({
+  verify: (req, _res, buf) => {
+    (req as any).rawBody = buf;
+  }
+})); // Parse JSON request bodies
 
 // Session middleware
 app.use(
