@@ -1,8 +1,13 @@
 import { StatusCodes } from "http-status-codes";
 import catchAsync from "../../core/Utils/catch_async";
-import AppError from "../../core/errors/app_errors";
+import GamesApiError from "../errors/games_api_error";
 import { IGreedyGameService } from "../services/greedy_game_service";
 
+/**
+ * Transport for the games provider contract. Deliberately thin: every rule that
+ * decides whether money may move lives in `GreedyGameService`, so there is one
+ * place to read when auditing the ledger.
+ */
 export default class GreedyGameController {
   GreedyGameService: IGreedyGameService;
 
@@ -15,57 +20,17 @@ export default class GreedyGameController {
 
     const balance = await this.GreedyGameService.getUserBalance(userId);
 
-    res.status(200).json(balance);
+    res.status(StatusCodes.OK).json(balance);
   });
 
   debit = catchAsync(async (req, res) => {
-    const { userId, currency, amount, type, idempotencyKey, description, refType, refId } = req.body;
-
-    if (!userId || !currency || !amount || !type || !idempotencyKey || !description || !refType || !refId) {
-      throw new AppError(StatusCodes.BAD_REQUEST, "All fields are required");
-    }
-
-    const allowedTypes = ["game_bet", "game_payout", "refund"];
-    if (!allowedTypes.includes(type)) {
-      throw new AppError(StatusCodes.BAD_REQUEST, `Invalid type. Allowed values: ${allowedTypes.join(", ")}`);
-    }
-
-    const result = await this.GreedyGameService.debit({
-      userId,
-      currency,
-      amount,
-      type,
-      idempotencyKey,
-      description,
-      refType,
-      refId,
-    });
+    const result = await this.GreedyGameService.debit(req.body);
 
     res.status(result.status).json(result.body);
   });
 
   credit = catchAsync(async (req, res) => {
-    const { userId, currency, amount, type, idempotencyKey, description, refType, refId } = req.body;
-
-    if (!userId || !currency || !amount || !type || !idempotencyKey || !description || !refType || !refId) {
-      throw new AppError(StatusCodes.BAD_REQUEST, "All fields are required");
-    }
-
-    const allowedTypes = ["game_bet", "game_payout", "refund"];
-    if (!allowedTypes.includes(type)) {
-      throw new AppError(StatusCodes.BAD_REQUEST, `Invalid type. Allowed values: ${allowedTypes.join(", ")}`);
-    }
-
-    const result = await this.GreedyGameService.credit({
-      userId,
-      currency,
-      amount,
-      type,
-      idempotencyKey,
-      description,
-      refType,
-      refId,
-    });
+    const result = await this.GreedyGameService.credit(req.body);
 
     res.status(result.status).json(result.body);
   });
@@ -73,7 +38,32 @@ export default class GreedyGameController {
   getTransaction = catchAsync(async (req, res) => {
     const { idempotencyKey } = req.params;
 
-    const result = await this.GreedyGameService.getTransactionByidempotencyKey(idempotencyKey);
+    const result = await this.GreedyGameService.getTransactionByidempotencyKey(
+      idempotencyKey,
+    );
+
+    res.status(result.status).json(result.body);
+  });
+
+  lookupTransactions = catchAsync(async (req, res) => {
+    const { txnIds } = req.body;
+
+    if (!Array.isArray(txnIds)) {
+      throw new GamesApiError(
+        StatusCodes.BAD_REQUEST,
+        "INVALID_REQUEST",
+        "txnIds must be an array",
+      );
+    }
+    if (txnIds.length > 500) {
+      throw new GamesApiError(
+        StatusCodes.BAD_REQUEST,
+        "INVALID_REQUEST",
+        "txnIds may contain at most 500 ids",
+      );
+    }
+
+    const result = await this.GreedyGameService.lookupTransactions(txnIds);
 
     res.status(result.status).json(result.body);
   });
@@ -81,11 +71,31 @@ export default class GreedyGameController {
   getUserNames = catchAsync(async (req, res) => {
     const { userIds } = req.body;
 
-    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-      throw new AppError(StatusCodes.BAD_REQUEST, "userIds must be a non-empty array");
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      throw new GamesApiError(
+        StatusCodes.BAD_REQUEST,
+        "INVALID_REQUEST",
+        "userIds must be a non-empty array",
+      );
     }
 
     const result = await this.GreedyGameService.getUserNames(userIds);
+
+    res.status(result.status).json(result.body);
+  });
+
+  searchUsers = catchAsync(async (req, res) => {
+    const { query } = req.body;
+
+    if (typeof query !== "string" || !query.trim()) {
+      throw new GamesApiError(
+        StatusCodes.BAD_REQUEST,
+        "INVALID_REQUEST",
+        "query must be a non-empty string",
+      );
+    }
+
+    const result = await this.GreedyGameService.searchUsers(query);
 
     res.status(result.status).json(result.body);
   });

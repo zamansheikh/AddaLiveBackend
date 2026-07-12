@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -vE '^\\\\s*\\(//|/\\\\*|\\\\*\\)' tsconfig.json)",
+      "Bash(grep -v '^\\\\s*$')"
+    ]
+  }
+}

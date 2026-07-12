@@ -51,6 +51,20 @@ export default interface IUserStatsRepository {
     amount: number,
     session?: ClientSession,
   ): Promise<IUSerStatsDocument | null>;
+  /** Currency-aware conditional deduct. `null` = insufficient balance. */
+  debitCurrency(
+    userId: string,
+    currency: "coins" | "diamonds",
+    amount: number,
+    session?: ClientSession,
+  ): Promise<IUSerStatsDocument | null>;
+  /** Currency-aware credit. Upserts the stats row so a payout is never lost. */
+  creditCurrency(
+    userId: string,
+    currency: "coins" | "diamonds",
+    amount: number,
+    session?: ClientSession,
+  ): Promise<IUSerStatsDocument>;
   diamondDeduction(
     userId: string,
     amount: number,

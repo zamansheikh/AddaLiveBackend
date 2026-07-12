@@ -7,7 +7,11 @@ import {
 
 export interface IWalletTransactionRepository {
   create(data: IWalletTransaction, session?: ClientSession): Promise<IWalletTransactionDocument>;
-  findByIdempotencyKey(idempotencyKey: string): Promise<IWalletTransactionDocument | null>;
+  findByIdempotencyKey(
+    idempotencyKey: string,
+    session?: ClientSession,
+  ): Promise<IWalletTransactionDocument | null>;
+  findByIds(ids: string[]): Promise<IWalletTransactionDocument[]>;
 }
 
 export default class WalletTransactionRepository implements IWalletTransactionRepository {
@@ -22,7 +26,25 @@ export default class WalletTransactionRepository implements IWalletTransactionRe
     return await transaction.save({ session });
   }
 
-  async findByIdempotencyKey(idempotencyKey: string): Promise<IWalletTransactionDocument | null> {
-    return await this.Model.findOne({ idempotencyKey });
+  /**
+   * Read from the PRIMARY, always.
+   *
+   * This backs `GET /internal/wallet/transaction/:idempotencyKey`, which the games
+   * backend calls to settle "my debit timed out — did the coins actually move?".
+   * A stale secondary answering `applied: false` for a debit that did commit would
+   * make games refund a stake it never lost. `applied: false` must mean *definitely
+   * not applied*, never *not visible yet*.
+   */
+  async findByIdempotencyKey(
+    idempotencyKey: string,
+    session?: ClientSession,
+  ): Promise<IWalletTransactionDocument | null> {
+    return await this.Model.findOne({ idempotencyKey })
+      .read("primary")
+      .session(session || null);
+  }
+
+  async findByIds(ids: string[]): Promise<IWalletTransactionDocument[]> {
+    return await this.Model.find({ _id: { $in: ids } });
   }
 }

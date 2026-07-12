@@ -95,6 +95,7 @@ export interface IUserRepository {
   ): Promise<IUserDocument | null>;
   validateUserIds(ids: string[]): Promise<boolean>;
   findUsersByIds(ids: string[]): Promise<IUserDocument[]>;
+  searchUsers(query: string, limit?: number): Promise<IUserDocument[]>;
 }
 
 export default class UserRepository implements IUserRepository {
@@ -542,5 +543,30 @@ export default class UserRepository implements IUserRepository {
 
   async findUsersByIds(ids: string[]): Promise<IUserDocument[]> {
     return await this.UserModel.find({ _id: { $in: ids } });
+  }
+
+  /**
+   * Free-text player lookup for the games admin panel: matches a display name or
+   * username substring, the numeric `userId`, or a raw ObjectId pasted in whole.
+   */
+  async searchUsers(query: string, limit = 20): Promise<IUserDocument[]> {
+    const term = query.trim();
+    if (!term) return [];
+
+    // Escape regex metacharacters — an unescaped "(" from a user is a crash, and
+    // ".*" would scan the whole collection.
+    const safe = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const or: Record<string, unknown>[] = [
+      { name: { $regex: safe, $options: "i" } },
+      { username: { $regex: safe, $options: "i" } },
+    ];
+
+    const numeric = Number(term);
+    if (Number.isInteger(numeric)) or.push({ userId: numeric });
+    if (mongoose.Types.ObjectId.isValid(term) && term.length === 24) {
+      or.push({ _id: new mongoose.Types.ObjectId(term) });
+    }
+
+    return await this.UserModel.find({ $or: or }).limit(limit);
   }
 }

@@ -1,73 +1,94 @@
-import crypto from "crypto";
 import { Request, Response, NextFunction } from "express";
+import {
+  NonceCache,
+  SIGNATURE_HEADERS,
+  clockSkewSeconds,
+  safeEqual,
+  verifySignature,
+} from "../Utils/games_signature";
 
-const seenNonces = new Map<string, number>();
+const nonceCache = new NonceCache(clockSkewSeconds());
 
-export default function verifyGamesRequest(req: Request, res: Response, next: NextFunction): void {
+/** Strict by default. Set INTERNAL_REQUIRE_SIGNATURE=false only to accept the
+ *  legacy static `x-internal-secret` header during a cutover. */
+function requireSignature(): boolean {
+  return process.env.INTERNAL_REQUIRE_SIGNATURE !== "false";
+}
+
+function reject(res: Response, code: string, reason?: string): void {
+  res.status(403).json({
+    success: false,
+    error: reason ? { code, details: { reason } } : { code },
+  });
+}
+
+/**
+ * Gate for every `/internal/*` route the games backend calls.
+ *
+ * Verifies the HMAC-SHA256 signature described in `core/Utils/games_signature.ts`
+ * against the RAW request bytes captured by the `express.json({ verify })` hook
+ * in server.ts. Re-serialising the parsed body would change spacing and key
+ * order, and every signature would fail.
+ *
+ * The signature covers `req.originalUrl`, which is the full mounted path
+ * (`/api/game/internal/...` or `/api/v1/internal/...`) plus the query string —
+ * so the games backend must sign whatever `PROVIDER_BASE_URL` resolves to.
+ */
+export default function verifyGamesRequest(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   const secret = process.env.INTERNAL_SERVICE_SECRET;
 
   if (!secret) {
-    res.status(403).json({
-      success: false,
-      error: { code: "INTERNAL_AUTH_DISABLED" },
-    });
+    reject(res, "INTERNAL_AUTH_DISABLED");
     return;
   }
 
-  const ts = req.get("X-Timestamp");
-  const nonce = req.get("X-Nonce");
-  const given = req.get("X-Signature");
+  const signed = Boolean(req.get(SIGNATURE_HEADERS.signature));
 
-  if (!ts || !nonce || !given) {
-    res.status(403).json({
-      success: false,
-      error: { code: "INTERNAL_SIGNATURE_INVALID", details: { reason: "MISSING_HEADERS" } },
-    });
+  if (!signed) {
+    if (requireSignature()) {
+      reject(res, "INTERNAL_SIGNATURE_REQUIRED");
+      return;
+    }
+    // Cutover path: the games backend still sends the static header alongside
+    // its signature (PROVIDER_LEGACY_HEADER=true) so a host that has not yet
+    // adopted signing keeps working. Turn strict mode on before games drops it.
+    const legacy = req.get("x-internal-secret");
+    if (legacy && safeEqual(legacy, secret)) {
+      next();
+      return;
+    }
+    reject(res, "INTERNAL_SIGNATURE_INVALID", "MISSING_HEADERS");
     return;
   }
 
-  const [version, hex] = given.split("=", 2);
-  if (version !== "v1" || !hex) {
-    res.status(403).json({
-      success: false,
-      error: { code: "INTERNAL_SIGNATURE_INVALID", details: { reason: "BAD_VERSION" } },
-    });
+  // Optional: pin the caller. Leave GAMES_OPERATOR_ID unset to accept any.
+  const expectedOperator = process.env.GAMES_OPERATOR_ID;
+  if (
+    expectedOperator &&
+    req.get(SIGNATURE_HEADERS.operatorId) !== expectedOperator
+  ) {
+    reject(res, "INTERNAL_SIGNATURE_INVALID", "UNKNOWN_OPERATOR");
     return;
   }
 
-  if (Math.abs(Math.floor(Date.now() / 1000) - Number(ts)) > 300) {
-    res.status(403).json({
-      success: false,
-      error: { code: "INTERNAL_SIGNATURE_INVALID", details: { reason: "STALE_TIMESTAMP" } },
-    });
+  const result = verifySignature({
+    secret,
+    method: req.method,
+    path: req.originalUrl,
+    body: (req as any).rawBody ?? Buffer.alloc(0),
+    headers: req.headers,
+    clockSkewSeconds: clockSkewSeconds(),
+    nonceCache,
+  });
+
+  if (!result.ok) {
+    reject(res, "INTERNAL_SIGNATURE_INVALID", result.reason);
     return;
   }
-
-  const rawBody = (req as any).rawBody ?? Buffer.alloc(0);
-  const bodyHash = crypto.createHash("sha256").update(rawBody).digest("hex");
-  const canonical = ["v1", req.method.toUpperCase(), req.originalUrl, ts, nonce, bodyHash].join("\n");
-  const expected = crypto.createHmac("sha256", secret).update(canonical).digest("hex");
-
-  const a = Buffer.from(expected, "utf8");
-  const b = Buffer.from(hex, "utf8");
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-    res.status(403).json({
-      success: false,
-      error: { code: "INTERNAL_SIGNATURE_INVALID", details: { reason: "BAD_SIGNATURE" } },
-    });
-    return;
-  }
-
-  const now = Date.now();
-  for (const [n, exp] of seenNonces) if (exp <= now) seenNonces.delete(n);
-  if (seenNonces.has(nonce)) {
-    res.status(403).json({
-      success: false,
-      error: { code: "INTERNAL_SIGNATURE_INVALID", details: { reason: "REPLAYED_NONCE" } },
-    });
-    return;
-  }
-  seenNonces.set(nonce, now + 300_000);
 
   next();
 }

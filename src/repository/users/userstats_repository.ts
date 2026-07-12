@@ -127,6 +127,56 @@ export default class UserStatsRepository implements IUserStatsRepository {
     return updated;
   }
 
+  /**
+   * Conditionally deduct `amount` of a single currency, atomically.
+   *
+   * Returns the updated doc, or `null` when the player cannot cover it (or has no
+   * stats row at all). Null is a *definitive* "nothing moved" — the caller turns
+   * it into a 400 INSUFFICIENT_BALANCE, never a 5xx.
+   *
+   * Unlike `balanceDeduction`/`diamondDeduction` this does not throw, because the
+   * games provider contract needs the outcome as a value, not an exception.
+   */
+  async debitCurrency(
+    userId: string,
+    currency: "coins" | "diamonds",
+    amount: number,
+    session?: ClientSession,
+  ): Promise<IUSerStatsDocument | null> {
+    return await this.model
+      .findOneAndUpdate(
+        { userId, [currency]: { $gte: amount } },
+        { $inc: { [currency]: -amount } },
+        { new: true },
+      )
+      .session(session || null);
+  }
+
+  /**
+   * Add `amount` to a single currency, atomically. Upserts the stats row.
+   *
+   * The upsert matters: a game payout must never be lost because a player somehow
+   * has no `userstats` document. Failing here would return a 5xx, which the games
+   * backend reads as "outcome unknown" and retries forever — the player's winnings
+   * would hang in limbo instead of landing.
+   */
+  async creditCurrency(
+    userId: string,
+    currency: "coins" | "diamonds",
+    amount: number,
+    session?: ClientSession,
+  ): Promise<IUSerStatsDocument> {
+    const updated = await this.model
+      .findOneAndUpdate(
+        { userId: new mongoose.Types.ObjectId(userId) },
+        { $inc: { [currency]: amount } },
+        { new: true, upsert: true, setDefaultsOnInsert: true },
+      )
+      .session(session || null);
+    if (!updated) throw new AppError(500, `Failed to credit ${currency}`);
+    return updated;
+  }
+
   async updateStars(
     userId: string,
     stars: number,

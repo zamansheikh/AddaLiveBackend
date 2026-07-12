@@ -1,15 +1,23 @@
 import mongoose, { Document, Model, Types } from "mongoose";
 import { DatabaseNames } from "../../core/Utils/enums";
 
+export type TransactionDirection = "debit" | "credit";
+
 export interface IWalletTransaction {
   userId: Types.ObjectId | string;
   currency: string;
   amount: number;
   type: string;
   idempotencyKey: string;
-  description: string;
-  refType: string;
-  refId: string;
+  /** "debit" | "credit" — which way the coins moved. */
+  direction?: TransactionDirection;
+  /** The player's balance in `currency` immediately after this row committed.
+   *  The games admin history shows it verbatim rather than walking backwards
+   *  from the current balance. */
+  balanceAfter?: number;
+  description?: string;
+  refType?: string;
+  refId?: string;
 }
 
 export interface IWalletTransactionDocument extends IWalletTransaction, Document {
@@ -30,31 +38,42 @@ const walletTransactionSchema = new mongoose.Schema<IWalletTransactionDocument, 
     currency: {
       type: String,
       required: true,
+      enum: ["coins", "diamonds"],
     },
     amount: {
       type: Number,
       required: true,
+      min: 1,
     },
     type: {
       type: String,
       required: true,
+      enum: ["game_bet", "game_payout", "refund"],
     },
+    // The ONLY thing standing between a retried request and a double charge.
+    // The service's findOne pre-check loses the race; this index does not.
     idempotencyKey: {
       type: String,
       required: true,
       unique: true,
     },
+    direction: {
+      type: String,
+      enum: ["debit", "credit"],
+    },
+    balanceAfter: {
+      type: Number,
+    },
+    // Optional in the provider contract — the games backend sends them for bets,
+    // payouts and refunds, but must not be rejected if it ever omits one.
     description: {
       type: String,
-      required: true,
     },
     refType: {
       type: String,
-      required: true,
     },
     refId: {
       type: String,
-      required: true,
     },
   },
   {
