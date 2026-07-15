@@ -34,6 +34,10 @@ import {
   IGiftRecordRepository,
 } from "../../repository/gifts/gift_record_repository";
 import { DateHelper } from "../../core/helper_classes/date_helper";
+import {
+  IAudioRoomRepository,
+} from "../../repository/audio_room/audio_room_repository";
+import { IAudioRoomDocument } from "../../models/audio_room/audio_room_model";
 
 // Simple in-memory cache with TTL for family ranking
 interface CacheEntry<T> {
@@ -103,6 +107,16 @@ export interface IThisWeekFamilyRankingResult extends IFamilyRankingResult {
   weekEnd: Date;
 }
 
+export interface IFamilyActiveRoom {
+  roomId: string;
+  title: string;
+  roomPhoto?: string;
+  hostId: { _id: string; name: string; avatar: string } | null;
+  membersCount: number;
+  isLocked: boolean;
+  familyMemberCount: number;
+}
+
 export interface IFamilyDetails {
   family: IFamilyDocument;
   topContributors: IFamilyMemberDocument[];
@@ -112,6 +126,7 @@ export interface IFamilyDetails {
     nextLevel: number | null;
     nextLevelTarget: number | null;
   };
+  activeRooms: IFamilyActiveRoom[];
 }
 
 export interface IFamilyService {
@@ -157,6 +172,8 @@ export class FamilyService implements IFamilyService {
     RepositoryProviders.giftRecordRepositoryProvider;
   familySupportRewardRepository =
     RepositoryProviders.familySupportRewardRepositoryProvider;
+  audioRoomRepository: IAudioRoomRepository =
+    RepositoryProviders.audioRoomRepositoryProvider;
 
   async createFamily(data: IFamily): Promise<IFamilyDocument> {
     //step1: validate leaderId
@@ -806,6 +823,8 @@ export class FamilyService implements IFamilyService {
         currentWeeklyContribution,
       );
 
+    const activeRooms = await this.getActiveRoomsForFamily(familyId);
+
     return {
       family,
       topContributors,
@@ -815,6 +834,7 @@ export class FamilyService implements IFamilyService {
         nextLevel,
         nextLevelTarget,
       },
+      activeRooms,
     };
   }
 
@@ -860,6 +880,31 @@ export class FamilyService implements IFamilyService {
     }
 
     return featured;
+  }
+
+  private async getActiveRoomsForFamily(
+    familyId: string,
+  ): Promise<IFamilyActiveRoom[]> {
+    const memberUserIds =
+      await this.familyMemberRepository.getAllMemberUserIds(familyId);
+
+    if (memberUserIds.length === 0) return [];
+
+    const rooms =
+      await this.audioRoomRepository.findActiveRoomsByMemberIds(
+        memberUserIds,
+        5,
+      );
+
+    return rooms.map((room) => ({
+      roomId: room.roomId,
+      title: room.title,
+      roomPhoto: room.roomPhoto,
+      hostId: room.hostId as unknown as { _id: string; name: string; avatar: string } | null,
+      membersCount: room.membersCount ?? 0,
+      isLocked: room.isLocked,
+      familyMemberCount: (room as any).familyMemberCount ?? 0,
+    }));
   }
 
   private async checkLeadershipPrivileges(

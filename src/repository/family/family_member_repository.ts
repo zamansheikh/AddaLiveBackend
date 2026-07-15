@@ -29,6 +29,7 @@ export interface IFamilyMemberRepository {
     limit: number,
     random?: boolean,
   ): Promise<IFamilyMemberDocument[]>;
+  getAllMemberUserIds(familyId: string): Promise<string[]>;
 }
 
 export class FamilyMemberRepository implements IFamilyMemberRepository {
@@ -125,5 +126,13 @@ export class FamilyMemberRepository implements IFamilyMemberRepository {
       .find({ familyId, role })
       .limit(limit)
       .populate("userId", "name _id avatar");
+  }
+
+  async getAllMemberUserIds(familyId: string): Promise<string[]> {
+    const members = await this.model
+      .find({ familyId })
+      .select("userId")
+      .lean();
+    return members.map((m) => m.userId.toString());
   }
 }

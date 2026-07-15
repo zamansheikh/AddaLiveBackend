@@ -455,7 +455,18 @@ All endpoints require authentication unless noted otherwise.
       "currentWeeklyContribution": 35000,
       "nextLevel": 3,
       "nextLevelTarget": 50000
-    }
+    },
+    "activeRooms": [
+      {
+        "roomId": "abc123",
+        "title": "Chill Zone",
+        "roomPhoto": "https://...",
+        "hostId": { "_id": "...", "name": "Alice", "avatar": "https://..." },
+        "membersCount": 12,
+        "isLocked": false,
+        "familyMemberCount": 5
+      }
+    ]
   }
 }
 ```
@@ -468,10 +479,23 @@ All endpoints require authentication unless noted otherwise.
 | `nextLevel` | number or null | The next reward level the family can reach. If already at max level, returns the max level number |
 | `nextLevelTarget` | number or null | The `targetPoints` needed for the next level. If already at max level, returns the max level's target |
 
+**`activeRooms` fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| `roomId` | string | Unique room identifier |
+| `title` | string | Room title |
+| `roomPhoto` | string or undefined | Room cover photo URL |
+| `hostId` | object or null | Room host's user info (`_id`, `name`, `avatar`) |
+| `membersCount` | number | Total number of members in the room |
+| `isLocked` | boolean | Whether the room is private (requires password) |
+| `familyMemberCount` | number | Number of family members currently in the room |
+
 **Notes:**
 - `topContributors`: top 5 members by `giftsReceived` (lifetime), populated with user info
 - `featuredMembers`: up to 5 members — leader first, then co-leaders, then regular members
 - `rewardProgress`: computed from gift records (current week) and `family_support_rewards` config
+- `activeRooms`: up to 5 active audio rooms containing family members, sorted by `familyMemberCount` descending (rooms with the most family members first)
 
 ---
 

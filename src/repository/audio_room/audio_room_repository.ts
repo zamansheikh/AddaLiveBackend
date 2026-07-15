@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import AppError from "../../core/errors/app_errors";
 import { IMyBucketRepository } from "../store/my_bucket_repository";
 import { IStoreCategoryRepository } from "../store/store_category_repository";
@@ -36,6 +37,10 @@ export interface IAudioRoomRepository {
   findAllRooms(): Promise<IAudioRoomDocument[]>;
   findActiveRooms(): Promise<IAudioRoomDocument[]>;
   findLockedRooms(): Promise<IAudioRoomDocument[]>;
+  findActiveRoomsByMemberIds(
+    userIds: string[],
+    limit: number,
+  ): Promise<IAudioRoomDocument[]>;
 }
 
 export class AudioRoomRepository implements IAudioRoomRepository {
@@ -287,6 +292,77 @@ export class AudioRoomRepository implements IAudioRoomRepository {
       },
     ]);
 
+    return await res.exec();
+  }
+
+  async findActiveRoomsByMemberIds(
+    userIds: string[],
+    limit: number,
+  ): Promise<IAudioRoomDocument[]> {
+    if (userIds.length === 0) return [];
+
+    const objectIds = userIds.map((id) => new Types.ObjectId(id));
+    const qb = new QueryBuilder(this.audioRoomModel, {});
+    const pipeline: any[] = [
+      {
+        $match: {
+          isActive: true,
+          $or: [
+            { hostId: { $in: objectIds } },
+            { membersArray: { $in: objectIds } },
+          ],
+        },
+      },
+      {
+        $addFields: {
+          familyMemberCount: {
+            $size: {
+              $setIntersection: [
+                "$membersArray",
+                objectIds,
+              ],
+            },
+          },
+          isHostFamilyMember: {
+            $in: ["$hostId", objectIds],
+          },
+        },
+      },
+      {
+        $addFields: {
+          familyMemberCount: {
+            $cond: [
+              "$isHostFamilyMember",
+              { $add: ["$familyMemberCount", 1] },
+              "$familyMemberCount",
+            ],
+          },
+        },
+      },
+      { $match: { familyMemberCount: { $gt: 0 } } },
+      { $sort: { familyMemberCount: -1 } },
+      { $limit: limit },
+      lookupRichUser("hostId", "hostId"),
+      {
+        $unwind: {
+          path: "$hostId",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          roomId: 1,
+          title: 1,
+          roomPhoto: 1,
+          hostId: 1,
+          membersCount: { $size: { $ifNull: ["$membersArray", []] } },
+          isLocked: 1,
+          familyMemberCount: 1,
+        },
+      },
+    ];
+
+    const res = qb.aggregate(pipeline);
     return await res.exec();
   }
 }
