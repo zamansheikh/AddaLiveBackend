@@ -22,6 +22,12 @@ router
   )
   .get(authenticate(), medalController.getAllMedals);
 
+router.get(
+  "/status",
+  authenticate(),
+  medalController.getMedalsWithUserStatus,
+);
+
 router
   .route("/:id")
   .get(authenticate(), medalController.getMedalById)

@@ -6,7 +6,10 @@ import {
 } from "../../core/Utils/upload_file_cloudinary";
 import { CloudinaryFolder } from "../../core/Utils/enums";
 import { IMedal, IMedalDocument } from "../../models/medal/medal_model";
-import { IMedalRepository } from "../../repository/medal/medal_repository";
+import {
+  IMedalRepository,
+  IMedalWithStatus,
+} from "../../repository/medal/medal_repository";
 import User from "../../models/user/user_model";
 
 export interface IMedalService {
@@ -29,6 +32,7 @@ export interface IMedalService {
     totalAwarded: number;
     medalsAwarded: { medalName: string; level: number; count: number }[];
   }>;
+  getMedalsWithUserStatus(userId: string): Promise<IMedalWithStatus[]>;
 }
 
 export default class MedalService implements IMedalService {
@@ -190,5 +194,9 @@ export default class MedalService implements IMedalService {
     const totalAwarded = results.reduce((sum, r) => sum + r.count, 0);
 
     return { totalAwarded, medalsAwarded: results };
+  }
+
+  async getMedalsWithUserStatus(userId: string): Promise<IMedalWithStatus[]> {
+    return await this.MedalRepository.findMedalsWithUserStatus(userId);
   }
 }

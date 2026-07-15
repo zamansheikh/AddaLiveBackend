@@ -31,6 +31,7 @@ The **Medal System** rewards users with achievement badges when they reach speci
 | :--- | :--- | :--- | :--- |
 | `POST` | `/api/medals` | Admin | Create a new medal (with icon upload) |
 | `GET` | `/api/medals` | Any authenticated | List all medals (sorted by level ascending) |
+| `GET` | `/api/medals/status` | Any authenticated | List all medals with acquired status for the authenticated user |
 | `GET` | `/api/medals/:id` | Any authenticated | Get a single medal by ID |
 | `PUT` | `/api/medals/:id` | Admin | Update a medal (partial update, icon optional) |
 | `DELETE` | `/api/medals/:id` | Admin | Delete a medal (cleans up icons + user references) |
@@ -128,7 +129,47 @@ Returns all medals sorted by `level` in ascending order.
 
 ---
 
-### 1.3 Get Medal by ID
+### 1.3 Get Medals with User Status
+
+Returns all medals with an `acquired` field indicating whether the authenticated user has earned each medal. Earned medals also include an `earnedAt` timestamp.
+
+- **Path**: `GET /api/medals/status`
+
+#### Response (200 OK)
+
+```json
+{
+  "success": true,
+  "result": [
+    {
+      "_id": "665a1b2c3d4e5f6a7b8c9d0e",
+      "name": "Bronze Star",
+      "level": 5,
+      "icon": "https://res.cloudinary.com/.../medal_assets/abc123.png",
+      "description": "Awarded for reaching level 5",
+      "createdAt": "2026-05-26T10:00:00.000Z",
+      "updatedAt": "2026-05-26T10:00:00.000Z",
+      "acquired": true,
+      "earnedAt": "2026-05-27T12:30:00.000Z"
+    },
+    {
+      "_id": "665a1b2c3d4e5f6a7b8c9d0f",
+      "name": "Silver Star",
+      "level": 10,
+      "icon": "https://res.cloudinary.com/.../medal_assets/def456.png",
+      "description": "Awarded for reaching level 10",
+      "createdAt": "2026-05-26T10:00:00.000Z",
+      "updatedAt": "2026-05-26T10:00:00.000Z",
+      "acquired": false
+    }
+  ],
+  "message": "Medals with status retrieved successfully"
+}
+```
+
+---
+
+### 1.4 Get Medal by ID
 
 - **Path**: `GET /api/medals/:id`
 
@@ -162,7 +203,7 @@ Returns all medals sorted by `level` in ascending order.
 
 ---
 
-### 1.4 Update Medal
+### 1.5 Update Medal
 
 Updates a medal's fields. The icon replacement is safe — the new icon is uploaded to Cloudinary **before** the old one is deleted, so a failed upload leaves the old icon intact.
 
@@ -224,7 +265,7 @@ Updates a medal's fields. The icon replacement is safe — the new icon is uploa
 
 ---
 
-### 1.5 Delete Medal
+### 1.6 Delete Medal
 
 Deletes a medal and performs two cleanup operations:
 
@@ -421,6 +462,7 @@ The `earnedMedals` field on the user document:
 | :--- | :--- | :--- | :--- |
 | `POST` | `/api/medals` | Admin | Create a medal with icon upload |
 | `GET` | `/api/medals` | Any authenticated | List all medals sorted by level |
+| `GET` | `/api/medals/status` | Any authenticated | List all medals with acquired status for the authenticated user |
 | `GET` | `/api/medals/:id` | Any authenticated | Get a single medal by ID |
 | `PUT` | `/api/medals/:id` | Admin | Update a medal (partial, safe icon swap) |
 | `DELETE` | `/api/medals/:id` | Admin | Delete medal + cleanup user references |

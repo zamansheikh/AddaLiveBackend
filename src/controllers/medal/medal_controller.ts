@@ -119,4 +119,16 @@ export default class MedalController {
       message: `Retroactive award complete: ${result.totalAwarded} medal(s) awarded`,
     });
   });
+
+  getMedalsWithUserStatus = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const medals = await this.MedalService.getMedalsWithUserStatus(userId);
+
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: medals,
+      message: "Medals with status retrieved successfully",
+    });
+  });
 }
