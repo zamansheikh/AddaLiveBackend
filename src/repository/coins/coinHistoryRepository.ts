@@ -173,6 +173,7 @@ export default class CoinHistoryRepository implements ICoinHistoryRepository {
           preserveNullAndEmptyArrays: true,
         },
       },
+      { $sort: { createdAt: -1 } },
       {
         $project: {
           _id: 1,
@@ -193,7 +194,7 @@ export default class CoinHistoryRepository implements ICoinHistoryRepository {
       },
     ]);
 
-    const data = await res.sort().exec();
+    const data = await res.exec();
     const pagination = await res.countTotal();
     return {
       pagination,
