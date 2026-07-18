@@ -93,4 +93,12 @@ router
     appResellerController.giveCoinsToReseller,
   );
 
+// Route for resellers to get their coin transfer history
+router
+  .route("/coin-history")
+  .get(
+    authenticate(),
+    appResellerController.getCoinHistory,
+  );
+
 export default router;

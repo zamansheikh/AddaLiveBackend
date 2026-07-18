@@ -21,6 +21,7 @@ import { IUserDocument } from "../../models/user/user_model_interface";
 import IUserStatsRepository from "../../repository/users/userstats_repository_interface";
 import { ICoinHistoryRepository } from "../../repository/coins/coinHistoryRepository";
 import { ICoinHistory } from "../../models/coins/coinHistoryModel";
+import { ICoinHistoryDocument } from "../../models/coins/coinHistoryModel";
 import { ILevelTagBgRepository } from "../../repository/users/level_tag_bg_repository";
 import {
   canUserUpdate,
@@ -95,6 +96,11 @@ export interface IAppResellerService {
     sender: { id: string; coins: number };
     receiver: { id: string; coins: number };
   }>;
+
+  getCoinHistory(
+    resellerId: string,
+    query: Record<string, unknown>,
+  ): Promise<{ pagination: IPagination; data: ICoinHistoryDocument[] }>;
 }
 
 
@@ -524,5 +530,23 @@ export default class AppResellerService implements IAppResellerService {
       sender: updatedSender,
       receiver: updatedReceiver,
     };
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  //  getCoinHistory
+  // ──────────────────────────────────────────────────────────────────────────
+
+  async getCoinHistory(
+    resellerId: string,
+    query: Record<string, unknown>,
+  ): Promise<{ pagination: IPagination; data: ICoinHistoryDocument[] }> {
+    const reseller = await this.UserRepository.findUserById(resellerId);
+    if (!reseller || reseller.userRole !== UserRoles.Reseller) {
+      throw new AppError(
+        StatusCodes.UNAUTHORIZED,
+        "Only resellers can view this history",
+      );
+    }
+    return this.CoinHistoryRepository.getResellerHistories(resellerId, query);
   }
 }

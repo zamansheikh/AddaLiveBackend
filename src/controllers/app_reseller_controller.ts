@@ -143,4 +143,18 @@ export default class AppResellerController {
       message: `Successfully assigned ${coins} coins to reseller`,
     });
   });
+
+  getCoinHistory = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const result = await this.Service.getCoinHistory(
+      id,
+      req.query as Record<string, unknown>,
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: result,
+      message: "Coin history retrieved successfully",
+    });
+  });
 }

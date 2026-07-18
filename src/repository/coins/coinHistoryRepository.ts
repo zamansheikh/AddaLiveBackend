@@ -19,13 +19,10 @@ export interface ICoinHistoryRepository {
     senderId: string,
     query: Record<string, any>
   ): Promise<{ pagination: IPagination; data: ICoinHistoryDocument[] }>;
-
-  //   getMerchantHistories(
-  //     query: Record<string, any>
-  //   ): Promise<{ pagination: IPagination; data: ICoinHistoryDocument[] }>;
-  //   getResellerHistories(
-  //     query: Record<string, any>
-  //   ): Promise<{ pagination: IPagination; data: ICoinHistoryDocument[] }>;
+  getResellerHistories(
+    senderId: string,
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; data: ICoinHistoryDocument[] }>;
 }
 
 export default class CoinHistoryRepository implements ICoinHistoryRepository {
@@ -139,6 +136,61 @@ export default class CoinHistoryRepository implements ICoinHistoryRepository {
           }
         }
       }
+    ]);
+
+    const data = await res.sort().exec();
+    const pagination = await res.countTotal();
+    return {
+      pagination,
+      data,
+    };
+  }
+
+  async getResellerHistories(
+    senderId: string,
+    query: Record<string, any>
+  ): Promise<{ pagination: IPagination; data: ICoinHistoryDocument[] }> {
+    const sender = new Types.ObjectId(senderId);
+    const qb = new QueryBuilder(this.Model, query);
+    const res = qb.aggregate([
+      {
+        $match: {
+          senderId: sender,
+          senderRole: UserRoles.Reseller,
+        },
+      },
+      {
+        $lookup: {
+          from: DatabaseNames.User,
+          foreignField: "_id",
+          localField: "receiverId",
+          as: "receiverInfo",
+        },
+      },
+      {
+        $unwind: {
+          path: "$receiverInfo",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          senderId: 1,
+          senderRole: 1,
+          receiverRole: 1,
+          amount: 1,
+          createdAt: 1,
+          receiverInfo: {
+            _id: 1,
+            name: 1,
+            email: 1,
+            uid: 1,
+            avatar: 1,
+            level: 1,
+          },
+        },
+      },
     ]);
 
     const data = await res.sort().exec();

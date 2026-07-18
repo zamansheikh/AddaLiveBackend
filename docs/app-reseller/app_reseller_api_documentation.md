@@ -1,6 +1,6 @@
 # App Reseller API Documentation
 
-The **App Reseller System** provides four endpoints: two administrative endpoints for managing the reseller role (`re-seller`), one for Admin/SubAdmin to allocate coins to resellers, and one for resellers to distribute coins to app users.
+The **App Reseller System** provides five endpoints: two administrative endpoints for managing the reseller role (`re-seller`), one for Admin/SubAdmin to allocate coins to resellers, one for resellers to distribute coins to app users, and one for resellers to view their coin transfer history.
 
 The system uses a dedicated **`resellerCoin`** field on the `UserStats` collection to track coins allocated to resellers by Admin/SubAdmin. This is separate from the regular `coins` field which represents the user's own balance.
 
@@ -25,6 +25,7 @@ The system uses a dedicated **`resellerCoin`** field on the `UserStats` collecti
 | `PUT` | `/api/app-reseller/change-role` | Admin, SubAdmin | Change a user's role between `"user"` and `"re-seller"` |
 | `PUT` | `/api/app-reseller/give-coins-to-reseller` | Admin, SubAdmin | Add coins to a reseller's **resellerCoin** balance |
 | `PUT` | `/api/app-reseller/give-coins` | Reseller | Transfer coins from a reseller's **resellerCoin** balance to an app user |
+| `GET` | `/api/app-reseller/coin-history` | Reseller | Get all coin transfers sent by the authenticated reseller |
 
 ---
 
@@ -443,6 +444,95 @@ Transfers coins from a reseller's **`resellerCoin`** balance to a target app use
 
 ---
 
+## 5. Get Reseller Coin History
+
+Returns all coin transfers **sent** by the authenticated reseller, with receiver info and pagination. Only users with the `"re-seller"` role can access this endpoint.
+
+- **Path**: `GET /api/app-reseller/coin-history`
+- **Access**: `Reseller` (`"re-seller"`) only
+
+### Query Parameters
+
+| Parameter | Type | Required | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `page` | `number` | No | `1` | Page number for pagination |
+| `limit` | `number` | No | `10` | Number of results per page |
+
+### Response (200 OK)
+
+```json
+{
+  "success": true,
+  "result": {
+    "pagination": {
+      "total": 45,
+      "limit": 10,
+      "page": 1,
+      "totalPage": 5
+    },
+    "data": [
+      {
+        "_id": "665a1b2c3d4e5f6a7b8c9d0e",
+        "senderId": "664f2a1b3c4d5e6f7a8b9c0d",
+        "senderRole": "re-seller",
+        "receiverRole": "user",
+        "amount": 50,
+        "createdAt": "2026-07-17T14:30:00.000Z",
+        "receiverInfo": {
+          "_id": "665f3b2c4d5e6f7a8b9c0d1e",
+          "name": "John Doe",
+          "email": "john@example.com",
+          "uid": "user_abc123",
+          "avatar": "https://res.cloudinary.com/.../avatar.png",
+          "level": 5
+        }
+      },
+      {
+        "_id": "665a1b2c3d4e5f6a7b8c9d0f",
+        "senderId": "664f2a1b3c4d5e6f7a8b9c0d",
+        "senderRole": "re-seller",
+        "receiverRole": "user",
+        "amount": 100,
+        "createdAt": "2026-07-16T10:15:00.000Z",
+        "receiverInfo": {
+          "_id": "665f4c3d5e6f7a8b9c0d1e2f",
+          "name": "Jane Smith",
+          "email": "jane@example.com",
+          "uid": "user_def456",
+          "avatar": "https://res.cloudinary.com/.../avatar2.png",
+          "level": 12
+        }
+      }
+    ]
+  },
+  "message": "Coin history retrieved successfully"
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `data[].receiverInfo` | `object \| null` | Receiver user info (looked up from `users` collection) |
+| `data[].receiverInfo._id` | `string` | Receiver's MongoDB `_id` |
+| `data[].receiverInfo.name` | `string` | Receiver's display name |
+| `data[].receiverInfo.email` | `string` | Receiver's email address |
+| `data[].receiverInfo.uid` | `string` | Receiver's unique user ID |
+| `data[].receiverInfo.avatar` | `string` | Receiver's avatar URL |
+| `data[].receiverInfo.level` | `number` | Receiver's current level |
+
+### Error Responses
+
+**401 Unauthorized — Not a reseller**
+```json
+{
+  "success": false,
+  "message": "Only resellers can view this history"
+}
+```
+
+---
+
 ## Behavior & Validation Rules
 
 ### Role Management (endpoints 1 & 2)
@@ -467,6 +557,14 @@ Transfers coins from a reseller's **`resellerCoin`** balance to a target app use
 5. **Level Update (non-XP mode)**: When `XP_MODE` is not `"1"`, the target user's `totalBoughtCoins`, `level`, `currentLevelTag`, and `currentLevelBackground` are recalculated.
 6. **Referral Tracking**: The referral recharge hook runs after the transaction commits (fire-and-forget).
 7. **Audit Trail**: Every transfer creates a coin history record with `senderRole: "re-seller"` and `receiverRole: "user"`.
+
+### Reseller Coin History (endpoint 5)
+
+1. **Sent Only**: Returns only records where the authenticated user is the **sender** (`senderId`), not the receiver.
+2. **Reseller Verification**: The service layer verifies `userRole === "re-seller"` before returning results.
+3. **Receiver Info**: Each record includes `receiverInfo` with the receiver's name, email, uid, avatar, and level (looked up from the `users` collection).
+4. **Pagination**: Standard QueryBuilder pagination via `page` and `limit` query parameters.
+5. **TTL Expiry**: Coin history records auto-delete after 30 days due to a TTL index on `expireAt`.
 
 ---
 
@@ -528,6 +626,13 @@ Transfers coins from a reseller's **`resellerCoin`** balance to a target app use
 | `updateResellerCoins(userId, coins, session?)` | Increments/decrements the `resellerCoin` field |
 | `resellerCoinDeduction(userId, amount, session?)` | Atomically checks `resellerCoin >= amount` then deducts from `resellerCoin` |
 
+### CoinHistoryRepository
+
+| Method | Description |
+| :--- | :--- |
+| `createHistory(data, session?)` | Creates a coin history audit record |
+| `getResellerHistories(senderId, query)` | Returns paginated coin history where the sender is the given reseller, with receiver info joined from `users` |
+
 ---
 
 ## File Structure Reference
@@ -538,14 +643,18 @@ src/
 │   └── userstats/
 │       └── userstats_interface.ts        # IUserStats with resellerCoin field
 ├── models/
-│   └── userstats/
-│       └── userstats_model.ts            # Mongoose schema with resellerCoin field
+│   ├── userstats/
+│   │   └── userstats_model.ts            # Mongoose schema with resellerCoin field
+│   └── coins/
+│       └── coinHistoryModel.ts           # CoinHistory schema (senderId, receiverId, amount, TTL)
 ├── repository/
-│   └── users/
-│       ├── userstats_repository_interface.ts  # IUserStatsRepository with new methods
-│       └── userstats_repository.ts             # Implementation of resellerCoin methods
+│   ├── users/
+│   │   ├── userstats_repository_interface.ts  # IUserStatsRepository with new methods
+│   │   └── userstats_repository.ts             # Implementation of resellerCoin methods
+│   └── coins/
+│       └── coinHistoryRepository.ts      # getResellerHistories() for reseller coin history
 ├── services/app_reseller/
-│   └── app_reseller_service.ts           # Business logic for all 4 endpoints
+│   └── app_reseller_service.ts           # Business logic for all 5 endpoints
 ├── controllers/
 │   └── app_reseller_controller.ts        # Request validation + response formatting
 ├── router/
