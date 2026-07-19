@@ -136,4 +136,22 @@ export default class MedalController {
       message: "Medals with status retrieved successfully",
     });
   });
+
+  /**
+   * PUT /api/medals/equip
+   * Body: { medalIds: string[] } — the full ordered set the user wants to wear.
+   * Replaces the current worn set. Only earned medals are accepted.
+   */
+  equipMedals = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const { medalIds } = req.body;
+    const activeMedals = await this.MedalService.equipMedals(userId, medalIds);
+
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: { activeMedals },
+      message: "Current medals updated successfully",
+    });
+  });
 }

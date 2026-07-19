@@ -89,6 +89,15 @@ const userSchema = new mongoose.Schema<IUserDocument>(
         earnedAt: { type: Date, default: Date.now },
       },
     ],
+    // Medals the user has chosen to display ("wear") right now. Ordered — the
+    // order maps to the slots shown in the app's Current Medal section. Every
+    // id here must also exist in earnedMedals (enforced on equip).
+    activeMedals: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: DatabaseNames.Medals,
+      },
+    ],
   },
   {
     timestamps: true,

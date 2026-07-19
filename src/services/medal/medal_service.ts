@@ -35,7 +35,11 @@ export interface IMedalService {
     medalsAwarded: { medalName: string; level: number; count: number }[];
   }>;
   getMedalsWithUserStatus(userId: string): Promise<IMedalStatusResponse>;
+  equipMedals(userId: string, medalIds: string[]): Promise<IMedalDocument[]>;
 }
+
+/** Maximum medals a user can wear ("Current Medal" slots) at once. */
+export const MAX_ACTIVE_MEDALS = 10;
 
 export default class MedalService implements IMedalService {
   MedalRepository: IMedalRepository;
@@ -235,5 +239,63 @@ export default class MedalService implements IMedalService {
 
   async getMedalsWithUserStatus(userId: string): Promise<IMedalStatusResponse> {
     return await this.MedalRepository.findMedalsWithUserStatus(userId);
+  }
+
+  /**
+   * Sets the medals a user is currently wearing.
+   *
+   * The incoming array is the full desired equipped set (not a toggle) — the
+   * order is preserved so it maps to the app's Current Medal slots. Every id
+   * must be a medal the user has actually earned, and the set is capped at
+   * MAX_ACTIVE_MEDALS. Passing an empty array clears all worn medals.
+   */
+  async equipMedals(
+    userId: string,
+    medalIds: string[],
+  ): Promise<IMedalDocument[]> {
+    if (!Array.isArray(medalIds)) {
+      throw new AppError(StatusCodes.BAD_REQUEST, "medalIds must be an array");
+    }
+
+    // De-duplicate while keeping the order the user chose.
+    const uniqueIds = [...new Set(medalIds.map((id) => String(id)))];
+
+    if (uniqueIds.length > MAX_ACTIVE_MEDALS) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `You can wear at most ${MAX_ACTIVE_MEDALS} medals at once`,
+      );
+    }
+
+    const user = await User.findById(userId).select("earnedMedals");
+    if (!user) {
+      throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+    }
+
+    const earnedSet = new Set(
+      (user.earnedMedals ?? [])
+        .map((e: any) => e.medalId?.toString())
+        .filter(Boolean),
+    );
+
+    for (const id of uniqueIds) {
+      if (!earnedSet.has(id)) {
+        throw new AppError(
+          StatusCodes.BAD_REQUEST,
+          "You can only wear medals you have earned",
+        );
+      }
+    }
+
+    await User.updateOne(
+      { _id: userId },
+      { $set: { activeMedals: uniqueIds } },
+    );
+
+    const updated = await User.findById(userId)
+      .select("activeMedals")
+      .populate("activeMedals");
+
+    return ((updated as any)?.activeMedals ?? []) as IMedalDocument[];
   }
 }

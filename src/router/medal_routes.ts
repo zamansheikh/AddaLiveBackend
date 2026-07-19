@@ -31,6 +31,9 @@ router.get(
   medalController.getMedalsWithUserStatus,
 );
 
+// Set the medals the current user is wearing (the "Current Medal" slots).
+router.put("/equip", authenticate(), medalController.equipMedals);
+
 router
   .route("/:id")
   .get(authenticate(), medalController.getMedalById)

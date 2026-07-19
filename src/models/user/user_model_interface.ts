@@ -53,6 +53,8 @@ export interface UserData {
   equippedStoreItems?: Record<string, any>;
   familyId?: mongoose.Schema.Types.ObjectId | string | null;
   earnedMedals?: { medalId: mongoose.Schema.Types.ObjectId | string; earnedAt: Date }[];
+  // Medals the user is currently wearing (ordered). Subset of earnedMedals.
+  activeMedals?: (mongoose.Schema.Types.ObjectId | string)[];
 }
 
 //  Create the document type (instance methods + fields)

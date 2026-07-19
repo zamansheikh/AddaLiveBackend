@@ -415,14 +415,17 @@ export default class AuthService implements IAuthService {
     if (!profile || !myProfile)
       throw new AppError(StatusCodes.NOT_FOUND, "Invalid user Id");
 
-    // Populate earned medals on the profile
+    // Populate earned + currently-worn medals on the profile
     await profile.populate("earnedMedals.medalId");
+    await profile.populate("activeMedals");
 
     let user = await this.UserRepository.getUserDetails({ Id: id, myId });
     if (!user) throw new AppError(StatusCodes.NOT_FOUND, "user not found");
 
     // Attach populated earnedMedals from the profile query
     (user as any).earnedMedals = profile.earnedMedals;
+    // The medals the user is wearing right now (ordered, populated).
+    (user as any).activeMedals = (profile as any).activeMedals;
 
     (user as any).equippedStoreItems = await getEquippedItemObjects(
       this.BucketRepository,
