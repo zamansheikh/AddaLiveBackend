@@ -42,6 +42,7 @@ import CoinExchangeRouter from "./router/coin_exchange_route";
 import RoomLevelCriteriaRouter from "./router/room_level_criteria_router";
 import CoinPurchaseRouter from "./router/coin_purchase_route";
 import AgoraConfigRouter from "./router/agora_config_routes";
+import AgoraTokenRouter from "./router/agora_token_routes";
 import XpConfigRouter from "./router/xp_config_routes";
 import MedalRouter from "./router/medal_routes";
 import AppResellerRouter from "./router/app_reseller_routes";
@@ -181,6 +182,9 @@ app.use("/api/admin/room-level-criteria", RoomLevelCriteriaRouter);
 app.use("/api/coin-exchange", CoinExchangeRouter);
 app.use("/api/coin-purchase", CoinPurchaseRouter);
 app.use("/api/admin/agora-config", AgoraConfigRouter);
+// Public Agora RTC/RTM token endpoints (moved here from the standalone/admin
+// token server) — the mobile app calls /api/agora/token/{rtc,rtm} directly.
+app.use("/api/agora", AgoraTokenRouter);
 app.use("/api/admin/xp-config", XpConfigRouter);
 
 // Medal routes
