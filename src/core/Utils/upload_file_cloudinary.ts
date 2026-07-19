@@ -1,98 +1,66 @@
-import { StatusCodes } from "http-status-codes";
 import cloudinary from "../config/cloudaniay_config";
-import AppError from "../errors/app_errors";
 import { getCloudinaryPublicId } from "./helper_functions";
+import { uploadFileToNimbus } from "./upload_file_nimbus";
 
 /**
- * Cloudinary's single-shot upload endpoint caps the request body at 10 MB on
- * the free plan. Anything bigger needs to go through the chunked endpoint —
- * which is allowed up to 100 MB on free and higher on paid plans. We pick a
- * chunk under the single-shot cap so each chunked request is itself within
- * the limit.
+ * File uploads now go to Nimbus cloud storage — NOT Cloudinary, and nothing is
+ * written to the server's disk. The `uploadFileToCloudinary` name is kept so the
+ * many existing call sites keep working unchanged; prefer importing
+ * `uploadFileToNimbus` directly in new code.
+ *
+ * The former `folder` argument is mapped to a Nimbus tag (Nimbus organizes by
+ * tags / folderId, not folder names).
  */
-const SINGLE_SHOT_CLOUDINARY_LIMIT = 10 * 1024 * 1024; // 10 MB
-const CHUNK_SIZE = 6 * 1024 * 1024; // 6 MB per chunk — well under the cap
-
 export const uploadFileToCloudinary = ({
   file,
-  folder = "user_profiles",
+  folder,
 }: {
   file: Express.Multer.File;
   folder?: string;
-}) => {
-  return new Promise<string>((resolve, reject) => {
-    const extension = file.originalname.split(".").pop()?.toLowerCase();
+}): Promise<string> => uploadFileToNimbus({ file, folder });
 
-    // Standard media types that Cloudinary handles automatically (appending extensions in URLs)
-    const standardMedia = [
-      "jpg",
-      "jpeg",
-      "png",
-      "gif",
-      "webp",
-      "svg",
-      "mp4",
-      "mov",
-      "avi",
-    ];
-    const isRaw = !extension || !standardMedia.includes(extension);
-
-    const options: any = {
-      folder,
-      resource_type: "auto",
-    };
-
-    // For 'raw' files like SVGA, we must include the extension in the public_id
-    // to ensure Cloudinary returns a URL with that extension.
-    if (isRaw && extension) {
-      const uniqueId = `${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
-      options.public_id = `${uniqueId}.${extension}`;
-      options.resource_type = "raw";
-    }
-
-    const callback = (error: any, result: any) => {
-      if (error || !result) return reject(error);
-      resolve(result.secure_url);
-    };
-
-    // Files larger than the single-shot cap (10 MB on free) must go through
-    // upload_chunked_stream or Cloudinary returns 400 "File size too large".
-    const useChunked = file.buffer.length > SINGLE_SHOT_CLOUDINARY_LIMIT;
-    const stream = useChunked
-      ? cloudinary.uploader.upload_chunked_stream(
-          { ...options, chunk_size: CHUNK_SIZE },
-          callback,
-        )
-      : cloudinary.uploader.upload_stream(options, callback);
-    stream.end(file.buffer);
-  });
-};
-
+/**
+ * Delete a previously-uploaded file by its URL.
+ *
+ * - Legacy Cloudinary URLs → deleted via the Cloudinary API (so old media can
+ *   still be cleaned up).
+ * - Nimbus / local / any other URL → best-effort no-op returning `true`. Nimbus
+ *   deletes by asset `_id`, which these older records don't store; failing here
+ *   would break "replace the old file" flows, so we report success instead.
+ *   (A leftover Nimbus asset can still be removed from the Nimbus dashboard or
+ *   via `nimbus.deleteAsset(id)` when the id is known.)
+ */
 export const deleteFileFromCloudinary = async (
   url: string,
 ): Promise<boolean> => {
+  if (!url) return false;
+
+  const isCloudinary =
+    url.includes("res.cloudinary.com") || url.includes("cloudinary.com");
+  if (!isCloudinary) {
+    return true;
+  }
+
   try {
     const publicId = getCloudinaryPublicId(url);
     const urlObj = new URL(url);
     const parts = urlObj.pathname.split("/");
-    const resourceType = parts[2]; // This extracts 'image', 'video', or 'raw' from the URL path
+    const resourceType = parts[2]; // 'image' | 'video' | 'raw'
 
     const result = await cloudinary.uploader.destroy(publicId, {
       resource_type: resourceType,
     });
 
     if (result.result == "not found") {
-      console.warn(`[Cloudinary] File not found on Cloudinary: ${url}`);
+      console.warn(`[Cloudinary] File not found: ${url}`);
       return true;
     }
-
     if (result.result != "ok") {
       console.error(
         `[Cloudinary] Deletion failed for ${url}. Result: ${result.result}`,
       );
       return false;
     }
-
     return result.result === "ok";
   } catch (error: any) {
     console.error(

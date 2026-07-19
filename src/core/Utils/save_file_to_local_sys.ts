@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import crypto from "crypto";
 import { Express, Request, Response } from "express";
 import AppError from "../errors/app_errors";
 import { StatusCodes } from "http-status-codes";
@@ -10,48 +9,39 @@ import {
   deleteFileFromCloudinary,
   uploadFileToCloudinary,
 } from "./upload_file_cloudinary";
+import { uploadFileToNimbus } from "./upload_file_nimbus";
 
 interface SaveFileOptions {
   folder: string; // e.g. "store_items"
 }
 
+/**
+ * Kept for API compatibility, but files are NO LONGER written to the server's
+ * disk — they are uploaded to Nimbus cloud storage and the Nimbus URL is
+ * returned. The `folder` is passed through as a Nimbus tag.
+ */
 export const saveFileToLocal = async (
   file: Express.Multer.File,
   options: SaveFileOptions,
 ): Promise<string> => {
-  const uploadsRoot = path.join(process.cwd(), "public/uploads");
-  const targetDir = path.join(uploadsRoot, options.folder);
-
-  // Ensure directory exists
-  await fs.promises.mkdir(targetDir, { recursive: true });
-
-  const extension = path.extname(file.originalname);
-  const fileName = `${crypto.randomUUID()}${extension}`;
-  const filePath = path.join(targetDir, fileName);
-
-  // Write buffer to disk
-  await fs.promises.writeFile(filePath, file.buffer);
-
-  // Public URL
-  return `/uploads/${options.folder}/${fileName}`;
+  return uploadFileToNimbus({ file, folder: options.folder });
 };
 
+/**
+ * Delete a previously-saved file.
+ * - Legacy local `/uploads/...` files → removed from disk.
+ * - Any other URL (Nimbus, etc.) → best-effort no-op returning `true`.
+ */
 export const deleteLocalFile = async (fileUrl: string): Promise<boolean> => {
+  // Only legacy local uploads live on disk; everything else is in the cloud.
+  if (!fileUrl || !fileUrl.startsWith("/uploads/")) {
+    return true;
+  }
   try {
-    // Prevent deleting arbitrary system files
-    if (!fileUrl.startsWith("/uploads/")) {
-      throw new AppError(StatusCodes.BAD_REQUEST, "Invalid file URL");
-    }
-
     const uploadsRoot = path.join(process.cwd(), "public");
     const filePath = path.join(uploadsRoot, fileUrl);
-
-    // Check if file exists
     await fs.promises.access(filePath);
-
-    // Delete file
     await fs.promises.unlink(filePath);
-
     return true;
   } catch (error: any) {
     // File not found → treat as already deleted

@@ -138,14 +138,16 @@ async function jsonRequest<T>(
   init: RequestInit = {},
 ): Promise<T> {
   const { baseUrl, apiKey } = getConfig();
-  const res = await fetch(`${baseUrl}${pathAndQuery}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      ...(init.headers as Record<string, string> | undefined),
-    },
-  });
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    ...(init.headers as Record<string, string> | undefined),
+  };
+  // Only declare a JSON content-type when we actually send a body — the API
+  // rejects bodiless GET/DELETE requests that carry `Content-Type: application/json`.
+  if (init.body !== undefined && init.body !== null) {
+    headers["Content-Type"] = "application/json";
+  }
+  const res = await fetch(`${baseUrl}${pathAndQuery}`, { ...init, headers });
   return handleResponse<T>(res);
 }
 
