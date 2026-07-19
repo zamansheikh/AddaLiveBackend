@@ -46,6 +46,7 @@ import AgoraTokenRouter from "./router/agora_token_routes";
 import AgoraStatsRouter from "./router/agora_stats_routes";
 import { seedSuperAdmin } from "./core/seed/seed_super_admin";
 import { resetStaleAudioRoomsOnStartup } from "./core/startup/reset_stale_audio_rooms";
+import { seedReferralConfig } from "./core/startup/seed_referral_config";
 import XpConfigRouter from "./router/xp_config_routes";
 import MedalRouter from "./router/medal_routes";
 import AppResellerRouter from "./router/app_reseller_routes";
@@ -292,6 +293,14 @@ mongoose.connect(MONGOURL).then(async () => {
     await resetStaleAudioRoomsOnStartup();
   } catch (err) {
     console.error("Failed to reset stale audio rooms:", err);
+  }
+
+  // Ensure a referral config exists (the invite/reward feature is a no-op
+  // without one).
+  try {
+    await seedReferralConfig();
+  } catch (err) {
+    console.error("Failed to seed referral config:", err);
   }
 
   try {
