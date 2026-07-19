@@ -293,8 +293,19 @@ export default class SharedPowerService implements ISharedPowerService {
     myId: string,
     role: UserRoles,
   ): Promise<IUSerStatsDocument | IPortalUserDocument> {
+    // The super-admin (portal owner) behaves like Admin here — it can send
+    // coins to anyone (general users and resellers included) and its wallet
+    // lives in the admins collection.
+    const isAdminLevel =
+      role === UserRoles.Admin || role === UserRoles.SuperAdmin;
+
     // ── 1. Validate sender eligibility ──────────────────────────────────────
-    const allowedSenders = [UserRoles.Admin, UserRoles.SubAdmin, UserRoles.Reseller];
+    const allowedSenders = [
+      UserRoles.Admin,
+      UserRoles.SuperAdmin,
+      UserRoles.SubAdmin,
+      UserRoles.Reseller,
+    ];
     if (!allowedSenders.includes(role)) {
       throw new AppError(
         StatusCodes.UNAUTHORIZED,
@@ -304,7 +315,7 @@ export default class SharedPowerService implements ISharedPowerService {
 
     // ── 2. Fetch sender profile from DB (not JWT) ──────────────────────────
     let myProfile;
-    if (role == UserRoles.Admin)
+    if (isAdminLevel)
       myProfile = await this.AdminRepository.getAdminById(myId);
     else
       myProfile = await this.PortalUserRepository.getPortalUserById(myId);
@@ -327,6 +338,11 @@ export default class SharedPowerService implements ISharedPowerService {
     // SubAdmin (with coin-distributor) → User
     // Reseller → User
     const allowedReceivers: Record<string, UserRoles[]> = {
+      [UserRoles.SuperAdmin]: [
+        UserRoles.SubAdmin,
+        UserRoles.Reseller,
+        UserRoles.User,
+      ],
       [UserRoles.Admin]: [UserRoles.SubAdmin, UserRoles.Reseller, UserRoles.User],
       [UserRoles.SubAdmin]: [UserRoles.User],
       [UserRoles.Reseller]: [UserRoles.User],
@@ -344,9 +360,11 @@ export default class SharedPowerService implements ISharedPowerService {
       throw new AppError(StatusCodes.BAD_REQUEST, "Insufficient coins");
 
     // ── 6. Fetch target profile from the correct repository ─────────────────
-    // Portal user targets: sub-admin, reseller
-    // Regular user targets: user (host normalized to user in controller)
-    const portalUserTargets = [UserRoles.SubAdmin, UserRoles.Reseller];
+    // Only sub-admins live in the portal_users collection. Re-sellers are app
+    // users (a promoted "user" role in the users collection) — so they, like
+    // regular users, are fetched from the UserRepository. Treating them as
+    // portal users looks them up in the wrong collection → "User not found".
+    const portalUserTargets = [UserRoles.SubAdmin];
 
     let targetProfile;
     if (portalUserTargets.includes(userRole))
@@ -381,7 +399,7 @@ export default class SharedPowerService implements ISharedPowerService {
 
     try {
       // Deduct coins from sender
-      if (role == UserRoles.Admin)
+      if (isAdminLevel)
         await this.AdminRepository.updateCoin(myId, -coins, session);
       else
         await this.PortalUserRepository.updateCoin(myId, -coins, session);

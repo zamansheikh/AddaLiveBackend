@@ -409,8 +409,15 @@ export default class AppResellerService implements IAppResellerService {
       );
     }
 
-    // Only Admin and SubAdmin are allowed to use this endpoint
-    const allowedSenders = [UserRoles.Admin, UserRoles.SubAdmin];
+    // Admin, Super Admin (owner) and SubAdmin are allowed to use this endpoint.
+    // Super Admin behaves like Admin — its wallet is in the admins collection.
+    const isAdminLevel =
+      senderRole === UserRoles.Admin || senderRole === UserRoles.SuperAdmin;
+    const allowedSenders = [
+      UserRoles.Admin,
+      UserRoles.SuperAdmin,
+      UserRoles.SubAdmin,
+    ];
     if (!allowedSenders.includes(senderRole)) {
       throw new AppError(
         StatusCodes.UNAUTHORIZED,
@@ -427,7 +434,7 @@ export default class AppResellerService implements IAppResellerService {
 
     // ── 2. Verify the sender exists and has the expected role ───────────────
     let senderProfile;
-    if (senderRole === UserRoles.Admin) {
+    if (isAdminLevel) {
       senderProfile = await this.AdminRepository.getAdminById(senderId);
     } else {
       senderProfile = await this.PortalUserRepository.getPortalUserById(senderId);
@@ -479,7 +486,7 @@ export default class AppResellerService implements IAppResellerService {
       // 4a. Deduct coins from the sender's balance.
       //     Both AdminRepository.updateCoin and PortalUserRepository.updateCoin
       //     atomically check `coins >= amount` before deducting.
-      if (senderRole === UserRoles.Admin) {
+      if (isAdminLevel) {
         const adminAfterDeduction = await this.AdminRepository.updateCoin(
           senderId,
           -coins,
