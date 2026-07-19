@@ -45,6 +45,7 @@ import AgoraConfigRouter from "./router/agora_config_routes";
 import AgoraTokenRouter from "./router/agora_token_routes";
 import AgoraStatsRouter from "./router/agora_stats_routes";
 import { seedSuperAdmin } from "./core/seed/seed_super_admin";
+import { resetStaleAudioRoomsOnStartup } from "./core/startup/reset_stale_audio_rooms";
 import XpConfigRouter from "./router/xp_config_routes";
 import MedalRouter from "./router/medal_routes";
 import AppResellerRouter from "./router/app_reseller_routes";
@@ -283,6 +284,14 @@ mongoose.connect(MONGOURL).then(async () => {
     await seedSuperAdmin();
   } catch (err) {
     console.error("Failed to seed super-admin:", err);
+  }
+
+  // Clear orphaned "active" audio rooms left over from the previous run (the
+  // process restarted while rooms were live, so their sockets are gone).
+  try {
+    await resetStaleAudioRoomsOnStartup();
+  } catch (err) {
+    console.error("Failed to reset stale audio rooms:", err);
   }
 
   try {
