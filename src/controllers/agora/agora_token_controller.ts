@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { RtcRole, RtcTokenBuilder, RtmTokenBuilder } from "agora-token";
 import AgoraConfigRepository from "../../repository/agora/agora_config_repository";
+import { AgoraRequestType } from "../../models/agora/agora_stats_model";
+import { agoraStatsService } from "../../services/agora/agora_stats_service";
 
 /**
  * Public Agora token endpoints, moved here from the standalone/admin-panel
@@ -51,6 +53,16 @@ async function resolveCreds(): Promise<ResolvedAgoraCreds> {
     appId: process.env.AGORA_APP_ID ?? "",
     appCertificate: process.env.PRIMARY_CERTIFICATE ?? "",
   };
+}
+
+/**
+ * Record a token request for the admin analytics. Fire-and-forget: a stats
+ * write must never fail or delay the token response.
+ */
+function recordStat(type: AgoraRequestType): void {
+  agoraStatsService.increment(type).catch(() => {
+    /* analytics only — ignore */
+  });
 }
 
 function rtcRoleFor(role: string): number | null {
@@ -164,6 +176,8 @@ export class AgoraTokenController {
         expireTime,
       );
 
+      recordStat("rtc");
+
       res.status(200).json({
         success: true,
         token,
@@ -230,6 +244,8 @@ export class AgoraTokenController {
         expireTime,
       );
 
+      recordStat("rtc");
+
       res.status(200).json({
         success: true,
         token,
@@ -286,6 +302,8 @@ export class AgoraTokenController {
         expireTime,
       );
 
+      recordStat("rtm");
+
       res.status(200).json({
         success: true,
         token,
@@ -326,6 +344,8 @@ export class AgoraTokenController {
         uid,
         expireTime,
       );
+
+      recordStat("rtm");
 
       res.status(200).json({
         success: true,
