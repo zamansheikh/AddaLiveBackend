@@ -166,14 +166,24 @@ export default class UserRepository implements IUserRepository {
 
     // only push $match if searchTerm is provided
     if (query.searchTerm && query.searchTerm.trim() !== "") {
-      pipeline.push({
-        $match: {
-          $or: [
-            { name: { $regex: query.searchTerm, $options: "i" } },
-            { email: { $regex: query.searchTerm, $options: "i" } },
-          ],
-        },
-      });
+      const term = query.searchTerm.trim();
+      const or: Record<string, any>[] = [
+        { name: { $regex: term, $options: "i" } },
+        { email: { $regex: term, $options: "i" } },
+      ];
+      // Allow searching by the short numeric user id (e.g. 101897) — full or
+      // partial. `userId` is a Number, so match it as a string.
+      if (/^\d+$/.test(term)) {
+        or.push({
+          $expr: {
+            $regexMatch: {
+              input: { $toString: "$userId" },
+              regex: term,
+            },
+          },
+        });
+      }
+      pipeline.push({ $match: { $or: or } });
     }
 
     pipeline.push(
