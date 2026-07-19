@@ -44,6 +44,7 @@ import CoinPurchaseRouter from "./router/coin_purchase_route";
 import AgoraConfigRouter from "./router/agora_config_routes";
 import AgoraTokenRouter from "./router/agora_token_routes";
 import AgoraStatsRouter from "./router/agora_stats_routes";
+import { seedSuperAdmin } from "./core/seed/seed_super_admin";
 import XpConfigRouter from "./router/xp_config_routes";
 import MedalRouter from "./router/medal_routes";
 import AppResellerRouter from "./router/app_reseller_routes";
@@ -275,6 +276,14 @@ const MONGOURL =
 
 mongoose.connect(MONGOURL).then(async () => {
   console.log("DB Connected");
+
+  // Ensure the super-admin (owner) account exists — seeded from env on first
+  // boot, then editable from the admin panel (Settings → Owner Account).
+  try {
+    await seedSuperAdmin();
+  } catch (err) {
+    console.error("Failed to seed super-admin:", err);
+  }
 
   try {
     await RoomLevelCriteriaService.bootstrap();

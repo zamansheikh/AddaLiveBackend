@@ -292,6 +292,9 @@ export enum UserActiveStatus {
 
 export enum UserRoles {
   User = "user",
+  // Portal owner — top power. Bypasses every role restriction (see
+  // authenticate middleware). Distinct from `Admin` (the app super admin).
+  SuperAdmin = "super-admin",
   Admin = "admin",
   Merchant = "merchant",
   Reseller = "re-seller",

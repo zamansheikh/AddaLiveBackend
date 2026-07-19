@@ -304,7 +304,12 @@ export default class AdminUserService implements IAdminUserService {
 
     const jwtSecret = process.env.JWT_SECRET || "secret";
 
-    const token = jwt.sign({ id: admin._id, role: UserRoles.Admin }, jwtSecret);
+    // Use the admin's actual role so the super-admin (owner) gets a
+    // `super-admin` token and the app super admin keeps `admin`.
+    const token = jwt.sign(
+      { id: admin._id, role: admin.userRole || UserRoles.Admin },
+      jwtSecret,
+    );
     return { user: adminObj, token };
   }
 

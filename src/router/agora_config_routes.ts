@@ -11,13 +11,13 @@ const controller = new AgoraConfigController(service);
 
 router
   .route("/")
-  .post(authenticate([UserRoles.Admin, UserRoles.SubAdmin]), controller.create)
-  .get(authenticate([UserRoles.Admin, UserRoles.SubAdmin]), controller.getAll);
+  .post(authenticate([UserRoles.SuperAdmin]), controller.create)
+  .get(authenticate([UserRoles.SuperAdmin]), controller.getAll);
 
 router
   .route("/:id")
-  .get(authenticate([UserRoles.Admin, UserRoles.SubAdmin]), controller.getById)
-  .put(authenticate([UserRoles.Admin, UserRoles.SubAdmin]), controller.update)
-  .delete(authenticate([UserRoles.Admin, UserRoles.SubAdmin]), controller.delete);
+  .get(authenticate([UserRoles.SuperAdmin]), controller.getById)
+  .put(authenticate([UserRoles.SuperAdmin]), controller.update)
+  .delete(authenticate([UserRoles.SuperAdmin]), controller.delete);
 
 export default router;

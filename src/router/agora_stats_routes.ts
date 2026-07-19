@@ -15,10 +15,10 @@ const controller = new AgoraStatsController(agoraStatsService);
 
 router
   .route("/")
-  .get(authenticate([UserRoles.Admin, UserRoles.SubAdmin]), controller.getStats);
+  .get(authenticate([UserRoles.SuperAdmin]), controller.getStats);
 
 router
   .route("/reset")
-  .post(authenticate([UserRoles.Admin, UserRoles.SubAdmin]), controller.reset);
+  .post(authenticate([UserRoles.SuperAdmin]), controller.reset);
 
 export default router;

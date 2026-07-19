@@ -5,6 +5,7 @@ import AppError from "../errors/app_errors";
 import BlockedEmailModel from "../../models/security/blocked_emails";
 import { BlockedEmailRepository } from "../../repository/security/blockedEmailRepository";
 import { blockedEmailRepositoryObject } from "../Utils/constant_repositories";
+import { UserRoles } from "../Utils/enums";
 
 // Define the shape of the JWT payload
 interface JwtPayload {
@@ -60,14 +61,18 @@ export const authenticate =
           );
       }
       if (allowedRoles.length > 0) {
-        // If specific roles are required, check them
-        if (!decoded.role || !allowedRoles.includes(decoded.role)) {
-          return next(
-            new AppError(
-              StatusCodes.FORBIDDEN,
-              "Access denied: insufficient role"
-            )
-          );
+        // The super-admin (portal owner) is a superuser — it passes every
+        // role-restricted route without being listed explicitly.
+        if (decoded.role !== UserRoles.SuperAdmin) {
+          // If specific roles are required, check them
+          if (!decoded.role || !allowedRoles.includes(decoded.role)) {
+            return next(
+              new AppError(
+                StatusCodes.FORBIDDEN,
+                "Access denied: insufficient role"
+              )
+            );
+          }
         }
       }
 
