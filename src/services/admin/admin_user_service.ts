@@ -48,7 +48,11 @@ import {
 } from "../../models/salary/salaryModelInterface";
 import { ISalaryRepository } from "../../repository/salary/salary_repository";
 import { IBannerRepository } from "../../repository/banners/bannerRepository";
-import { IBanner, IBannerDocument } from "../../models/banner/bannerModel";
+import {
+  IBanner,
+  IBannerDocument,
+  BannerLinkType,
+} from "../../models/banner/bannerModel";
 import { ICoinHistoryRepository } from "../../repository/coins/coinHistoryRepository";
 import { ICoinHistoryDocument } from "../../models/coins/coinHistoryModel";
 import { IAgencyWithdrawDocument } from "../../models/room/agency_withdraw_model";
@@ -166,11 +170,13 @@ export interface IAdminUserService {
   createBanner(
     alt: string,
     file: Express.Multer.File,
+    link?: { linkType?: BannerLinkType; linkTarget?: string },
   ): Promise<IBannerDocument>;
   updateBanner(
     id: string,
     alt?: string,
     file?: Express.Multer.File,
+    link?: { linkType?: BannerLinkType; linkTarget?: string },
   ): Promise<IBannerDocument>;
   deleteBanner(id: string): Promise<IBannerDocument>;
   // posters
@@ -954,15 +960,19 @@ export default class AdminUserService implements IAdminUserService {
   async createBanner(
     alt: string,
     file: Express.Multer.File,
+    link?: { linkType?: BannerLinkType; linkTarget?: string },
   ): Promise<IBannerDocument> {
     const bannerUrl = await uploadFileToCloudinary({
       folder: CloudinaryFolder.BannerAssets,
       file: file,
     });
 
+    const linkType = link?.linkType ?? "none";
     const newBanner = await this.BannerRepository.createBanner({
       url: bannerUrl,
       alt: alt,
+      linkType,
+      linkTarget: linkType === "none" ? "" : (link?.linkTarget ?? ""),
     });
     return newBanner;
   }
@@ -971,6 +981,7 @@ export default class AdminUserService implements IAdminUserService {
     id: string,
     alt?: string,
     file?: Express.Multer.File,
+    link?: { linkType?: BannerLinkType; linkTarget?: string },
   ): Promise<IBannerDocument> {
     let url;
     if (file) {
@@ -983,6 +994,11 @@ export default class AdminUserService implements IAdminUserService {
 
     if (url) updateObj["url"] = url as string;
     if (alt) updateObj["alt"] = alt;
+    if (link?.linkType !== undefined) {
+      updateObj["linkType"] = link.linkType;
+      updateObj["linkTarget"] =
+        link.linkType === "none" ? "" : (link.linkTarget ?? "");
+    }
 
     const updatedBanner = await this.BannerRepository.updateBanner(
       id,

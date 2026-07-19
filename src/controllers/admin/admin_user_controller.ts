@@ -571,10 +571,14 @@ export default class AdminUserController {
 
   createBanner = catchAsync(async (req: Request, res: Response) => {
     let { alt } = req.body;
+    const { linkType, linkTarget } = req.body;
     const file = req.file as Express.Multer.File;
     if (!file) throw new AppError(StatusCodes.BAD_REQUEST, "Image is required");
     if (!alt) alt = "banner";
-    const result = await this.AdminUserService.createBanner(alt, file);
+    const result = await this.AdminUserService.createBanner(alt, file, {
+      linkType,
+      linkTarget,
+    });
     sendResponse(res, {
       statusCode: StatusCodes.CREATED,
       success: true,
@@ -595,11 +599,14 @@ export default class AdminUserController {
 
   updateBanner = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { alt } = req.body;
+    const { alt, linkType, linkTarget } = req.body;
     const file = req.file as Express.Multer.File;
-    if (!alt && !file)
+    if (!alt && !file && linkType === undefined)
       throw new AppError(StatusCodes.BAD_REQUEST, "Data is required");
-    const result = await this.AdminUserService.updateBanner(id, alt, file);
+    const result = await this.AdminUserService.updateBanner(id, alt, file, {
+      linkType,
+      linkTarget,
+    });
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
