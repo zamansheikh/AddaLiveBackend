@@ -8,15 +8,15 @@ import { RepositoryProviders } from "../../core/providers/repository_providers";
  */
 const DEFAULT_SVIP_CONFIG: ISvipConfig = {
   tiers: [
-    { tier: 1, milestoneCoins: 1_000_000, storeItemId: null },
-    { tier: 2, milestoneCoins: 4_000_000, storeItemId: null },
-    { tier: 3, milestoneCoins: 8_000_000, storeItemId: null },
-    { tier: 4, milestoneCoins: 15_000_000, storeItemId: null },
-    { tier: 5, milestoneCoins: 25_000_000, storeItemId: null },
-    { tier: 6, milestoneCoins: 40_000_000, storeItemId: null },
-    { tier: 7, milestoneCoins: 60_000_000, storeItemId: null },
-    { tier: 8, milestoneCoins: 85_000_000, storeItemId: null },
-    { tier: 9, milestoneCoins: 110_000_000, storeItemId: null },
+    { tier: 1, milestoneCoins: 1_000_000, validityMonths: 1, storeItemId: null },
+    { tier: 2, milestoneCoins: 4_000_000, validityMonths: 1, storeItemId: null },
+    { tier: 3, milestoneCoins: 8_000_000, validityMonths: 1, storeItemId: null },
+    { tier: 4, milestoneCoins: 15_000_000, validityMonths: 1, storeItemId: null },
+    { tier: 5, milestoneCoins: 25_000_000, validityMonths: 1, storeItemId: null },
+    { tier: 6, milestoneCoins: 40_000_000, validityMonths: 1, storeItemId: null },
+    { tier: 7, milestoneCoins: 60_000_000, validityMonths: 1, storeItemId: null },
+    { tier: 8, milestoneCoins: 85_000_000, validityMonths: 1, storeItemId: null },
+    { tier: 9, milestoneCoins: 110_000_000, validityMonths: 1, storeItemId: null },
   ],
   retentionThreshold: 0.5,
 };

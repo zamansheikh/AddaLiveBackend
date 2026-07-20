@@ -807,7 +807,7 @@ export default class StoreService implements IStoreService {
   private async syncSvipConfigWithStoreItem(
     itemName: string,
     itemId: string | Types.ObjectId,
-    prices?: { price: number }[],
+    prices?: { price: number; validity?: number }[],
     action: 'set' | 'clear' = 'set',
   ): Promise<void> {
     if (!itemName.startsWith("SVIP-")) return;
@@ -841,10 +841,16 @@ export default class StoreService implements IStoreService {
         storeItemId: null,
       };
     } else {
-      // Only update milestoneCoins if a price was provided and it differs
-      const newMilestoneCoins =
-        prices && prices.length > 0 ? prices[0].price : current.milestoneCoins;
-      const milestoneChanged = newMilestoneCoins !== current.milestoneCoins;
+      // The SVIP store item's first price carries the tier's admin-set config:
+      //   price    → milestoneCoins (the recharge target)
+      //   validity → validityMonths (how long the tier lasts; SVIP is never
+      //              bought, so this field isn't a purchase duration)
+      const priceRow = prices && prices.length > 0 ? prices[0] : undefined;
+      const newMilestoneCoins = priceRow ? priceRow.price : current.milestoneCoins;
+      const newValidityMonths =
+        priceRow && typeof priceRow.validity === "number"
+          ? priceRow.validity
+          : current.validityMonths;
 
       updatedTiers[tierIndex] = {
         ...current,
@@ -852,7 +858,8 @@ export default class StoreService implements IStoreService {
           typeof itemId === 'string'
             ? new Types.ObjectId(itemId)
             : (itemId as Types.ObjectId),
-        ...(milestoneChanged ? { milestoneCoins: newMilestoneCoins } : {}),
+        milestoneCoins: newMilestoneCoins,
+        validityMonths: newValidityMonths,
       };
     }
 

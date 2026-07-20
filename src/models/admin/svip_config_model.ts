@@ -4,8 +4,10 @@ import { DatabaseNames } from "../../core/Utils/enums";
 export interface ISvipTier {
   /** Tier number (1-based). */
   tier: number;
-  /** Coins needed in a single month to reach this tier. */
+  /** Coins needed in a single month to reach this tier (the recharge target). */
   milestoneCoins: number;
+  /** How long the tier stays active before it must be re-earned. Default 1. */
+  validityMonths: number;
   /**
    * The store item _id that visually represents this tier.
    * Set automatically when an admin creates/updates a store item
@@ -36,6 +38,7 @@ const SvipConfigSchema = new Schema<ISvipConfigDocument, ISvipConfigModel>(
         {
           tier: { type: Number, required: true },
           milestoneCoins: { type: Number, required: true },
+          validityMonths: { type: Number, required: true, default: 1 },
           storeItemId: {
             type: Schema.Types.ObjectId,
             ref: DatabaseNames.StoreItem,

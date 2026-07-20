@@ -330,6 +330,9 @@ export class SvipService {
     monthlyRechargeCoins: number;
     tierStartOfMonth: number;
     nextMilestone: { tier: number; milestoneCoins: number } | null;
+    // Every configured tier's coin requirement, so the client can show the
+    // target for whichever tier the user is browsing (not just the next one).
+    tiers: { tier: number; milestoneCoins: number }[];
     progressPercent: number;
     retentionStatus: {
       requiredCoins: number;
@@ -413,6 +416,10 @@ export class SvipService {
       monthlyRechargeCoins,
       tierStartOfMonth,
       nextMilestone,
+      tiers: sortedTiers.map((t) => ({
+        tier: t.tier,
+        milestoneCoins: t.milestoneCoins,
+      })),
       progressPercent,
       retentionStatus,
       currentItem,
