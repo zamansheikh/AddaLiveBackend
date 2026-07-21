@@ -39,6 +39,8 @@ import FamilyRewardRouter from "./router/family_reward_router";
 import ReferralRouter from "./router/referral_routes";
 import RocketConfigRouter from "./router/rocket_config_routes";
 import CoinExchangeRouter from "./router/coin_exchange_route";
+import CoinHistoryRouter from "./router/coin_history_routes";
+import FeedbackRouter from "./router/feedback_routes";
 import RoomLevelCriteriaRouter from "./router/room_level_criteria_router";
 import CoinPurchaseRouter from "./router/coin_purchase_route";
 import AgoraConfigRouter from "./router/agora_config_routes";
@@ -184,6 +186,8 @@ app.use("/api/referral", ReferralRouter);
 app.use("/api/admin/rocket-config", RocketConfigRouter);
 app.use("/api/admin/room-level-criteria", RoomLevelCriteriaRouter);
 app.use("/api/coin-exchange", CoinExchangeRouter);
+app.use("/api/coin-history", CoinHistoryRouter);
+app.use("/api/feedback", FeedbackRouter);
 app.use("/api/coin-purchase", CoinPurchaseRouter);
 app.use("/api/admin/agora-config", AgoraConfigRouter);
 // Admin-only Agora request analytics (counts recorded by the token endpoints).
