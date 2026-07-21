@@ -1,5 +1,8 @@
+import { StatusCodes } from "http-status-codes";
 import { PrivilegeTypes } from "../../core/Utils/enums";
 import { RepositoryProviders } from "../../core/providers/repository_providers";
+import AppError from "../../core/errors/app_errors";
+import User from "../../models/user/user_model";
 
 export default class PrivilegeService {
   private static instance: PrivilegeService;
@@ -35,6 +38,78 @@ export default class PrivilegeService {
     return this.availablePrivileges;
   }
 
+  /** The user's on/off toggle map (missing key = enabled). */
+  private async getSettings(userId: string): Promise<Record<string, boolean>> {
+    const user = await User.findById(userId)
+      .select("svipPrivilegeSettings")
+      .lean();
+    const raw = (user as any)?.svipPrivilegeSettings;
+    return raw && typeof raw === "object" ? (raw as Record<string, boolean>) : {};
+  }
+
+  /**
+   * Every SVIP privilege with whether the user OWNS it (equipped SVIP item)
+   * and whether it's currently switched ON. Used by the app's SVIP Settings.
+   */
+  public async getMyPrivileges(userId: string) {
+    const [active, settings] = await Promise.all([
+      RepositoryProviders.myBucketRepositoryProvider.getEquippedPrivileges(
+        userId,
+      ),
+      this.getSettings(userId),
+    ]);
+    return this.availablePrivileges.map((p) => {
+      const owned = active.includes(p.name);
+      return {
+        name: p.name,
+        description: p.description,
+        tag: p.tag,
+        owned,
+        // Default ON when owned and no explicit toggle stored.
+        enabled: owned && settings[p.name] !== false,
+      };
+    });
+  }
+
+  /**
+   * Turn a privilege on/off. Only privileges the user actually owns can be
+   * toggled. Returns the updated per-privilege state list.
+   */
+  public async setPrivilegeSetting(
+    userId: string,
+    privilege: string,
+    enabled: boolean,
+  ) {
+    const known = this.availablePrivileges.some((p) => p.name === privilege);
+    if (!known) {
+      throw new AppError(StatusCodes.BAD_REQUEST, "Unknown privilege");
+    }
+
+    const active =
+      await RepositoryProviders.myBucketRepositoryProvider.getEquippedPrivileges(
+        userId,
+      );
+    if (!active.includes(privilege as PrivilegeTypes)) {
+      throw new AppError(
+        StatusCodes.FORBIDDEN,
+        "You don't have this privilege",
+      );
+    }
+
+    const user = await User.findById(userId);
+    if (!user) throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+
+    const settings: Record<string, boolean> = {
+      ...((user as any).svipPrivilegeSettings || {}),
+    };
+    settings[privilege] = enabled;
+    (user as any).svipPrivilegeSettings = settings;
+    user.markModified("svipPrivilegeSettings");
+    await user.save();
+
+    return this.getMyPrivileges(userId);
+  }
+
   /**
    * Checks if a user has a specific privilege based on their equipped store items.
    * Uses an optimized repository call to minimize database and network overhead.
@@ -51,7 +126,10 @@ export default class PrivilegeService {
       await RepositoryProviders.myBucketRepositoryProvider.getEquippedPrivileges(
         userId,
       );
-    return activePrivileges.includes(privilege);
+    if (!activePrivileges.includes(privilege)) return false;
+    // The user owns it — honour their on/off toggle (default ON when unset).
+    const settings = await this.getSettings(userId);
+    return settings[privilege] !== false;
   }
 
   /**

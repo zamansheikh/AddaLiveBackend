@@ -103,6 +103,10 @@ router
   .route("/privileges")
   .get(authenticate([UserRoles.Admin, UserRoles.SubAdmin]), controller.getPrivileges);
 
+// 📌 the logged-in user's SVIP privileges + on/off toggles (SVIP Settings)
+router.route("/privileges/my").get(authenticate(), controller.getMyPrivileges);
+router.route("/privileges/my/toggle").put(authenticate(), controller.setMyPrivilege);
+
 // 📌 grant item (admin only — exclusive items with canUserBuyThis: false)
 router
   .route("/items/grant")

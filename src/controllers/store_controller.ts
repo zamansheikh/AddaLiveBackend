@@ -556,4 +556,38 @@ export default class StoreController {
       result: privileges,
     });
   });
+
+  // The logged-in user's SVIP privileges with ownership + on/off state.
+  getMyPrivileges = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const privileges = await PrivilegeService.getInstance().getMyPrivileges(id);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: privileges,
+    });
+  });
+
+  // Turn one of the user's SVIP privileges on/off.
+  setMyPrivilege = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.user!;
+    const { privilege, enabled } = req.body;
+    if (typeof privilege !== "string" || typeof enabled !== "boolean") {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "privilege (string) and enabled (boolean) are required",
+      );
+    }
+    const privileges = await PrivilegeService.getInstance().setPrivilegeSetting(
+      id,
+      privilege,
+      enabled,
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: privileges,
+      message: "Privilege updated",
+    });
+  });
 }

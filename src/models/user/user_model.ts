@@ -76,6 +76,13 @@ const userSchema = new mongoose.Schema<IUserDocument>(
       expire: { type: Date },
     },
     verified: { type: Boolean, default: false },
+    // Per-user on/off toggles for SVIP special privileges (anti-kick etc.),
+    // keyed by PrivilegeTypes value. A missing key means "enabled" — the
+    // privilege still requires actually owning it via an equipped SVIP item.
+    svipPrivilegeSettings: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
     familyId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: DatabaseNames.Family,

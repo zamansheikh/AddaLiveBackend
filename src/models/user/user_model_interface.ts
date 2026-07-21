@@ -50,6 +50,8 @@ export interface UserData {
   };
   stats?: IUserStats;
   verified: boolean;
+  /** Per-user on/off toggles for SVIP privileges, keyed by PrivilegeTypes. */
+  svipPrivilegeSettings?: Record<string, boolean>;
   equippedStoreItems?: Record<string, any>;
   familyId?: mongoose.Schema.Types.ObjectId | string | null;
   earnedMedals?: { medalId: mongoose.Schema.Types.ObjectId | string; earnedAt: Date }[];
