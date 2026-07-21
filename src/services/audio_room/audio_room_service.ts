@@ -690,17 +690,35 @@ export class AudioRoomService implements IAudioRoomService {
     audioHelper.checkAuthorityInAudioRoom(myId, audioRoom, 0); // 0 -> host level authority
 
     let isMuteCurrent = false;
+    let seatUserId: number | undefined;
     if (seatKey === "hostSeat") {
       isMuteCurrent = audioRoom.hostSeat?.isMute || false;
+      seatUserId = audioRoom.hostSeat?.member?.userId;
     } else {
       const seat = audioRoom.seats.get(seatKey);
       if (!seat) {
         throw new AppError(404, "Seat not found");
       }
       isMuteCurrent = seat.isMute || false;
+      seatUserId = seat.member?.userId;
     }
 
     const newMuteStatus = !isMuteCurrent;
+
+    // Muting a seat must also respect the occupant's AntiMute privilege —
+    // otherwise a host could mute an immune SVIP user via the seat instead of
+    // the per-user mute action. Only guards muting (not unmuting).
+    if (newMuteStatus && seatUserId && seatUserId > 0) {
+      const occupant = await this.userRepository.findUserByShortId(seatUserId);
+      if (occupant) {
+        const canUserBeMuted = await PrivilegeService.getInstance().canUserBeMuted(
+          (occupant._id as any).toString(),
+        );
+        if (!canUserBeMuted) {
+          throw new AppError(403, "User is immune to this action");
+        }
+      }
+    }
     const updatePath = seatKey === "hostSeat" ? "hostSeat.isMute" : `seats.${seatKey}.isMute`;
 
     await this.audioRoomRepository.findByIdAndUpdate(audioRoom._id as string, {
