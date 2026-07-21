@@ -15,6 +15,8 @@ export interface IStoreItemRepository {
   createStoreItem(item: IStoreItem): Promise<IStoreItemDocument>;
   getStoreItemById(id: string): Promise<IStoreItemDocument | null>;
   getStoreItemByName(name: string): Promise<IStoreItemDocument | null>;
+  /** All live SVIP tier items (name matches "SVIP-<number>"), sorted by tier. */
+  getSvipTierItems(): Promise<IStoreItemDocument[]>;
   getAllStoreItems(
     category: string,
     query: Record<string, any>,
@@ -65,6 +67,13 @@ export default class StoreItemRepository implements IStoreItemRepository {
 
   async getStoreItemByName(name: string): Promise<IStoreItemDocument | null> {
     return await this.Model.findOne({ name });
+  }
+
+  async getSvipTierItems(): Promise<IStoreItemDocument[]> {
+    return await this.Model.find({
+      name: { $regex: /^SVIP-\d+$/ },
+      deleteStatus: false,
+    });
   }
 
   async getAllStoreItems(

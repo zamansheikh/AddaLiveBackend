@@ -1,11 +1,17 @@
 import { ClientSession, Types } from "mongoose";
 import { RepositoryProviders } from "../../core/providers/repository_providers";
 import { IUserSvipRepository } from "../../repository/svip/user_svip_repository";
-import { SvipConfigService } from "../admin/svip_config_service";
 import { IUserSvipDocument } from "../../models/svip/user_svip_model";
 import { IMyBucketRepository } from "../../repository/store/my_bucket_repository";
 import { IStoreCategoryRepository } from "../../repository/store/store_category_repository";
 import { IStoreItemRepository } from "../../repository/store/store_item_repository";
+
+/** A SVIP tier derived from its store item. */
+interface SvipTier {
+  tier: number;
+  milestoneCoins: number;
+  storeItemId: Types.ObjectId | string;
+}
 
 /**
  * Service that handles SVIP tier upgrades when users recharge coins
@@ -29,6 +35,62 @@ export class SvipService {
 
   private static get storeItemRepo(): IStoreItemRepository {
     return RepositoryProviders.storeItemRepositoryProvider;
+  }
+
+  /**
+   * Fraction of a tier's milestone a user must keep recharging each month to
+   * retain it (0.5 = 50%). Kept as a constant — the SVIP config collection is
+   * gone; tiers come straight from the store items.
+   */
+  private static readonly RETENTION_THRESHOLD = 0.5;
+
+  // The SVIP tiers are DERIVED from the SVIP-<n> store items — the recharge
+  // target set on each item's price IS the milestone. A tiny in-memory cache
+  // keeps recharge/status calls from hitting the DB every time.
+  private static tiersCache: SvipTier[] | null = null;
+  private static tiersCacheTime = 0;
+  private static readonly TIERS_CACHE_TTL_MS = 30_000;
+
+  /**
+   * Build the tier list from the SVIP store items. Single source of truth:
+   *   tier          = the number in "SVIP-<n>"
+   *   milestoneCoins = the item's recharge target (prices[0].price)
+   *   storeItemId    = the item _id (used to grant the bucket on activation)
+   */
+  static async getSvipTiers(): Promise<SvipTier[]> {
+    const now = Date.now();
+    if (
+      SvipService.tiersCache &&
+      now - SvipService.tiersCacheTime < SvipService.TIERS_CACHE_TTL_MS
+    ) {
+      return SvipService.tiersCache;
+    }
+
+    const items = await SvipService.storeItemRepo.getSvipTierItems();
+    const tiers: SvipTier[] = [];
+    for (const item of items) {
+      const match = /^SVIP-(\d+)$/.exec(item.name);
+      if (!match) continue;
+      const tier = Number(match[1]);
+      const milestoneCoins = (item.prices?.[0] as any)?.price ?? 0;
+      if (tier < 1 || milestoneCoins <= 0) continue;
+      tiers.push({
+        tier,
+        milestoneCoins,
+        storeItemId: item._id as Types.ObjectId,
+      });
+    }
+    tiers.sort((a, b) => a.tier - b.tier);
+
+    SvipService.tiersCache = tiers;
+    SvipService.tiersCacheTime = now;
+    return tiers;
+  }
+
+  /** Drop the derived-tiers cache — call after an SVIP store item changes. */
+  static invalidateTiersCache(): void {
+    SvipService.tiersCache = null;
+    SvipService.tiersCacheTime = 0;
   }
 
   // ────────────────────────────────────────────────────────────────────────
@@ -94,9 +156,9 @@ export class SvipService {
     );
 
     // ── 3. Check milestones — did we cross any? ───────────────────────
-    const config = await SvipConfigService.getConfig();
-    if (config && config.tiers.length > 0) {
-      const sortedTiers = [...config.tiers].sort(
+    const tiers = await SvipService.getSvipTiers();
+    if (tiers.length > 0) {
+      const sortedTiers = [...tiers].sort(
         (a, b) => a.milestoneCoins - b.milestoneCoins,
       );
 
@@ -167,14 +229,12 @@ export class SvipService {
       return;
     }
 
-    const config = await SvipConfigService.getConfig();
-    if (!config) return;
-
-    const tierConfig = config.tiers.find((t) => t.tier === tier);
+    const tiers = await SvipService.getSvipTiers();
+    const tierConfig = tiers.find((t) => t.tier === tier);
     if (!tierConfig || !tierConfig.storeItemId) {
       console.warn(
-        `[SVIP] No storeItemId linked for tier ${tier} — cannot grant bucket item. ` +
-          `Admin must create an SVIP-${tier} store item.`,
+        `[SVIP] No SVIP-${tier} store item found — cannot grant bucket item. ` +
+          `Admin must create the SVIP-${tier} store item.`,
       );
       return;
     }
@@ -237,9 +297,9 @@ export class SvipService {
     retained: number;
     downgraded: number;
   }> {
-    const config = await SvipConfigService.getConfig();
-    if (!config || config.tiers.length === 0) {
-      console.log("[SVIP Cron] No config loaded — skipping retention.");
+    const tiers = await SvipService.getSvipTiers();
+    if (tiers.length === 0) {
+      console.log("[SVIP Cron] No SVIP tiers configured — skipping retention.");
       return { processed: 0, retained: 0, downgraded: 0 };
     }
 
@@ -261,7 +321,7 @@ export class SvipService {
       );
 
       // Find the milestone for this effective tier
-      const tierConfig = config.tiers.find((t) => t.tier === effectiveTier);
+      const tierConfig = tiers.find((t) => t.tier === effectiveTier);
       if (!tierConfig) {
         // Unknown tier — treat as tier 0
         updates.push({
@@ -275,7 +335,7 @@ export class SvipService {
 
       // Check retention: monthly recharge >= retentionThreshold × milestone
       const requiredCoins = Math.floor(
-        tierConfig.milestoneCoins * config.retentionThreshold,
+        tierConfig.milestoneCoins * SvipService.RETENTION_THRESHOLD,
       );
 
       if (record.monthlyRechargeCoins >= requiredCoins) {
@@ -346,7 +406,7 @@ export class SvipService {
       previewFile: string | null;
     };
   }> {
-    const config = await SvipConfigService.getConfig();
+    const tiers = await SvipService.getSvipTiers();
     const record = await SvipService.userSvipRepo.findByUserId(userId);
 
     const currentTier = record?.currentTier ?? 0;
@@ -354,9 +414,9 @@ export class SvipService {
     const tierStartOfMonth = record?.tierStartOfMonth ?? 0;
 
     // Find next milestone
-    const sortedTiers = config
-      ? [...config.tiers].sort((a, b) => a.milestoneCoins - b.milestoneCoins)
-      : [];
+    const sortedTiers = [...tiers].sort(
+      (a, b) => a.milestoneCoins - b.milestoneCoins,
+    );
 
     const nextMilestone =
       sortedTiers.find((t) => t.tier > currentTier) ?? null;
@@ -367,12 +427,12 @@ export class SvipService {
 
     // Retention status (for users with SVIP)
     let retentionStatus = null;
-    if (currentTier > 0 && config) {
+    if (currentTier > 0) {
       const effectiveTier = Math.max(tierStartOfMonth, currentTier);
       const tierConfig = sortedTiers.find((t) => t.tier === effectiveTier);
       if (tierConfig) {
         const requiredCoins = Math.floor(
-          tierConfig.milestoneCoins * config.retentionThreshold,
+          tierConfig.milestoneCoins * SvipService.RETENTION_THRESHOLD,
         );
         retentionStatus = {
           requiredCoins,
@@ -390,7 +450,7 @@ export class SvipService {
       previewFile: string | null;
     } = { name: null, logo: null, svgaFile: null, previewFile: null };
 
-    if (currentTier > 0 && config) {
+    if (currentTier > 0) {
       const tierConfig = sortedTiers.find((t) => t.tier === currentTier);
       if (tierConfig && tierConfig.storeItemId) {
         const storeItem = await SvipService.storeItemRepo.getStoreItemById(

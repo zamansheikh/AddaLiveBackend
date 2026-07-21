@@ -80,7 +80,6 @@ import { initializeMagicBallTrackers } from "./services/magic_ball";
 import { RoomLevelCriteriaService } from "./services/audio_room/room_level_criteria_service";
 import { RocketConfigService } from "./services/audio_room/rocket_config_service";
 import { XpConfigService } from "./services/admin/xp_config_service";
-import { SvipConfigService } from "./services/admin/svip_config_service";
 import { FamilySupportRewardService } from "./services/family/family_support_reward_service";
 
 // Initialize Magic Ball Trackers
@@ -327,12 +326,8 @@ mongoose.connect(MONGOURL).then(async () => {
     console.error("Failed to bootstrap XP Configuration:", err);
   }
 
-  // Bootstrap SVIP Configuration (seed defaults + warm cache)
-  try {
-    await SvipConfigService.bootstrap();
-  } catch (err) {
-    console.error("Failed to bootstrap SVIP Configuration:", err);
-  }
+  // SVIP tiers are now derived directly from the SVIP store items (each item's
+  // recharge target = its milestone) — no separate SVIP config to seed/warm.
 
   // Bootstrap Family Support Rewards (seed defaults if empty)
   try {

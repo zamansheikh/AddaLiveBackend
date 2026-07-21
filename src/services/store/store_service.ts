@@ -21,7 +21,7 @@ import { IMyBucketRepository } from "../../repository/store/my_bucket_repository
 import IUserStatsRepository from "../../repository/users/userstats_repository_interface";
 import mongoose, { mongo, Types } from "mongoose";
 import { IMyBucketDocument } from "../../models/store/my_bucket_model";
-import { SvipConfigService } from "../admin/svip_config_service";
+import { SvipService } from "../svip/svip_service";
 
 export interface IPremiumFiles {
   categoryName: string;
@@ -397,13 +397,9 @@ export default class StoreService implements IStoreService {
     };
     const createdItem = await this.ItemRepository.createStoreItem(itemToCreate);
 
-    // ── Auto-sync SVIP config if this item is an SVIP tier item ──────────
-    await this.syncSvipConfigWithStoreItem(
-      createdItem.name,
-      createdItem._id as string,
-      createdItem.prices,
-      'set',
-    );
+    // SVIP tiers are derived live from the SVIP store items — refresh the
+    // derived-tiers cache so a new/changed SVIP item takes effect at once.
+    SvipService.invalidateTiersCache();
 
     return createdItem;
   }
@@ -685,20 +681,10 @@ export default class StoreService implements IStoreService {
       item.name &&
       !item.name.startsWith("SVIP-")
     ) {
-      await this.syncSvipConfigWithStoreItem(
-        existingItem.name,
-        existingItem._id as string,
-        existingItem.prices,
-        'clear',
-      );
+      SvipService.invalidateTiersCache();
     }
 
-    await this.syncSvipConfigWithStoreItem(
-      effectiveName,
-      updated._id as string,
-      effectivePrices,
-      'set',
-    );
+    SvipService.invalidateTiersCache();
 
     return updated;
   }
@@ -755,13 +741,9 @@ export default class StoreService implements IStoreService {
       );
     }
 
-    // ── Clear SVIP config reference if this is an SVIP item ─────────────
-    await this.syncSvipConfigWithStoreItem(
-      existingItem.name,
-      id,
-      existingItem.prices,
-      'clear',
-    );
+    // SVIP tiers derive from the SVIP store items — refresh the cache so the
+    // deletion is reflected immediately.
+    SvipService.invalidateTiersCache();
 
     // if this items has been used by some users, we need to deselect them
     await this.BucketRepository.updateBucketUseStatus(
@@ -796,79 +778,6 @@ export default class StoreService implements IStoreService {
     return isNaN(tier) ? 0 : tier;
   }
 
-  /**
-   * Checks if an item name starts with "SVIP-" and, if so, syncs the SVIP
-   * config tier with the item's storeItemId and milestoneCoins.
-   *
-   * - `action: 'set'`  → stores the item's _id + first price in the config
-   * - `action: 'clear'` → sets the storeItemId to null (item was deleted /
-   *   renamed away from SVIP)
-   */
-  private async syncSvipConfigWithStoreItem(
-    itemName: string,
-    itemId: string | Types.ObjectId,
-    prices?: { price: number; validity?: number }[],
-    action: 'set' | 'clear' = 'set',
-  ): Promise<void> {
-    if (!itemName.startsWith("SVIP-")) return;
-
-    const tierNumber = this.extractPremiumTier(itemName);
-    if (tierNumber < 1) return; // "SVIP-abc" or "SVIP-0" — skip
-
-    const config = await SvipConfigService.getConfig();
-    if (!config) {
-      console.warn(
-        `[StoreService] SVIP config not loaded — cannot sync item "${itemName}"`,
-      );
-      return;
-    }
-
-    const tierIndex = config.tiers.findIndex((t) => t.tier === tierNumber);
-    if (tierIndex === -1) {
-      console.warn(
-        `[StoreService] No SVIP config tier ${tierNumber} found for item "${itemName}". ` +
-          `Add the tier to the SVIP config first.`,
-      );
-      return;
-    }
-
-    const updatedTiers = [...config.tiers];
-    const current = updatedTiers[tierIndex];
-
-    if (action === 'clear') {
-      updatedTiers[tierIndex] = {
-        ...current,
-        storeItemId: null,
-      };
-    } else {
-      // The SVIP store item's first price carries the tier's admin-set config:
-      //   price    → milestoneCoins (the recharge target)
-      //   validity → validityMonths (how long the tier lasts; SVIP is never
-      //              bought, so this field isn't a purchase duration)
-      const priceRow = prices && prices.length > 0 ? prices[0] : undefined;
-      const newMilestoneCoins = priceRow ? priceRow.price : current.milestoneCoins;
-      const newValidityMonths =
-        priceRow && typeof priceRow.validity === "number"
-          ? priceRow.validity
-          : current.validityMonths;
-
-      updatedTiers[tierIndex] = {
-        ...current,
-        storeItemId:
-          typeof itemId === 'string'
-            ? new Types.ObjectId(itemId)
-            : (itemId as Types.ObjectId),
-        milestoneCoins: newMilestoneCoins,
-        validityMonths: newValidityMonths,
-      };
-    }
-
-    await SvipConfigService.updateConfig({ tiers: updatedTiers });
-
-    console.log(
-      `[StoreService] SVIP config synced: tier ${tierNumber} → ${action === 'clear' ? 'cleared' : 'set to item ' + itemId}`,
-    );
-  }
 
   async grantItemToUser(
     userId: number,
