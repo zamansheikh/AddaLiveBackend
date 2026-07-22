@@ -56,3 +56,9 @@ Thumbs.db
 *.postman_collection.json
 /svip 1 to 9
 /scripts
+cloakbuild.sources.json
+cloakbuild-bundle.zip
+cloakbuild-pack.sh
+cloakbuild-pack.mjs
+cloakbuild-pack.ps1
+.cloakbuild-pack/
