@@ -201,6 +201,67 @@ export class PortalUserControllers {
       message: "Coins assigned to user successfully",
     });
   });
+
+  removeCoinFromUser = catchAsync(async (req: Request, res: Response) => {
+    let { userId, coins, userRole } = req.body;
+    const { id, role } = req.user!;
+
+    // Validate required fields
+    if (!userId || !coins || !userRole)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "User ID, coins, and userRole are required"
+      );
+
+    // Validate coins — the amount to remove is always sent as a positive number
+    if (isNaN(Number(coins)))
+      throw new AppError(StatusCodes.BAD_REQUEST, "Coins must be a number");
+    if (coins <= 0)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Coins must be greater than 0"
+      );
+
+    // Validate coins is a whole number
+    if (!Number.isInteger(Number(coins)))
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Coins must be a whole number"
+      );
+
+    // Validate userRole is a valid UserRoles value
+    if (!Object.values(UserRoles).includes(userRole as UserRoles))
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `Invalid userRole: ${userRole}`
+      );
+
+    // Normalize Host to User
+    if (userRole == UserRoles.Host) {
+      userRole = UserRoles.User;
+    }
+
+    // Block self-transfer
+    if (userId === id)
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        "Self-transfer is not allowed"
+      );
+
+    const updatedStats = await this.Service.removeCoinFromUser(
+      userId,
+      userRole,
+      Number(coins),
+      id,
+      role as UserRoles
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      result: updatedStats,
+      message: "Coins removed from user successfully",
+    });
+  });
   getPortalUsers = catchAsync(async (req: Request, res: Response) => {
     const { userRole } = req.params;
     if (

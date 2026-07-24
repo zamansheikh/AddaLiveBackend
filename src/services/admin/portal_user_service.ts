@@ -67,6 +67,13 @@ export interface ISharedPowerService {
     myId: string,
     myRole: UserRoles,
   ): Promise<IUSerStatsDocument | IPortalUserDocument>;
+  removeCoinFromUser(
+    userId: string,
+    userRole: UserRoles,
+    coins: number,
+    myId: string,
+    myRole: UserRoles,
+  ): Promise<IUSerStatsDocument>;
   demoteUser(
     userId: string,
     myId: string,
@@ -458,6 +465,126 @@ export default class SharedPowerService implements ISharedPowerService {
     }
 
     return returnBody;
+  }
+
+  /**
+   * Removes (deducts) coins from a regular app user — the reverse of
+   * `assignCoinToUser`. Admin-level only (Admin / Super Admin).
+   *
+   * **Key design decisions:**
+   * - Only Admin / Super Admin can remove coins; this is a corrective action
+   *   (e.g. undoing a wrong top-up), not part of the reseller distribution
+   *   chain, so SubAdmin / Reseller are NOT allowed.
+   * - Targets are regular app users ("user" / "re-seller") whose balance
+   *   lives in `UserStats.coins`. Portal users are out of scope.
+   * - Deduction uses `UserStatsRepository.balanceDeduction()`, which
+   *   atomically checks `coins >= amount` — removing more than the user has
+   *   fails with "not enough coins" instead of going negative.
+   * - The removed coins are credited BACK to the admin's wallet, mirroring
+   *   how `assignCoinToUser` deducts from it — the coin economy stays
+   *   balanced and a wrong transfer can be fully reversed.
+   * - `totalBoughtCoins` is decremented (clamped at 0) so the cumulative
+   *   figure stays consistent with reversed top-ups.
+   * - A coin history record is written with a NEGATIVE amount so audits can
+   *   distinguish removals from grants.
+   * - XP / SVIP / referral progress earned from the original grant is NOT
+   *   rolled back (those flows are additive-only by design).
+   */
+  async removeCoinFromUser(
+    userId: string,
+    userRole: UserRoles,
+    coins: number,
+    myId: string,
+    myRole: UserRoles,
+  ): Promise<IUSerStatsDocument> {
+    // ── 1. Validate sender: admin-level only ────────────────────────────────
+    const allowedSenders = [UserRoles.Admin, UserRoles.SuperAdmin];
+    if (!allowedSenders.includes(myRole)) {
+      throw new AppError(
+        StatusCodes.UNAUTHORIZED,
+        `${myRole} is not authorized to remove coins`,
+      );
+    }
+
+    const myProfile = await this.AdminRepository.getAdminById(myId);
+    if (!myProfile)
+      throw new AppError(StatusCodes.NOT_FOUND, "Not valid token");
+
+    // ── 2. Validate target: regular app users only ──────────────────────────
+    const allowedTargets = [UserRoles.User, UserRoles.Reseller];
+    if (!allowedTargets.includes(userRole)) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `Coins can only be removed from roles: ${allowedTargets.join(", ")}`,
+      );
+    }
+
+    const targetProfile = await this.UserRepository.findUserById(userId);
+    if (!targetProfile)
+      throw new AppError(StatusCodes.NOT_FOUND, "User not found");
+
+    if (targetProfile.userRole !== userRole) {
+      throw new AppError(
+        StatusCodes.BAD_REQUEST,
+        `User role mismatch: expected "${userRole}", but the target user has role "${targetProfile.userRole}"`,
+      );
+    }
+
+    // ── 3. Execute the reversal inside a transaction ────────────────────────
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    let updatedStats: IUSerStatsDocument;
+
+    try {
+      // 3a. Deduct from the user (atomic balance check — throws if too low).
+      const statsAfterDeduction = await this.UserStatsRepository.balanceDeduction(
+        userId,
+        coins,
+        session,
+      );
+      if (!statsAfterDeduction) {
+        throw new AppError(
+          StatusCodes.INTERNAL_SERVER_ERROR,
+          "Failed to deduct coins from user",
+        );
+      }
+      updatedStats = statsAfterDeduction;
+
+      // 3b. Keep the cumulative bought-coins figure consistent (clamp at 0).
+      await this.UserRepository.findUserByIdAndUpdate(
+        userId,
+        {
+          totalBoughtCoins: Math.max(
+            (targetProfile.totalBoughtCoins ?? 0) - coins,
+            0,
+          ),
+        },
+        session,
+      );
+
+      // 3c. Return the removed coins to the admin's wallet.
+      await this.AdminRepository.updateCoin(myId, coins, session);
+
+      // 3d. Audit record — negative amount marks this as a removal.
+      const historyObj: ICoinHistory = {
+        senderRole: myRole,
+        senderId: myId,
+        receiverRole: userRole,
+        receiverId: userId,
+        amount: -coins,
+      };
+      await this.CoinHistoryRepository.createHistory(historyObj, session);
+
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+
+    return updatedStats;
   }
 
   async demoteUser(

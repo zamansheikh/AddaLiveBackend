@@ -138,6 +138,15 @@ router
     portalUserControllers.assignCoinToUser,
   );
 
+// Admin-level only (Super Admin passes any authenticate check implicitly).
+// Reverses a coin grant: deducts from the user, credits the admin wallet back.
+router
+  .route("/users/remove-coin")
+  .put(
+    authenticate([UserRoles.Admin]),
+    portalUserControllers.removeCoinFromUser,
+  );
+
 // for upper management exp: sub admin, merchant, country admin
 router
   .route("/portal/:userRole")
